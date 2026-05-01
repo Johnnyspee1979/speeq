@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Wkb Tool (Web)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "${workspaceFolder}/scripts/start-wkb-web.sh",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

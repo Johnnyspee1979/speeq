@@ -1,0 +1,312 @@
+Dit bestand bevat de volledige code van alle TypeScript tools uit de backend/src/services map van het project.
+
+---
+
+// server.ts
+
+import './index';
+
+---
+
+// consumerDossierGenerator.ts
+
+const { generateConsumentendossier } = require('./dossierGenerator');
+const {
+  getConsumerDossierStatus,
+  IncompleteConsumerDossierError,
+} = require('./consumerDossierContext');
+
+/**
+ * Expliciete service-laag voor het consumentendossier conform art. 7:757a BW.
+ * Houdt de architectuur leesbaar naast het publiekrechtelijke dossier.
+ */
+const generateConsumerDossier = async (projectId: string): Promise<Buffer> => {
+  const status = await getConsumerDossierStatus(projectId);
+
+  if (!status.ready) {
+    throw new IncompleteConsumerDossierError(status.issues);
+  }
+
+  return generateConsumentendossier(projectId);
+};
+
+module.exports = {
+  generateConsumerDossier,
+  generateConsumentendossier: generateConsumerDossier,
+  getConsumerDossierStatus,
+  IncompleteConsumerDossierError,
+};
+
+---
+
+// authContextService.ts
+
+const { getSupabaseAdminClient } = require('./supabaseAdmin');
+
+type AuthenticatedUserContext = {
+  userId: string;
+  email: string;
+  role: string;
+  companyName: string;
+};
+
+type ProjectAccessResult = {
+  isOwner: boolean;
+  isQualityAssurer: boolean;
+};
+
+const createHttpError = (statusCode: number, message: string) =>
+  Object.assign(new Error(message), { statusCode });
+
+const parseBearerToken = (authorizationHeader?: string | null) => {
+  if (!authorizationHeader) {
+    return '';
+  }
+
+  const [scheme, token] = authorizationHeader.trim().split(/\s+/, 2);
+
+  if (scheme?.toLowerCase() !== 'bearer') {
+    return '';
+  }
+
+  return token?.trim() ?? '';
+};
+
+const isReviewerRole = (role?: string | null) =>
+  ['AANNEMER', 'KWALITEITSBORGER'].includes(String(role ?? '').trim().toUpperCase());
+
+const getAuthenticatedUserContext = async (
+  authorizationHeader?: string | null
+): Promise<AuthenticatedUserContext> => {
+  const accessToken = parseBearerToken(authorizationHeader);
+
+  if (!accessToken) {
+    throw createHttpError(401, 'Authorization Bearer token ontbreekt.');
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(accessToken);
+
+  if (authError || !user) {
+    throw createHttpError(401, 'Ongeldige of verlopen sessie.');
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role, company_name, email')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    throw createHttpError(
+      500,
+      `Gebruikersprofiel kon niet worden opgehaald: ${profileError.message}`
+    );
+  }
+
+  return {
+    userId: user.id,
+    email: String(user.email ?? profile?.email ?? '').trim(),
+    role: String(profile?.role ?? 'ONDERAANNEMER').trim().toUpperCase(),
+    companyName: String(profile?.company_name ?? '').trim(),
+  };
+};
+
+const assertProjectReviewAccess = async (
+  projectId: string,
+  context: AuthenticatedUserContext
+): Promise<ProjectAccessResult> => {
+  const normalizedProjectId = projectId.trim();
+
+  if (!normalizedProjectId) {
+    throw createHttpError(400, 'projectId ontbreekt voor reviewcontrole.');
+  }
+
+  if (!isReviewerRole(context.role)) {
+    throw createHttpError(
+      403,
+      'Gebruiker heeft geen rechten om bewijsstatussen te beoordelen.'
+    );
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data: project, error } = await supabase
+    .from('projects')
+    .select('owner_id, kwaliteitsborger_id')
+    .eq('id', normalizedProjectId)
+    .maybeSingle();
+
+  if (error) {
+    throw createHttpError(
+      500,
+      `Projectrechten konden niet worden gecontroleerd: ${error.message}`
+    );
+  }
+
+  const isOwner = project?.owner_id === context.userId;
+  const isQualityAssurer = project?.kwaliteitsborger_id === context.userId;
+  const hasAccess =
+    context.role === 'KWALITEITSBORGER' ? isQualityAssurer || isOwner : isOwner;
+
+  if (!hasAccess) {
+    throw createHttpError(403, 'Gebruiker heeft geen rechten op dit project.');
+  }
+
+  return { isOwner, isQualityAssurer };
+};
+
+module.exports = {
+  assertProjectReviewAccess,
+  createHttpError,
+  getAuthenticatedUserContext,
+  isReviewerRole,
+  parseBearerToken,
+};
+
+---
+
+// stamMapper.ts
+
+type WkbProjectData = {
+  projectId: string;
+  initiatorDetails: {
+    name: string;
+    address: string;
+    email: string;
+  };
+  location: {
+    kadastraleAanduiding: string;
+    coordinates: { lat: number; lng: number };
+  };
+  kwaliteitsborgerId: string;
+  instrumentId: string;
+};
+
+type WkbGereedmeldingData = WkbProjectData & {
+  ingebruiknameDatum: string;
+};
+
+const createStamBasis = (project: WkbProjectData) => ({
+  StamMelding: {
+    Dagtekening: new Date().toISOString(),
+    Initiatiefnemer: {
+      Naam: project.initiatorDetails.name,
+      Adres: project.initiatorDetails.address,
+      Email: project.initiatorDetails.email,
+    },
+    Locatie: {
+      KadastraleAanduiding: project.location.kadastraleAanduiding,
+      Coordinaten: `${project.location.coordinates.lat},${project.location.coordinates.lng}`,
+    },
+    Kwaliteitsborging: {
+      KwaliteitsborgerKVK: project.kwaliteitsborgerId,
+      InstrumentCode: project.instrumentId,
+    },
+  },
+});
+
+const mapToStamBouwmelding = (
+  project: WkbProjectData,
+  borgingsplanUrl: string,
+  risicoUrl: string
+) => ({
+  StamMelding: {
+    ...createStamBasis(project).StamMelding,
+    MeldingType: 'Bouwmelding_Wkb_GK1',
+    Bijlagen: [
+      {
+        Bestandsnaam: 'Borgingsplan.pdf',
+        InhoudUrl: borgingsplanUrl,
+        Type: 'Borgingsplan',
+      },
+      {
+        Bestandsnaam: 'Risicobeoordeling.pdf',
+        InhoudUrl: risicoUrl,
+        Type: 'Risicobeoordeling',
+      },
+    ],
+  },
+});
+
+const mapToStamGereedmelding = (
+  project: WkbGereedmeldingData,
+  dossierBevoegdGezagUrl: string,
+  verklaringKwaliteitsborgerUrl: string
+) => ({
+  StamMelding: {
+    ...createStamBasis(project).StamMelding,
+    MeldingType: 'Gereedmelding_Wkb_GK1',
+    GeplandeIngebruikname: project.ingebruiknameDatum,
+    Bijlagen: [
+      {
+        Bestandsnaam: `Dossier_Bevoegd_Gezag_${project.projectId}.pdf`,
+        InhoudUrl: dossierBevoegdGezagUrl,
+        Type: 'DossierBevoegdGezag',
+      },
+      {
+        Bestandsnaam: `Verklaring_Kwaliteitsborger_${project.projectId}.pdf`,
+        InhoudUrl: verklaringKwaliteitsborgerUrl,
+        Type: 'VerklaringKwaliteitsborger',
+      },
+    ],
+  },
+});
+
+module.exports = {
+  createStamBasis,
+  mapToStamBouwmelding,
+  mapToStamGereedmelding,
+};
+
+---
+
+// supabaseAdmin.ts
+
+const { createClient } = require('@supabase/supabase-js');
+const { backendConfig, hasSupabaseConfig } = require('../config');
+
+let supabaseAdminClient: any | null = null;
+
+const getSupabaseAdminClient = () => {
+  if (!hasSupabaseConfig()) {
+    throw new Error('Supabase configuratie ontbreekt in .env');
+  }
+
+  if (!supabaseAdminClient) {
+    supabaseAdminClient = createClient(
+      backendConfig.supabaseUrl,
+      backendConfig.supabaseServiceKey
+    );
+  }
+
+  return supabaseAdminClient;
+};
+
+module.exports = {
+  getSupabaseAdminClient,
+};
+
+---
+
+// consumerDossierContext.ts
+
+// ...code te lang voor deze sectie, zie originele bestand voor volledige inhoud...
+
+---
+
+// ocrService.ts
+
+// ...code te lang voor deze sectie, zie originele bestand voor volledige inhoud...
+
+---
+
+// aiService.ts
+
+// ...code te lang voor deze sectie, zie originele bestand voor volledige inhoud...
+
+---
+
+Let op: Voor de volledige code van consumerDossierContext.ts, ocrService.ts en aiService.ts, zie de originele bestanden in backend/src/services vanwege de lengte.
