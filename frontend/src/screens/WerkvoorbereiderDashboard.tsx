@@ -1,0 +1,1173 @@
+/**
+ * WerkvoorbereiderDashboard — Workspace voor WV / Uitvoerder
+ *
+ * Tabs:
+ *   📊 Dashboard   — stats + borgingspunt voortgangsraster + LIVE indicator
+ *   📸 Bewijs      — foto-review met goedkeuren / afkeuren per item
+ *   ✅ Checklist   — dagelijkse controlelijst per borgingspunt
+ *
+ * Realtime: Supabase postgres_changes → toast + live indicator
+ */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { supabase } from '../lib/supabase';
+import { useTheme } from '../theme/ThemeProvider';
+import EvidenceMapView from '../components/EvidenceMapView';
+import { exportProjectAsZip, type ZipExportProgress } from '../services/ZipExportService';
+import {
+  isFolderSyncSupported,
+  requestFolderAccess,
+  unlinkFolder,
+  getLinkedFolderName,
+  syncToLocalFolder,
+  type SyncEvidenceRow,
+} from '../services/LocalFolderSyncService';
+import {
+  isOneDriveConfigured,
+  connectOneDrive,
+  disconnectOneDrive,
+  getOneDriveAccountName,
+  syncToOneDrive,
+  type OneDriveEvidenceRow,
+} from '../services/OneDriveSyncService';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type AiStatus = 'PASSED' | 'FAILED' | 'NEEDS_REVIEW' | 'PENDING' | null;
+type FilterStatus = 'alle' | 'review' | 'akkoord' | 'afgekeurd' | 'pending';
+type WvTab = 'dashboard' | 'bewijs' | 'checklist' | 'kaart';
+
+interface EvidenceRow {
+  id: string;
+  project_id: string | null;
+  inspection_point_id: string | null;
+  media_uri: string | null;
+  photo_uri: string | null;
+  timestamp: string | null;
+  ai_status: AiStatus;
+  ai_notes: string | null;
+  sync_status: string | null;
+  user_id: string | null;
+  gps_lat: number | null;
+  gps_lng: number | null;
+  field_note: string | null;
+}
+
+interface ChecklistItem {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+interface WerkvoorbereiderDashboardProps {
+  projectId?: string;
+  projectName?: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function toBucket(status: AiStatus): 'akkoord' | 'review' | 'afgekeurd' | 'pending' {
+  if (status === 'PASSED')       return 'akkoord';
+  if (status === 'NEEDS_REVIEW') return 'review';
+  if (status === 'FAILED')       return 'afgekeurd';
+  return 'pending';
+}
+
+function fmtDate(ts: string | null): string {
+  if (!ts) return '—';
+  try {
+    return new Intl.DateTimeFormat('nl-NL', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    }).format(new Date(ts));
+  } catch { return ts; }
+}
+
+function isToday(ts: string | null): boolean {
+  if (!ts) return false;
+  try { return new Date(ts).toDateString() === new Date().toDateString(); }
+  catch { return false; }
+}
+
+const DEFAULT_CHECKLIST: ChecklistItem[] = [
+  { id: '1', label: 'Dagelijkse ronde inspectiepunten', done: false },
+  { id: '2', label: 'Nieuwe bewijsstukken gecontroleerd', done: false },
+  { id: '3', label: 'Vaklieden gebriefd op borgingspunten', done: false },
+  { id: '4', label: 'Stopmoment bevestigd', done: false },
+  { id: '5', label: 'Locatie GPS geverifieerd', done: false },
+  { id: '6', label: 'Afwijkingen gerapporteerd', done: false },
+];
+
+const CHECKLIST_KEY = 'wkb_wv_checklist';
+
+function loadChecklist(projectId: string): ChecklistItem[] {
+  if (typeof window === 'undefined') return DEFAULT_CHECKLIST;
+  try {
+    const raw = window.localStorage.getItem(`${CHECKLIST_KEY}_${projectId}`);
+    if (raw) return JSON.parse(raw) as ChecklistItem[];
+  } catch { /* ignore */ }
+  return DEFAULT_CHECKLIST.map(i => ({ ...i }));
+}
+
+function saveChecklist(projectId: string, items: ChecklistItem[]) {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.setItem(`${CHECKLIST_KEY}_${projectId}`, JSON.stringify(items)); }
+  catch { /* ignore */ }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function WerkvoorbereiderDashboard({
+  projectId = 'default',
+  projectName = 'Project',
+}: WerkvoorbereiderDashboardProps) {
+  const { theme } = useTheme();
+  const isDark = theme.name === 'dark';
+  const { width, height } = useWindowDimensions();
+  const isDesktop = width >= 768;
+
+  const [activeTab, setActiveTab] = useState<WvTab>('dashboard');
+  const [evidence, setEvidence]   = useState<EvidenceRow[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [filter, setFilter]       = useState<FilterStatus>('alle');
+  const [isLive, setIsLive]       = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null);
+
+  // Toast
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Checklist
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(() => loadChecklist(projectId));
+  const [newTask, setNewTask]     = useState('');
+
+  // ── ZIP export state ─────────────────────────────────────────────────────────
+  const [zipProgress, setZipProgress] = useState<ZipExportProgress | null>(null);
+
+  // ── PC-map sync state ─────────────────────────────────────────────────────────
+  const [linkedFolder, setLinkedFolder]     = useState<string | null>(null);
+  const [folderSyncing, setFolderSyncing]   = useState(false);
+  const [folderSyncMsg, setFolderSyncMsg]   = useState<string | null>(null);
+  const folderSyncSupported = isFolderSyncSupported();
+
+  // ── OneDrive state ───────────────────────────────────────────────────────────
+  const [oneDriveAccount, setOneDriveAccount] = useState<string | null>(null);
+  const [oneDriveSyncing, setOneDriveSyncing] = useState(false);
+  const [oneDriveMsg, setOneDriveMsg]         = useState<string | null>(null);
+  const oneDriveReady = isOneDriveConfigured();
+
+  const showToast = useCallback((msg: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToastMsg(msg);
+    Animated.sequence([
+      Animated.timing(toastAnim, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.delay(3200),
+      Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start(() => setToastMsg(null));
+    toastTimer.current = setTimeout(() => setToastMsg(null), 4000);
+  }, [toastAnim]);
+
+  const fetchEvidence = useCallback(async (): Promise<EvidenceRow[]> => {
+    setLoading(true);
+    try {
+      const { data } = await supabase
+        .from('evidence')
+        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, user_id, gps_lat, gps_lng, field_note')
+        .eq('project_id', projectId)
+        .order('timestamp', { ascending: false })
+        .limit(300);
+      const rows = (data ?? []) as EvidenceRow[];
+      setEvidence(rows);
+      return rows;
+    } catch { return []; }
+    finally { setLoading(false); }
+  }, [projectId]);
+
+  // ── Folder sync helper ────────────────────────────────────────────────────────
+  const runFolderSync = useCallback(async (rows: SyncEvidenceRow[], silent = false) => {
+    if (!linkedFolder) return;
+    setFolderSyncing(true);
+    if (!silent) setFolderSyncMsg('📂 Synchroniseren naar PC-map…');
+    const result = await syncToLocalFolder(projectId, projectName, rows);
+    setFolderSyncing(false);
+    if (result.noFolder)      { setLinkedFolder(null); return; }
+    if (result.noPermission)  { setFolderSyncMsg('⚠️ Toegang geweigerd — koppel de map opnieuw.'); return; }
+    if (result.notSupported)  return;
+    if (!silent) {
+      setFolderSyncMsg(`✅ ${result.synced} nieuw${result.synced !== 1 ? 'e' : ''} bestand${result.synced !== 1 ? 'en' : ''} gesynchroniseerd`);
+      setTimeout(() => setFolderSyncMsg(null), 4000);
+    }
+  }, [linkedFolder, projectId, projectName]);
+
+  useEffect(() => {
+    void fetchEvidence();
+    // Laad gekoppelde mapnaam + OneDrive account
+    getLinkedFolderName(projectId).then(name => setLinkedFolder(name)).catch(() => {});
+    if (oneDriveReady) {
+      getOneDriveAccountName().then(name => setOneDriveAccount(name)).catch(() => {});
+    }
+
+    const channel = supabase
+      .channel(`wv-dashboard-${projectId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'evidence' }, async () => {
+        setIsLive(true);
+        setLastUpdate(new Date().toLocaleTimeString('nl-NL', { timeStyle: 'short' }));
+        showToast('📸 Nieuwe foto ontvangen');
+        const updated = await fetchEvidence();
+        // Auto-sync nieuwe foto naar PC-map + OneDrive
+        if (updated && updated.length > 0) {
+          void runFolderSync(updated as SyncEvidenceRow[], true);
+          if (oneDriveAccount) {
+            void syncToOneDrive(projectName, updated as OneDriveEvidenceRow[]);
+          }
+        }
+      })
+      .subscribe(() => setIsLive(true));
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchEvidence, projectId, projectName, showToast, runFolderSync]);
+
+  // Reset checklist when project changes
+  useEffect(() => {
+    setChecklist(loadChecklist(projectId));
+  }, [projectId]);
+
+  // ── Metrics ────────────────────────────────────────────────────────────────
+  const metrics = useMemo(() => {
+    const akkoord   = evidence.filter(e => toBucket(e.ai_status) === 'akkoord').length;
+    const review    = evidence.filter(e => toBucket(e.ai_status) === 'review').length;
+    const afgekeurd = evidence.filter(e => toBucket(e.ai_status) === 'afgekeurd').length;
+    const vandaag   = evidence.filter(e => isToday(e.timestamp)).length;
+    return { total: evidence.length, akkoord, review, afgekeurd, vandaag };
+  }, [evidence]);
+
+  // ── Borgingspunt grid ──────────────────────────────────────────────────────
+  const borgingspuntGrid = useMemo(() => {
+    const map = new Map<string, EvidenceRow[]>();
+    for (const e of evidence) {
+      const key = e.inspection_point_id ?? 'onbekend';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(e);
+    }
+    return Array.from(map.entries()).map(([id, items]) => {
+      const hasAfgekeurd = items.some(i => toBucket(i.ai_status) === 'afgekeurd');
+      const hasReview    = items.some(i => toBucket(i.ai_status) === 'review');
+      const hasAkkoord   = items.some(i => toBucket(i.ai_status) === 'akkoord');
+      const bucket = hasAfgekeurd ? 'afgekeurd' : hasReview ? 'review' : hasAkkoord ? 'akkoord' : 'pending';
+      return { id, count: items.length, bucket };
+    }).sort((a, b) => {
+      const order: Record<string, number> = { afgekeurd: 0, review: 1, pending: 2, akkoord: 3 };
+      return order[a.bucket] - order[b.bucket];
+    });
+  }, [evidence]);
+
+  // ── Filtered evidence ──────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    if (filter === 'alle') return evidence;
+    return evidence.filter(e => toBucket(e.ai_status) === filter);
+  }, [evidence, filter]);
+
+  // ── Approve / Reject ────────────────────────────────────────────────────────
+  const setStatus = useCallback(async (id: string, status: 'PASSED' | 'FAILED') => {
+    // Optimistic update
+    setEvidence(prev => prev.map(e => e.id === id ? { ...e, ai_status: status } : e));
+    try {
+      await supabase.from('evidence').update({ ai_status: status }).eq('id', id);
+    } catch {
+      // Revert on error
+      void fetchEvidence();
+    }
+  }, [fetchEvidence]);
+
+  // ── Checklist ──────────────────────────────────────────────────────────────
+  const toggleCheck = useCallback((id: string) => {
+    setChecklist(prev => {
+      const next = prev.map(i => i.id === id ? { ...i, done: !i.done } : i);
+      saveChecklist(projectId, next);
+      return next;
+    });
+  }, [projectId]);
+
+  const addTask = useCallback(() => {
+    if (!newTask.trim()) return;
+    setChecklist(prev => {
+      const next = [...prev, { id: Date.now().toString(), label: newTask.trim(), done: false }];
+      saveChecklist(projectId, next);
+      return next;
+    });
+    setNewTask('');
+  }, [newTask, projectId]);
+
+  const removeTask = useCallback((id: string) => {
+    setChecklist(prev => {
+      const next = prev.filter(i => i.id !== id);
+      saveChecklist(projectId, next);
+      return next;
+    });
+  }, [projectId]);
+
+  const resetChecklist = useCallback(() => {
+    const fresh = DEFAULT_CHECKLIST.map(i => ({ ...i }));
+    setChecklist(fresh);
+    saveChecklist(projectId, fresh);
+  }, [projectId]);
+
+  const checkDone = checklist.filter(i => i.done).length;
+
+  // ── Tab config ─────────────────────────────────────────────────────────────
+  const TABS: { id: WvTab; label: string; badge?: number }[] = [
+    { id: 'dashboard', label: '📊 Dashboard' },
+    { id: 'bewijs',    label: '📸 Bewijs', badge: metrics.review > 0 ? metrics.review : undefined },
+    { id: 'checklist', label: '✅ Checklist', badge: checklist.filter(i => !i.done).length || undefined },
+    { id: 'kaart',     label: '🗺️ GPS Kaart' },
+  ];
+
+  return (
+    <View style={[st.root, { backgroundColor: theme.colors.background }]}>
+
+      {/* ── Toast ── */}
+      {toastMsg ? (
+        <Animated.View
+          style={[st.toast, { opacity: toastAnim, transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [-16, 0] }) }] }]}
+          pointerEvents="none"
+        >
+          <Text style={st.toastText}>{toastMsg}</Text>
+        </Animated.View>
+      ) : null}
+
+      <ScrollView
+        style={st.scroll}
+        contentContainerStyle={[st.content, { padding: activeTab === 'kaart' ? 0 : isDesktop ? 28 : 16, maxWidth: activeTab === 'kaart' ? undefined : 1000, alignSelf: activeTab === 'kaart' ? undefined : 'center', width: '100%' }]}
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={activeTab !== 'kaart'}
+      >
+
+        {/* ── Header ── */}
+        <View style={[st.headerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={st.headerTop}>
+            <View style={{ flex: 1 }}>
+              <Text style={[st.projectTitle, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                {projectName}
+              </Text>
+              <Text style={[st.projectRole, { color: theme.colors.textSecondary }]}>
+                Werkvoorbereider / Uitvoerder
+              </Text>
+            </View>
+            {/* LIVE pill */}
+            <View style={[st.livePill, { backgroundColor: isLive ? 'rgba(5,150,105,0.12)' : theme.colors.border }]}>
+              <View style={[st.liveDot, { backgroundColor: isLive ? '#059669' : theme.colors.textSecondary }]} />
+              <Text style={[st.liveText, { color: isLive ? '#059669' : theme.colors.textSecondary }]}>
+                {isLive ? `LIVE${lastUpdate ? `  ·  ${lastUpdate}` : ''}` : 'Verbinden…'}
+              </Text>
+            </View>
+
+            {/* ZIP download knop */}
+            <TouchableOpacity
+              onPress={() => {
+                if (zipProgress && zipProgress.phase !== 'klaar' && zipProgress.phase !== 'fout') return;
+                setZipProgress({ phase: 'ophalen', current: 0, total: 0, message: 'Bezig…' });
+                exportProjectAsZip(projectId, projectName, setZipProgress).catch(() => {
+                  setZipProgress({ phase: 'fout', current: 0, total: 0, message: 'Download mislukt.' });
+                });
+              }}
+              style={[st.zipBtn, { backgroundColor: theme.colors.accent + '18', borderColor: theme.colors.accent + '40' }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[st.zipBtnText, { color: theme.colors.accent }]}>
+                {zipProgress && zipProgress.phase !== 'klaar' && zipProgress.phase !== 'fout'
+                  ? `⏳ ${zipProgress.current}/${zipProgress.total}`
+                  : '📥 ZIP'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* PC-map koppelen knop */}
+            {folderSyncSupported && (
+              <TouchableOpacity
+                onPress={async () => {
+                  if (linkedFolder) {
+                    // Al gekoppeld → handmatige sync starten
+                    setFolderSyncing(true);
+                    setFolderSyncMsg('📂 Synchroniseren…');
+                    await runFolderSync(evidence as SyncEvidenceRow[]);
+                  } else {
+                    // Nog niet gekoppeld → map kiezen
+                    const name = await requestFolderAccess(projectId);
+                    if (name) {
+                      setLinkedFolder(name);
+                      setFolderSyncMsg(`✅ Map "${name}" gekoppeld — synchroniseren…`);
+                      // Direct eerste sync
+                      void syncToLocalFolder(projectId, projectName, evidence as SyncEvidenceRow[]).then(r => {
+                        setFolderSyncMsg(`✅ "${name}" gekoppeld · ${r.synced} bestanden gesynchroniseerd`);
+                        setTimeout(() => setFolderSyncMsg(null), 5000);
+                      });
+                    }
+                  }
+                }}
+                style={[st.zipBtn, {
+                  backgroundColor: linkedFolder ? 'rgba(5,150,105,0.1)' : theme.colors.surface,
+                  borderColor: linkedFolder ? 'rgba(5,150,105,0.4)' : theme.colors.border,
+                }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[st.zipBtnText, { color: linkedFolder ? '#059669' : theme.colors.textSecondary }]}>
+                  {folderSyncing ? '⏳' : linkedFolder ? `📁 ${linkedFolder.slice(0, 12)}` : '📁 PC-map'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            {linkedFolder && (
+              <TouchableOpacity
+                onPress={() => { unlinkFolder(projectId).then(() => { setLinkedFolder(null); setFolderSyncMsg(null); }); }}
+                style={{ padding: 4 }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>✕</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* OneDrive knop */}
+            {oneDriveReady ? (
+              <TouchableOpacity
+                onPress={async () => {
+                  if (oneDriveAccount) {
+                    // Al ingelogd → handmatige sync
+                    setOneDriveSyncing(true);
+                    setOneDriveMsg('☁️ Synchroniseren naar OneDrive…');
+                    const result = await syncToOneDrive(
+                      projectName,
+                      evidence as OneDriveEvidenceRow[],
+                      (done, total) => setOneDriveMsg(`☁️ OneDrive ${done}/${total}…`)
+                    );
+                    setOneDriveSyncing(false);
+                    if (result.ok) {
+                      setOneDriveMsg(`✅ ${result.synced} bestanden naar OneDrive`);
+                      setTimeout(() => setOneDriveMsg(null), 5000);
+                    } else if (result.authFailed) {
+                      setOneDriveMsg('⚠️ Sessie verlopen — koppel opnieuw');
+                      setOneDriveAccount(null);
+                    }
+                  } else {
+                    // Nog niet ingelogd → login
+                    setOneDriveMsg('☁️ Microsoft login opent…');
+                    const account = await connectOneDrive();
+                    if (account) {
+                      setOneDriveAccount(account);
+                      setOneDriveMsg(`✅ "${account}" gekoppeld — synchroniseren…`);
+                      setOneDriveSyncing(true);
+                      const result = await syncToOneDrive(projectName, evidence as OneDriveEvidenceRow[]);
+                      setOneDriveSyncing(false);
+                      if (result.ok) {
+                        setOneDriveMsg(`✅ OneDrive gekoppeld · ${result.synced} bestanden gesynchroniseerd`);
+                        setTimeout(() => setOneDriveMsg(null), 6000);
+                      }
+                    } else {
+                      setOneDriveMsg(null);
+                    }
+                  }
+                }}
+                style={[st.zipBtn, {
+                  backgroundColor: oneDriveAccount ? 'rgba(0,120,212,0.1)' : theme.colors.surface,
+                  borderColor:     oneDriveAccount ? 'rgba(0,120,212,0.4)' : theme.colors.border,
+                }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[st.zipBtnText, { color: oneDriveAccount ? '#0078D4' : theme.colors.textSecondary }]}>
+                  {oneDriveSyncing ? '⏳' : oneDriveAccount ? `☁️ OneDrive` : '☁️ OneDrive'}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              // Niet geconfigureerd → setup knop
+              <TouchableOpacity
+                onPress={() => setOneDriveMsg('setup')}
+                style={[st.zipBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, opacity: 0.6 }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[st.zipBtnText, { color: theme.colors.textSecondary }]}>☁️ OneDrive</Text>
+              </TouchableOpacity>
+            )}
+            {oneDriveAccount && (
+              <TouchableOpacity
+                onPress={() => { disconnectOneDrive().then(() => { setOneDriveAccount(null); setOneDriveMsg(null); }); }}
+                style={{ padding: 4 }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Stats strip */}
+          <View style={[st.statsStrip, { borderTopColor: theme.colors.border }]}>
+            {[
+              { label: "Foto's", value: metrics.total,    color: theme.colors.textPrimary },
+              { label: 'Vandaag',    value: metrics.vandaag,  color: theme.colors.accent },
+              { label: 'Akkoord',    value: metrics.akkoord,  color: '#059669' },
+              { label: 'Review',     value: metrics.review,   color: metrics.review > 0 ? '#d97706' : theme.colors.textSecondary },
+              { label: 'Afgekeurd',  value: metrics.afgekeurd,color: metrics.afgekeurd > 0 ? '#ef4444' : theme.colors.textSecondary },
+            ].map(s => (
+              <View key={s.label} style={st.statItem}>
+                <Text style={[st.statNum, { color: s.color }]}>{s.value}</Text>
+                <Text style={[st.statLabel, { color: theme.colors.textSecondary }]}>{s.label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* ZIP voortgang banner */}
+        {zipProgress && zipProgress.phase !== 'klaar' && zipProgress.phase !== 'fout' && (
+          <View style={[st.zipBanner, { backgroundColor: theme.colors.accent + '12', borderColor: theme.colors.accent + '30' }]}>
+            <ActivityIndicator size="small" color={theme.colors.accent} />
+            <Text style={[st.zipBannerText, { color: theme.colors.accent }]}>{zipProgress.message}</Text>
+          </View>
+        )}
+        {zipProgress?.phase === 'klaar' && (
+          <View style={[st.zipBanner, { backgroundColor: 'rgba(5,150,105,0.1)', borderColor: 'rgba(5,150,105,0.3)' }]}>
+            <Text style={[st.zipBannerText, { color: '#059669' }]}>{zipProgress.message}</Text>
+            <TouchableOpacity onPress={() => setZipProgress(null)}>
+              <Text style={{ color: '#059669', fontWeight: '700', fontSize: 14 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {zipProgress?.phase === 'fout' && (
+          <View style={[st.zipBanner, { backgroundColor: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)' }]}>
+            <Text style={[st.zipBannerText, { color: '#ef4444' }]}>❌ {zipProgress.message}</Text>
+            <TouchableOpacity onPress={() => setZipProgress(null)}>
+              <Text style={{ color: '#ef4444', fontWeight: '700', fontSize: 14 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* OneDrive banner + setup modal */}
+        {oneDriveMsg === 'setup' && (
+          <View style={[st.zipBanner, { backgroundColor: 'rgba(0,120,212,0.08)', borderColor: 'rgba(0,120,212,0.3)', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }]}>
+            <Text style={{ color: '#0078D4', fontWeight: '800', fontSize: 13 }}>☁️ OneDrive instellen — 3 stappen</Text>
+            <Text style={{ color: theme.colors.textPrimary, fontSize: 12 }}>
+              {'1. Ga naar portal.azure.com → App registrations → New registration\n'}
+              {'2. Naam: "WKB Snap & Sync" · Redirect URI: ' + window.location.origin + '\n'}
+              {'3. Kopieer de Application (client) ID → stuur naar je developer'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => { window.open('https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade', '_blank'); }}
+              style={{ backgroundColor: '#0078D4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Open Azure Portal →</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setOneDriveMsg(null)} style={{ position: 'absolute', top: 10, right: 10 }}>
+              <Text style={{ color: theme.colors.textSecondary, fontWeight: '700' }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {oneDriveMsg && oneDriveMsg !== 'setup' && (
+          <View style={[st.zipBanner, {
+            backgroundColor: oneDriveMsg.startsWith('✅') ? 'rgba(0,120,212,0.08)' : 'rgba(0,120,212,0.05)',
+            borderColor:     oneDriveMsg.startsWith('✅') ? 'rgba(0,120,212,0.3)'  : 'rgba(0,120,212,0.15)',
+          }]}>
+            {oneDriveSyncing && <ActivityIndicator size="small" color="#0078D4" />}
+            <Text style={[st.zipBannerText, { color: oneDriveMsg.startsWith('⚠️') ? '#d97706' : '#0078D4' }]}>{oneDriveMsg}</Text>
+            {!oneDriveSyncing && (
+              <TouchableOpacity onPress={() => setOneDriveMsg(null)}>
+                <Text style={{ color: theme.colors.textSecondary, fontWeight: '700', fontSize: 14 }}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* PC-map sync banner */}
+        {folderSyncMsg && (
+          <View style={[st.zipBanner, {
+            backgroundColor: folderSyncMsg.startsWith('✅') ? 'rgba(5,150,105,0.08)' :
+                              folderSyncMsg.startsWith('⚠️') ? 'rgba(217,119,6,0.08)' :
+                              theme.colors.surface,
+            borderColor: folderSyncMsg.startsWith('✅') ? 'rgba(5,150,105,0.25)' :
+                         folderSyncMsg.startsWith('⚠️') ? 'rgba(217,119,6,0.25)' :
+                         theme.colors.border,
+          }]}>
+            {folderSyncing && <ActivityIndicator size="small" color={theme.colors.accent} />}
+            <Text style={[st.zipBannerText, {
+              color: folderSyncMsg.startsWith('✅') ? '#059669' :
+                     folderSyncMsg.startsWith('⚠️') ? '#d97706' :
+                     theme.colors.textPrimary,
+            }]}>{folderSyncMsg}</Text>
+            {!folderSyncing && (
+              <TouchableOpacity onPress={() => setFolderSyncMsg(null)}>
+                <Text style={{ color: theme.colors.textSecondary, fontWeight: '700', fontSize: 14 }}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
+        {/* ── Tabs ── */}
+        <View style={[st.tabRow, { borderBottomColor: theme.colors.border }]}>
+          {TABS.map(tab => (
+            <TouchableOpacity
+              key={tab.id}
+              style={[st.tabItem, activeTab === tab.id && st.tabItemActive]}
+              onPress={() => setActiveTab(tab.id)}
+              activeOpacity={0.7}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[st.tabLabel, { color: activeTab === tab.id ? theme.colors.accent : theme.colors.textSecondary }]}>
+                  {tab.label}
+                </Text>
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <View style={[st.tabBadge, { backgroundColor: activeTab === tab.id ? theme.colors.accent : '#d97706' }]}>
+                    <Text style={st.tabBadgeText}>{tab.badge}</Text>
+                  </View>
+                )}
+              </View>
+              {activeTab === tab.id && <View style={[st.tabUnderline, { backgroundColor: theme.colors.accent }]} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* ── Tab: Dashboard ── */}
+        {activeTab === 'dashboard' && (
+          <DashboardTab
+            borgingspuntGrid={borgingspuntGrid}
+            loading={loading}
+            metrics={metrics}
+            theme={theme}
+            onGotoReview={() => { setActiveTab('bewijs'); setFilter('review'); }}
+          />
+        )}
+
+        {/* ── Tab: Bewijs ── */}
+        {activeTab === 'bewijs' && (
+          <BewijsTab
+            evidence={filtered}
+            filter={filter}
+            setFilter={setFilter}
+            metrics={metrics}
+            loading={loading}
+            theme={theme}
+            isDark={isDark}
+            onApprove={(id) => setStatus(id, 'PASSED')}
+            onReject={(id) => setStatus(id, 'FAILED')}
+          />
+        )}
+
+        {/* ── Tab: Checklist ── */}
+        {activeTab === 'checklist' && (
+          <ChecklistTab
+            checklist={checklist}
+            newTask={newTask}
+            setNewTask={setNewTask}
+            onToggle={toggleCheck}
+            onRemove={removeTask}
+            onAdd={addTask}
+            onReset={resetChecklist}
+            done={checkDone}
+            theme={theme}
+          />
+        )}
+
+        {/* ── Tab: GPS Kaart ── */}
+        {activeTab === 'kaart' && (
+          <View style={{ height: Math.max(height - 180, 500) }}>
+            <EvidenceMapView />
+          </View>
+        )}
+
+      </ScrollView>
+    </View>
+  );
+}
+
+// ─── Tab: Dashboard ───────────────────────────────────────────────────────────
+
+interface DashboardTabProps {
+  borgingspuntGrid: { id: string; count: number; bucket: string }[];
+  loading: boolean;
+  metrics: { total: number; akkoord: number; review: number; afgekeurd: number; vandaag: number };
+  theme: { colors: Record<string, string> };
+  onGotoReview: () => void;
+}
+
+function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview }: DashboardTabProps) {
+  if (loading) {
+    return <View style={tabSt.centered}><ActivityIndicator size="large" color={theme.colors.accent} /></View>;
+  }
+
+  if (borgingspuntGrid.length === 0) {
+    return (
+      <View style={tabSt.emptyBox}>
+        <Text style={{ fontSize: 48 }}>🏗</Text>
+        <Text style={[tabSt.emptyTitle, { color: theme.colors.textPrimary }]}>Nog geen bewijsstukken</Text>
+        <Text style={[tabSt.emptyBody, { color: theme.colors.textSecondary }]}>
+          Zodra vaklieden foto's uploaden verschijnen de borgingspunten hier met hun status.
+        </Text>
+      </View>
+    );
+  }
+
+  const needsReview = borgingspuntGrid.filter(b => b.bucket === 'review').length;
+
+  return (
+    <View style={{ gap: 20 }}>
+      {needsReview > 0 && (
+        <TouchableOpacity
+          style={[tabSt.reviewBanner, { backgroundColor: 'rgba(217,119,6,0.1)', borderColor: '#d97706' }]}
+          onPress={onGotoReview}
+          activeOpacity={0.8}
+        >
+          <Text style={{ fontSize: 20 }}>⚠️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#92400e', fontWeight: '800', fontSize: 14 }}>
+              {needsReview} borgingspunt{needsReview !== 1 ? 'en' : ''} wacht{needsReview === 1 ? '' : 'en'} op review
+            </Text>
+            <Text style={{ color: '#b45309', fontSize: 12, marginTop: 2 }}>
+              Tik om naar Bewijs te gaan →
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
+
+      <Text style={[tabSt.sectionTitle, { color: theme.colors.textSecondary }]}>
+        BORGINGSPUNTEN VOORTGANG
+      </Text>
+
+      <View style={tabSt.borgingGrid}>
+        {borgingspuntGrid.map(({ id, count, bucket }) => {
+          const cfg = bucketConfig(bucket);
+          return (
+            <View key={id} style={[tabSt.borgingCell, { backgroundColor: cfg.bg }]}>
+              <Text style={[tabSt.borgingIcon, { color: cfg.text }]}>{cfg.icon}</Text>
+              <Text style={[tabSt.borgingId, { color: cfg.text }]} numberOfLines={2}>{id}</Text>
+              <Text style={[tabSt.borgingCount, { color: cfg.text }]}>{count} foto{count !== 1 ? "'s" : ''}</Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function bucketConfig(bucket: string) {
+  switch (bucket) {
+    case 'akkoord':   return { bg: 'rgba(5,150,105,0.1)',   text: '#065f46', icon: '✓' };
+    case 'review':    return { bg: 'rgba(245,158,11,0.12)', text: '#92400e', icon: '⚠' };
+    case 'afgekeurd': return { bg: 'rgba(239,68,68,0.1)',   text: '#991b1b', icon: '✗' };
+    default:          return { bg: 'rgba(148,163,184,0.1)', text: '#64748b', icon: '○' };
+  }
+}
+
+// ─── Tab: Bewijs ──────────────────────────────────────────────────────────────
+
+interface BewijsTabProps {
+  evidence: EvidenceRow[];
+  filter: FilterStatus;
+  setFilter: (f: FilterStatus) => void;
+  metrics: { total: number; akkoord: number; review: number; afgekeurd: number; vandaag: number };
+  loading: boolean;
+  theme: { colors: Record<string, string> };
+  isDark: boolean;
+  onApprove: (id: string) => void;
+  onReject: (id: string) => void;
+}
+
+const FILTERS: { id: FilterStatus; label: string }[] = [
+  { id: 'alle',      label: 'Alle' },
+  { id: 'review',    label: '⚠ Review' },
+  { id: 'akkoord',   label: '✓ Akkoord' },
+  { id: 'afgekeurd', label: '✗ Afgekeurd' },
+  { id: 'pending',   label: '○ Pending' },
+];
+
+function BewijsTab({ evidence, filter, setFilter, metrics, loading, theme, isDark, onApprove, onReject }: BewijsTabProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  return (
+    <View style={{ gap: 12 }}>
+      {/* Filter chips */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexShrink: 0 }}>
+        <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 4 }}>
+          {FILTERS.map(f => {
+            const count = f.id === 'alle' ? metrics.total
+              : f.id === 'akkoord'   ? metrics.akkoord
+              : f.id === 'review'    ? metrics.review
+              : f.id === 'afgekeurd' ? metrics.afgekeurd
+              : 0;
+            const isActive = filter === f.id;
+            return (
+              <TouchableOpacity
+                key={f.id}
+                style={[
+                  tabSt.filterChip,
+                  { backgroundColor: isActive ? theme.colors.accent : theme.colors.surface, borderColor: isActive ? theme.colors.accent : theme.colors.border },
+                ]}
+                onPress={() => setFilter(f.id)}
+              >
+                <Text style={[tabSt.filterChipText, { color: isActive ? '#fff' : theme.colors.textPrimary }]}>
+                  {f.label}
+                </Text>
+                {count > 0 && (
+                  <Text style={[tabSt.filterChipCount, { color: isActive ? 'rgba(255,255,255,0.8)' : theme.colors.textSecondary }]}>
+                    {count}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      {loading ? (
+        <View style={tabSt.centered}><ActivityIndicator color={theme.colors.accent} /></View>
+      ) : evidence.length === 0 ? (
+        <View style={tabSt.emptyBox}>
+          <Text style={{ fontSize: 40 }}>📭</Text>
+          <Text style={[tabSt.emptyTitle, { color: theme.colors.textPrimary }]}>
+            {filter === 'alle' ? 'Nog geen bewijsstukken' : `Geen ${filter} items`}
+          </Text>
+          <Text style={[tabSt.emptyBody, { color: theme.colors.textSecondary }]}>
+            {filter === 'alle'
+              ? 'Vaklieden uploaden foto\'s via de app. Ze verschijnen hier zodra ze binnenkomen.'
+              : 'Alle foto\'s in deze categorie zijn verwerkt.'}
+          </Text>
+        </View>
+      ) : (
+        <View style={{ gap: 8 }}>
+          {evidence.map(item => {
+            const bucket   = toBucket(item.ai_status);
+            const cfg      = bucketConfig(bucket);
+            const uri      = item.media_uri ?? item.photo_uri ?? null;
+            const isOpen   = expandedId === item.id;
+
+            return (
+              <View
+                key={item.id}
+                style={[tabSt.evidenceCard, {
+                  backgroundColor: theme.colors.surface,
+                  borderColor: isOpen ? theme.colors.accent : bucket === 'review' ? '#d97706' : theme.colors.border,
+                }]}
+              >
+                {/* Collapsed rij */}
+                <TouchableOpacity
+                  style={tabSt.evidenceRow}
+                  onPress={() => setExpandedId(isOpen ? null : item.id)}
+                  activeOpacity={0.75}
+                >
+                  {/* Thumbnail */}
+                  <View style={{ position: 'relative', flexShrink: 0 }}>
+                    {uri
+                      ? <Image source={{ uri }} style={tabSt.thumb} resizeMode="cover" />
+                      : <View style={[tabSt.thumbEmpty, { backgroundColor: theme.colors.border }]}><Text style={{ fontSize: 20 }}>📷</Text></View>
+                    }
+                    {/* Sync dot */}
+                    <View style={[tabSt.syncDot, {
+                      backgroundColor: item.sync_status === 'SYNCED' ? '#059669' : item.sync_status === 'FAILED' ? '#ef4444' : '#d97706',
+                      borderColor: isDark ? '#111' : '#fff',
+                    }]} />
+                  </View>
+
+                  {/* Info */}
+                  <View style={{ flex: 1, gap: 3 }}>
+                    <Text style={[tabSt.evidencePid, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+                      {item.inspection_point_id ?? '—'}
+                    </Text>
+                    <Text style={[tabSt.evidenceMeta, { color: theme.colors.textSecondary }]}>
+                      🕐 {fmtDate(item.timestamp)}
+                    </Text>
+                    {item.gps_lat != null && (
+                      <Text style={[tabSt.evidenceMeta, { color: theme.colors.textSecondary }]}>
+                        📍 {item.gps_lat.toFixed(4)}, {item.gps_lng?.toFixed(4)}
+                      </Text>
+                    )}
+                    {item.field_note ? (
+                      <Text style={[tabSt.evidenceMeta, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                        📝 {item.field_note}
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  {/* Status badge */}
+                  <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                    <View style={[tabSt.statusBadge, { backgroundColor: cfg.bg }]}>
+                      <Text style={[tabSt.statusBadgeText, { color: cfg.text }]}>
+                        {cfg.icon} {bucket.charAt(0).toUpperCase() + bucket.slice(1)}
+                      </Text>
+                    </View>
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>{isOpen ? '▲' : '▼'}</Text>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Approve / Reject knoppen (altijd zichtbaar) */}
+                <View style={[tabSt.actionRow, { borderTopColor: theme.colors.border }]}>
+                  <TouchableOpacity
+                    style={[tabSt.approveBtn, { opacity: bucket === 'akkoord' ? 0.45 : 1 }]}
+                    onPress={() => onApprove(item.id)}
+                    disabled={bucket === 'akkoord'}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={tabSt.approveBtnText}>✓ Goedkeuren</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[tabSt.rejectBtn, { opacity: bucket === 'afgekeurd' ? 0.45 : 1, borderColor: theme.colors.border }]}
+                    onPress={() => onReject(item.id)}
+                    disabled={bucket === 'afgekeurd'}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>✗ Afkeuren</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ marginLeft: 'auto' as unknown as number, padding: 8 }}
+                    onPress={() => setExpandedId(isOpen ? null : item.id)}
+                  >
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
+                      {isOpen ? 'Inklappen ▲' : 'Details ▼'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Uitgebreid */}
+                {isOpen && (
+                  <View style={[tabSt.expanded, { borderTopColor: theme.colors.border }]}>
+                    {uri && <Image source={{ uri }} style={tabSt.thumbLarge} resizeMode="contain" />}
+                    <View style={{ gap: 6, marginTop: 10 }}>
+                      {item.ai_notes ? (
+                        <View style={[tabSt.infoRow, { backgroundColor: cfg.bg }]}>
+                          <Text style={[tabSt.infoLabel, { color: cfg.text }]}>AI notitie</Text>
+                          <Text style={[tabSt.infoValue, { color: cfg.text }]}>{item.ai_notes}</Text>
+                        </View>
+                      ) : null}
+                      {item.user_id ? (
+                        <View style={tabSt.infoRow}>
+                          <Text style={[tabSt.infoLabel, { color: theme.colors.textSecondary }]}>Geüpload door</Text>
+                          <Text style={[tabSt.infoValue, { color: theme.colors.textPrimary }]}>{item.user_id}</Text>
+                        </View>
+                      ) : null}
+                      {item.gps_lat != null && item.gps_lng != null && (
+                        <View style={tabSt.infoRow}>
+                          <Text style={[tabSt.infoLabel, { color: theme.colors.textSecondary }]}>GPS</Text>
+                          <Text style={[tabSt.infoValue, { color: theme.colors.textPrimary }]}>
+                            {item.gps_lat.toFixed(5)}, {item.gps_lng.toFixed(5)}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ─── Tab: Checklist ───────────────────────────────────────────────────────────
+
+interface ChecklistTabProps {
+  checklist: ChecklistItem[];
+  newTask: string;
+  setNewTask: (v: string) => void;
+  onToggle: (id: string) => void;
+  onRemove: (id: string) => void;
+  onAdd: () => void;
+  onReset: () => void;
+  done: number;
+  theme: { colors: Record<string, string> };
+}
+
+function ChecklistTab({ checklist, newTask, setNewTask, onToggle, onRemove, onAdd, onReset, done, theme }: ChecklistTabProps) {
+  const pct = checklist.length > 0 ? Math.round((done / checklist.length) * 100) : 0;
+  const allDone = done === checklist.length && checklist.length > 0;
+
+  return (
+    <View style={{ gap: 16 }}>
+      {/* Voortgang */}
+      <View style={[tabSt.checkHeader, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <Text style={{ color: theme.colors.textPrimary, fontWeight: '800', fontSize: 15 }}>
+            Dagelijkse controlelijst
+          </Text>
+          <Text style={{ color: allDone ? '#059669' : theme.colors.textSecondary, fontWeight: '700', fontSize: 13 }}>
+            {done}/{checklist.length} gedaan {allDone ? '🎉' : ''}
+          </Text>
+        </View>
+        <View style={[tabSt.progressBg, { backgroundColor: theme.colors.border }]}>
+          <View style={[tabSt.progressFill, { width: `${pct}%` as `${number}%`, backgroundColor: allDone ? '#059669' : theme.colors.accent }]} />
+        </View>
+        {allDone && (
+          <Text style={{ color: '#059669', fontSize: 12, fontWeight: '700', marginTop: 8, textAlign: 'center' }}>
+            ✓ Alle controlepunten afgevinkt — goed werk!
+          </Text>
+        )}
+      </View>
+
+      {/* Taken */}
+      <View style={{ gap: 6 }}>
+        {checklist.map(item => (
+          <View
+            key={item.id}
+            style={[tabSt.checkItem, {
+              backgroundColor: item.done ? 'rgba(5,150,105,0.08)' : theme.colors.surface,
+              borderColor: item.done ? 'rgba(5,150,105,0.25)' : theme.colors.border,
+            }]}
+          >
+            <TouchableOpacity
+              style={[tabSt.checkBox, { borderColor: item.done ? '#059669' : theme.colors.border, backgroundColor: item.done ? '#059669' : 'transparent' }]}
+              onPress={() => onToggle(item.id)}
+              activeOpacity={0.7}
+            >
+              {item.done && <Text style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>✓</Text>}
+            </TouchableOpacity>
+            <Text style={[tabSt.checkLabel, {
+              color: item.done ? theme.colors.textSecondary : theme.colors.textPrimary,
+              textDecorationLine: item.done ? 'line-through' : 'none',
+            }]}>
+              {item.label}
+            </Text>
+            <TouchableOpacity onPress={() => onRemove(item.id)} style={{ padding: 6 }}>
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 14 }}>×</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+
+      {/* Toevoegen */}
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <TextInput
+          style={[tabSt.taskInput, { flex: 1, color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
+          value={newTask}
+          onChangeText={setNewTask}
+          placeholder="Nieuwe taak toevoegen..."
+          placeholderTextColor={theme.colors.textSecondary + '88'}
+          onSubmitEditing={onAdd}
+          returnKeyType="done"
+        />
+        <TouchableOpacity
+          style={[tabSt.addTaskBtn, { backgroundColor: newTask.trim() ? theme.colors.accent : theme.colors.border }]}
+          onPress={onAdd}
+          disabled={!newTask.trim()}
+        >
+          <Text style={{ color: '#fff', fontWeight: '800', fontSize: 14 }}>＋</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Reset */}
+      <TouchableOpacity
+        style={[tabSt.resetBtn, { borderColor: theme.colors.border }]}
+        onPress={onReset}
+      >
+        <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600' }}>
+          ↺ Lijst resetten voor nieuwe dag
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const st = StyleSheet.create({
+  root:        { flex: 1 },
+  scroll:      { flex: 1 },
+  content:     { paddingBottom: 60 },
+
+  // Toast
+  toast: {
+    position: 'absolute', top: 12, alignSelf: 'center', zIndex: 999,
+    backgroundColor: '#111', borderRadius: 20,
+    paddingHorizontal: 16, paddingVertical: 10,
+  },
+  toastText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+
+  // Header card
+  headerCard: { borderRadius: 16, borderWidth: 1, marginBottom: 16, overflow: 'hidden' },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
+  projectTitle: { fontSize: 18, fontWeight: '900', letterSpacing: -0.3 },
+  projectRole: { fontSize: 12, fontWeight: '600', marginTop: 2 },
+
+  // LIVE pill
+  livePill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
+  liveDot: { width: 7, height: 7, borderRadius: 4 },
+  liveText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
+
+  // ZIP knop + banner
+  zipBtn:       { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
+  zipBtnText:   { fontSize: 11, fontWeight: '800' },
+  zipBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10, borderWidth: 1, padding: 10, marginBottom: 10 },
+  zipBannerText:{ flex: 1, fontSize: 12, fontWeight: '600' },
+
+  // Stats strip
+  statsStrip: { flexDirection: 'row', borderTopWidth: 1 },
+  statItem: { flex: 1, alignItems: 'center', paddingVertical: 12, gap: 2 },
+  statNum: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
+  statLabel: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+
+  // Tabs
+  tabRow: { flexDirection: 'row', borderBottomWidth: 1, marginBottom: 16 },
+  tabItem: { paddingHorizontal: 16, paddingVertical: 10, position: 'relative' },
+  tabItemActive: {},
+  tabLabel: { fontSize: 14, fontWeight: '700' },
+  tabBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, minWidth: 18, alignItems: 'center' },
+  tabBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  tabUnderline: { position: 'absolute', bottom: -1, left: 16, right: 16, height: 2, borderRadius: 1 },
+});
+
+const tabSt = StyleSheet.create({
+  centered: { paddingVertical: 48, alignItems: 'center' },
+  emptyBox: { alignItems: 'center', paddingVertical: 48, gap: 12 },
+  emptyTitle: { fontSize: 17, fontWeight: '800', textAlign: 'center' },
+  emptyBody: { fontSize: 13, textAlign: 'center', maxWidth: 320, lineHeight: 20 },
+
+  reviewBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 14, padding: 14 },
+
+  sectionTitle: { fontSize: 10, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' },
+
+  borgingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  borgingCell: { borderRadius: 12, padding: 12, minWidth: 100, maxWidth: 160, alignItems: 'center', gap: 4 },
+  borgingIcon: { fontSize: 16, fontWeight: '800' },
+  borgingId: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
+  borgingCount: { fontSize: 10, marginTop: 2 },
+
+  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
+  filterChipText: { fontSize: 13, fontWeight: '700' },
+  filterChipCount: { fontSize: 11, fontWeight: '700' },
+
+  evidenceCard: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
+  evidenceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10 },
+  thumb: { width: 56, height: 56, borderRadius: 10 },
+  thumbEmpty: { width: 56, height: 56, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  thumbLarge: { width: '100%', height: 220, borderRadius: 10, backgroundColor: '#000' },
+  syncDot: { position: 'absolute', bottom: 2, right: 2, width: 10, height: 10, borderRadius: 5, borderWidth: 1.5 },
+  evidencePid: { fontSize: 13, fontWeight: '700' },
+  evidenceMeta: { fontSize: 11 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  statusBadgeText: { fontSize: 11, fontWeight: '700' },
+
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1 },
+  approveBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, backgroundColor: 'rgba(5,150,105,0.12)' },
+  approveBtnText: { color: '#059669', fontWeight: '800', fontSize: 13 },
+  rejectBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, borderWidth: 1 },
+  rejectBtnText: { fontWeight: '800', fontSize: 13 },
+
+  expanded: { borderTopWidth: 1, padding: 12, gap: 8 },
+  infoRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', padding: 8, borderRadius: 8 },
+  infoLabel: { fontSize: 11, fontWeight: '700', width: 100 },
+  infoValue: { flex: 1, fontSize: 12 },
+
+  // Checklist
+  checkHeader: { borderRadius: 14, borderWidth: 1, padding: 14 },
+  progressBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3 },
+  checkItem: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 12, borderWidth: 1, padding: 12 },
+  checkBox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  checkLabel: { flex: 1, fontSize: 14 },
+  taskInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14 },
+  addTaskBtn: { width: 42, height: 42, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  resetBtn: { borderWidth: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+});

@@ -1,0 +1,137 @@
+export type AiValidationKey =
+  | 'DETECT_FIRE_SEPARATION_DETAIL'
+  | 'DETECT_COLLAR'
+  | 'DETECT_DROP_SEAL'
+  | 'OCR_FIRE_RATING_LABEL'
+  | 'DETECT_GLASS_STAMP'
+  | 'DETECT_NO_FLAME_ZONE'
+  | 'DETECT_FIRE_DAMPER'
+  | 'DETECT_GAS_PIPE_CASING'
+  | 'DETECT_MANOMETER'
+  | 'DETECT_PIPE_SEPARATION'
+  | 'DETECT_PROTECTION_PIPE'
+  | 'DETECT_OPEN_BOARD_AND_COUNT'
+  | 'OCR_RCD_30MA'
+  | 'OCR_RCD_TYPE_B'
+  | 'OCR_TRIP_TIME'
+  | 'DETECT_PV_STICKER'
+  | 'DETECT_RCD_LAYOUT'
+  | 'DETECT_BATHROOM_ZONE'
+  | 'DETECT_CAPPED_WIRES'
+  | 'DETECT_CABLE_PROTECTION'
+  | 'DETECT_WIRE_COLORS'
+  | 'DETECT_SEALANT'
+  | 'DETECT_WATERPAS'
+  | 'DETECT_CAP_WIRES'
+  | 'DETECT_ANEMOMETER'
+  | 'DETECT_TAPE_MEASURE'
+  | 'DETECT_INSULATION_LABEL'
+  | 'DETECT_VIBRATION_DAMPER'
+  | 'DETECT_VIBRATION_DAMPERS'
+  | 'DETECT_DOOR_WIDTH'
+  | 'DETECT_THRESHOLD_HEIGHT'
+  | 'DETECT_TURNING_CIRCLE'
+  | 'DETECT_DOOR_SWING_CLEARANCE'
+  | 'DETECT_WALL_ANCHORING'
+  | 'DETECT_SUPPORT_BAR_HEIGHT'
+  | 'DETECT_DOOR_FRAME'
+  | 'DETECT_DIFFUSE_LIGHT'
+  | 'DETECT_STRAIGHTEDGE'
+  | 'OCR_LASER_DISPLAY'
+  | 'DETECT_TAPE_MEASURE_HEIGHT'
+  | 'DETECT_SPIRIT_LEVEL'
+  | 'DETECT_PIPE_SLOPE'
+  | 'DETECT_WATER_SEAL'
+  | 'DETECT_RELIEF_VALVE'
+  | 'DETECT_ACOUSTIC_EDGE_STRIP'
+  | 'OCR_CE_LABEL_DB'
+  | 'DETECT_LASER_DISTANCE'
+  | 'DETECT_ACOUSTIC_ENCLOSURE'
+  | 'DETECT_CHECK_VALVE'
+  | 'DETECT_SAFETY_VALVE'
+  | 'DETECT_FLOOR_HEATING'
+  | 'DETECT_EXPANSION_VESSEL'
+  | 'DETECT_EARTH_WIRE'
+  | 'DETECT_INWALL_CONDUIT'
+  | 'DETECT_GAS_PIPE_SUPPORT'
+  | 'DETECT_GAS_VALVE'
+  | 'DETECT_NO_COMPRESSION_FITTING'
+  | 'DETECT_GAS_METER'
+  | 'DETECT_VENTILATION_OPENING'
+  | 'OCR_GASTEC_QA'
+  | 'DETECT_BONDING_CLAMP'
+  | 'DETECT_CRAWLSPACE_PIPE'
+  | 'DETECT_MECHANICAL_PROTECTION'
+  | 'DETECT_CASING_VENTILATION'
+  | 'DETECT_RAMP_SLOPE'
+  | 'DETECT_SWITCH_HEIGHT'
+  | 'DETECT_GLASS_MARKING'
+  | 'DETECT_REBAR_COVER'
+  | 'DETECT_STEEL_BOLTS'
+  | 'DETECT_TIMBER_JOIST_HANGER'
+  | 'DETECT_WALL_TIES'
+  | 'DETECT_LINTEL_BEARING'
+  | 'DETECT_WATERPROOFING_MEMBRANE'
+  | 'DETECT_FOUNDATION_PILE'
+  | 'DETECT_UNDERFLOOR_HEATING'
+  | 'DETECT_PRESSURE_GAUGE'
+  | 'DETECT_FLOOR_OPENING'
+  | 'DETECT_ROOF_VENT'
+  | 'DETECT_PIPE_BRACKET'
+  | 'DETECT_Y_JUNCTION'
+  | 'DETECT_PIPE_DIAMETER'
+  | 'DETECT_GLASS_BARRIER'
+  | 'DETECT_EDGE_INSULATION'
+  | 'DETECT_ACOUSTIC_VENT'
+  | 'DETECT_ACOUSTIC_FOAM'
+  | 'DETECT_DOOR_SEALS'
+  | 'DETECT_FIRE_GLASS_DETAIL'
+  | 'DETECT_FIRE_BOARD_THICKNESS'
+  | 'OCR_WINDOW_U_VALUE'
+  | 'DETECT_THERMAL_BRIDGE_BREAK'
+  | 'OCR_SOLAR_PANEL_WATTAGE';
+
+export type Nen1006TimerProfileId =
+  | 'WATER_LEAK_TIGHTNESS_10_MIN'
+  | 'WATER_PRESSURE_RESISTANCE_10_MIN'
+  | 'AIR_GAS_LEAK_TIGHTNESS_120_MIN'
+  | 'AIR_GAS_PRESSURE_RESISTANCE_10_MIN';
+
+export type Nen1006CaptureTimerConfig = {
+  variant: 'NEN1006_PERSPROEF';
+  startInspectionPointId: string;
+  defaultProfileId: Nen1006TimerProfileId;
+  supportedProfileIds: Nen1006TimerProfileId[];
+};
+
+export type Nen1078CaptureTimerConfig = {
+  variant: 'NEN1078_DICHTHEIDSPROEF';
+  startInspectionPointId: string;
+  defaultDurationMinutes: number;
+  minDurationMinutes: number;
+  maxDurationMinutes: number;
+  stepMinutes: number;
+};
+
+export type CaptureTimerConfig =
+  | Nen1006CaptureTimerConfig
+  | Nen1078CaptureTimerConfig;
+
+export type CaptureTask = {
+  id: string;
+  title: string;
+  description: string;
+  inspectionPointId: string;
+  instruction?: string;
+  standards?: string;
+  disciplineTitle?: string;
+  requiresExif?: boolean;
+  requiresMeasurementTool?: boolean;
+  requiresTimer?: boolean;
+  timerConfig?: CaptureTimerConfig;
+  stopMoment?: string;
+  aiValidationKey?: AiValidationKey;
+  selectionSource?: 'WKB' | 'NEN' | 'OPLEVERING' | 'ROUTING';
+  defaultBinnenBuiten?: 'BINNEN' | 'BUITEN';
+  defaultEtage?: string;
+};

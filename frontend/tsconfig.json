@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "experimentalDecorators": true,
+    "isolatedModules": true,
+    "types": ["jest"]
+  },
+  "exclude": ["dist", "web-build"]
+}

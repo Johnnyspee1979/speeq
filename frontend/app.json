@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Wkb Snap & Sync",
+    "slug": "wkb-snap-sync",
+    "version": "1.0.0",
+    "scheme": "wkb-snap-sync",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0F19"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Maak foto's om Wkb-bewijs op de bouwplaats vast te leggen."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Gebruik locatie om juridisch houdbaar Wkb-bewijs te verrijken."
+        }
+      ],
+      "expo-notifications",
+      "expo-sqlite",
+      "expo-sharing"
+    ]
+  }
+}
