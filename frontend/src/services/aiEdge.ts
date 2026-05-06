@@ -185,12 +185,44 @@ export const validateCaptureOnDevice = async (
   photoUri: string,
   aiValidationKey?: AiValidationKey
 ): Promise<AiValidationResult> => {
+  const validationHint = aiValidationKey ? AI_VALIDATION_HINTS[aiValidationKey] : null;
+
+  // Blob-URLs (mobiele camera PWA): expo-file-system werkt niet met blob-URLs.
+  // Controleer de bestandsgrootte via fetch().blob().size
+  if (photoUri.startsWith('blob:') || photoUri.startsWith('http')) {
+    try {
+      const response = await fetch(photoUri);
+      const blob = await response.blob();
+      const size = blob.size;
+      if (size < 150_000) {
+        return {
+          status: 'FAILED',
+          confidence: 0.2,
+          notes: validationHint
+            ? `Foto mogelijk te onscherp of te klein. ${validationHint}`
+            : 'Foto mogelijk te onscherp of te klein (edge check).',
+        };
+      }
+      return {
+        status: 'PASSED',
+        confidence: 0.75,
+        notes: validationHint
+          ? `Edge check OK. ${validationHint}`
+          : 'Edge check OK: foto via mobiele camera vastgelegd.',
+      };
+    } catch {
+      return {
+        status: 'PENDING',
+        confidence: null,
+        notes: 'Edge check kon niet worden uitgevoerd (web).',
+      };
+    }
+  }
+
+  // Natief bestandspad — expo-file-system werkt hier correct
   try {
     const info = new File(photoUri).info();
     const size = info.exists && typeof info.size === 'number' ? info.size : 0;
-    const validationHint = aiValidationKey
-      ? AI_VALIDATION_HINTS[aiValidationKey]
-      : null;
 
     if (size < 150_000) {
       return {

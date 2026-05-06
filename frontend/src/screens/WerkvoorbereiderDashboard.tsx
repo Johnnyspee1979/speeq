@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Animated,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +23,12 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import SignaturePad from '../components/SignaturePad';
+import {
+  uploadDossierHtml,
+  exportDossierAsPdf,
+  type DossierSignatures,
+} from '../services/BorgingsDossierService';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeProvider';
 import EvidenceMapView from '../components/EvidenceMapView';
@@ -156,6 +163,17 @@ export default function WerkvoorbereiderDashboard({
 
   // ── ZIP export state ─────────────────────────────────────────────────────────
   const [zipProgress, setZipProgress] = useState<ZipExportProgress | null>(null);
+
+  // ── Email dossier modal ───────────────────────────────────────────────────────
+  const [emailModal, setEmailModal]         = useState(false);
+  const [emailAddress, setEmailAddress]     = useState('');
+  const [emailSending, setEmailSending]     = useState(false);
+  const [emailMsg, setEmailMsg]             = useState<string | null>(null);
+  const [sigPL, setSigPL]                   = useState<string | null>(null);   // projectleider handtekening
+  const [sigPLNaam, setSigPLNaam]           = useState('');
+  const [sigOG, setSigOG]                   = useState<string | null>(null);   // opdrachtgever handtekening
+  const [sigOGNaam, setSigOGNaam]           = useState('');
+  const [pdfLoading, setPdfLoading]         = useState(false);
 
   // ── PC-map sync state ─────────────────────────────────────────────────────────
   const [linkedFolder, setLinkedFolder]     = useState<string | null>(null);
@@ -324,6 +342,96 @@ export default function WerkvoorbereiderDashboard({
     saveChecklist(projectId, fresh);
   }, [projectId]);
 
+  // ── Email dossier handler ─────────────────────────────────────────────────────
+  const handleEmailDossier = useCallback(async () => {
+    if (!emailAddress.trim()) {
+      setEmailMsg('⚠️ Vul een e-mailadres in.');
+      return;
+    }
+    setEmailSending(true);
+    setEmailMsg('📄 Dossier genereren en uploaden…');
+    try {
+      const sigs: DossierSignatures = {
+        projectleider: sigPL ?? undefined,
+        projectleiderNaam: sigPLNaam || undefined,
+        opdrachtgever: sigOG ?? undefined,
+        opdrachtgeverNaam: sigOGNaam || undefined,
+        signedAt: (sigPL || sigOG) ? new Date().toISOString() : undefined,
+      };
+      // Zet EvidenceRow[] om naar StoredWkbEvidence compatibel formaat
+      const evidenceForDossier = evidence.map(e => ({
+        id: e.id,
+        mediaUri: e.media_uri ?? e.photo_uri ?? '',
+        inspectionPointId: e.inspection_point_id ?? 'onbekend',
+        timestamp: e.timestamp ?? '',
+        latitude: e.gps_lat ?? undefined,
+        longitude: e.gps_lng ?? undefined,
+        aiStatus: e.ai_status ?? undefined,
+        aiNotes: e.ai_notes ?? undefined,
+        syncStatus: (e.sync_status ?? 'SYNCED') as 'SYNCED' | 'PENDING' | 'FAILED',
+        fieldNote: e.field_note ?? undefined,
+      }));
+
+      // Upload HTML naar Supabase Storage
+      // @ts-ignore — vereenvoudigd type
+      const publicUrl = await uploadDossierHtml(evidenceForDossier, projectId, projectName, {}, sigs);
+
+      if (!publicUrl) {
+        setEmailMsg('❌ Upload mislukt. Probeer opnieuw.');
+        setEmailSending(false);
+        return;
+      }
+
+      setEmailMsg('📧 E-mailprogramma openen…');
+
+      const subject = encodeURIComponent(`WKB Borgingsdossier — ${projectName}`);
+      const body = encodeURIComponent(
+        `Geachte,\n\nHierbij het digitale borgingsdossier van project ${projectName}.\n\n` +
+        `Bekijk of download het dossier via onderstaande link:\n${publicUrl}\n\n` +
+        `Dit dossier bevat alle borgingspuntfoto's met GPS, tijdstempel en AI-validatie.\n\n` +
+        `Met vriendelijke groet,\nWKB Snap & Sync — Spee Solutions`
+      );
+
+      window.open(`mailto:${emailAddress.trim()}?subject=${subject}&body=${body}`, '_self');
+      setEmailMsg('✅ E-mailprogramma geopend! Controleer en verstuur de mail.');
+    } catch (err) {
+      setEmailMsg('❌ Er ging iets mis. Probeer opnieuw.');
+      console.error(err);
+    } finally {
+      setEmailSending(false);
+    }
+  }, [emailAddress, evidence, projectId, projectName, sigPL, sigPLNaam, sigOG, sigOGNaam]);
+
+  // ── PDF met handtekeningen exporteren ─────────────────────────────────────────
+  const handlePdfWithSig = useCallback(async () => {
+    setPdfLoading(true);
+    try {
+      const sigs: DossierSignatures = {
+        projectleider: sigPL ?? undefined,
+        projectleiderNaam: sigPLNaam || undefined,
+        opdrachtgever: sigOG ?? undefined,
+        opdrachtgeverNaam: sigOGNaam || undefined,
+        signedAt: (sigPL || sigOG) ? new Date().toISOString() : undefined,
+      };
+      const evidenceForDossier = evidence.map(e => ({
+        id: e.id,
+        mediaUri: e.media_uri ?? e.photo_uri ?? '',
+        inspectionPointId: e.inspection_point_id ?? 'onbekend',
+        timestamp: e.timestamp ?? '',
+        latitude: e.gps_lat ?? undefined,
+        longitude: e.gps_lng ?? undefined,
+        aiStatus: e.ai_status ?? undefined,
+        aiNotes: e.ai_notes ?? undefined,
+        syncStatus: (e.sync_status ?? 'SYNCED') as 'SYNCED' | 'PENDING' | 'FAILED',
+        fieldNote: e.field_note ?? undefined,
+      }));
+      // @ts-ignore
+      await exportDossierAsPdf(evidenceForDossier, projectId, projectName, {}, sigs);
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [evidence, projectId, projectName, sigPL, sigPLNaam, sigOG, sigOGNaam]);
+
   const checkDone = checklist.filter(i => i.done).length;
 
   // ── Tab config ─────────────────────────────────────────────────────────────
@@ -372,6 +480,26 @@ export default function WerkvoorbereiderDashboard({
                 {isLive ? `LIVE${lastUpdate ? `  ·  ${lastUpdate}` : ''}` : 'Verbinden…'}
               </Text>
             </View>
+
+            {/* 📧 Mail dossier knop */}
+            <TouchableOpacity
+              onPress={() => { setEmailModal(true); setEmailMsg(null); }}
+              style={[st.zipBtn, { backgroundColor: 'rgba(37,99,235,0.1)', borderColor: 'rgba(37,99,235,0.35)' }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[st.zipBtnText, { color: '#2563eb' }]}>📧 Mailen</Text>
+            </TouchableOpacity>
+
+            {/* ✍️ Ondertekenen knop */}
+            <TouchableOpacity
+              onPress={() => { setEmailModal(true); setEmailMsg(null); }}
+              style={[st.zipBtn, { backgroundColor: (sigPL || sigOG) ? 'rgba(5,150,105,0.1)' : theme.colors.surface, borderColor: (sigPL || sigOG) ? 'rgba(5,150,105,0.4)' : theme.colors.border }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[st.zipBtnText, { color: (sigPL || sigOG) ? '#059669' : theme.colors.textSecondary }]}>
+                {(sigPL || sigOG) ? '✍️ Getekend' : '✍️ Tekenen'}
+              </Text>
+            </TouchableOpacity>
 
             {/* ZIP download knop */}
             <TouchableOpacity
@@ -680,6 +808,145 @@ export default function WerkvoorbereiderDashboard({
         )}
 
       </ScrollView>
+
+      {/* ── Email + Handtekening Modal ── */}
+      <Modal
+        visible={emailModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setEmailModal(false)}
+      >
+        <View style={[emailSt.modalRoot, { backgroundColor: theme.colors.background }]}>
+          {/* Header */}
+          <View style={[emailSt.modalHeader, { borderBottomColor: theme.colors.border }]}>
+            <Text style={[emailSt.modalTitle, { color: theme.colors.textPrimary }]}>
+              📧 Dossier ondertekenen & mailen
+            </Text>
+            <TouchableOpacity onPress={() => { setEmailModal(false); setEmailMsg(null); }} style={emailSt.closeBtn}>
+              <Text style={[emailSt.closeBtnText, { color: theme.colors.textSecondary }]}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={emailSt.modalScroll} contentContainerStyle={emailSt.modalContent} showsVerticalScrollIndicator={false}>
+
+            {/* Handtekening projectleider */}
+            <View style={[emailSt.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <Text style={[emailSt.sectionTitle, { color: theme.colors.textSecondary }]}>HANDTEKENING PROJECTLEIDER</Text>
+              <TextInput
+                style={[emailSt.nameInput, { borderColor: theme.colors.border, color: theme.colors.textPrimary, backgroundColor: theme.colors.background }]}
+                value={sigPLNaam}
+                onChangeText={setSigPLNaam}
+                placeholder="Naam projectleider"
+                placeholderTextColor={theme.colors.textSecondary + '88'}
+              />
+              {sigPL ? (
+                <View>
+                  <Image source={{ uri: sigPL }} style={emailSt.sigPreview} resizeMode="contain" />
+                  <TouchableOpacity onPress={() => setSigPL(null)} style={emailSt.clearSigBtn}>
+                    <Text style={[emailSt.clearSigText, { color: '#ef4444' }]}>Handtekening wissen</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <SignaturePad
+                  onSave={(dataUrl) => setSigPL(dataUrl)}
+                  label=""
+                  subLabel="Teken met muis of vinger"
+                  theme={theme}
+                />
+              )}
+            </View>
+
+            {/* Handtekening opdrachtgever */}
+            <View style={[emailSt.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <Text style={[emailSt.sectionTitle, { color: theme.colors.textSecondary }]}>HANDTEKENING OPDRACHTGEVER</Text>
+              <TextInput
+                style={[emailSt.nameInput, { borderColor: theme.colors.border, color: theme.colors.textPrimary, backgroundColor: theme.colors.background }]}
+                value={sigOGNaam}
+                onChangeText={setSigOGNaam}
+                placeholder="Naam opdrachtgever"
+                placeholderTextColor={theme.colors.textSecondary + '88'}
+              />
+              {sigOG ? (
+                <View>
+                  <Image source={{ uri: sigOG }} style={emailSt.sigPreview} resizeMode="contain" />
+                  <TouchableOpacity onPress={() => setSigOG(null)} style={emailSt.clearSigBtn}>
+                    <Text style={[emailSt.clearSigText, { color: '#ef4444' }]}>Handtekening wissen</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <SignaturePad
+                  onSave={(dataUrl) => setSigOG(dataUrl)}
+                  label=""
+                  subLabel="Teken met muis of vinger"
+                  theme={theme}
+                />
+              )}
+            </View>
+
+            {/* Acties: PDF of Mailen */}
+            <View style={[emailSt.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+              <Text style={[emailSt.sectionTitle, { color: theme.colors.textSecondary }]}>EXPORTEREN</Text>
+
+              {/* PDF downloaden */}
+              <TouchableOpacity
+                style={[emailSt.actionBtn, { backgroundColor: theme.colors.accent + '18', borderColor: theme.colors.accent + '40' }]}
+                onPress={handlePdfWithSig}
+                disabled={pdfLoading}
+                activeOpacity={0.8}
+              >
+                {pdfLoading
+                  ? <ActivityIndicator size="small" color={theme.colors.accent} />
+                  : <Text style={[emailSt.actionBtnText, { color: theme.colors.accent }]}>📄 PDF opslaan / Afdrukken</Text>
+                }
+              </TouchableOpacity>
+
+              {/* E-mail verzenden */}
+              <Text style={[emailSt.fieldLabel, { color: theme.colors.textSecondary }]}>E-MAILADRES ONTVANGER</Text>
+              <TextInput
+                style={[emailSt.emailInput, { borderColor: theme.colors.border, color: theme.colors.textPrimary, backgroundColor: theme.colors.background }]}
+                value={emailAddress}
+                onChangeText={setEmailAddress}
+                placeholder="opdrachtgever@bedrijf.nl"
+                placeholderTextColor={theme.colors.textSecondary + '88'}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+              />
+
+              <TouchableOpacity
+                style={[emailSt.actionBtn, emailSt.actionBtnPrimary]}
+                onPress={handleEmailDossier}
+                disabled={emailSending}
+                activeOpacity={0.8}
+              >
+                {emailSending
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={[emailSt.actionBtnText, { color: '#fff' }]}>📧 Dossier per mail versturen</Text>
+                }
+              </TouchableOpacity>
+
+              {emailMsg ? (
+                <View style={[emailSt.msgBanner, {
+                  backgroundColor: emailMsg.startsWith('✅') ? 'rgba(5,150,105,0.1)' :
+                                   emailMsg.startsWith('❌') ? 'rgba(239,68,68,0.08)' :
+                                   theme.colors.accent + '12',
+                  borderColor: emailMsg.startsWith('✅') ? 'rgba(5,150,105,0.3)' :
+                               emailMsg.startsWith('❌') ? 'rgba(239,68,68,0.25)' :
+                               theme.colors.accent + '30',
+                }]}>
+                  <Text style={[emailSt.msgText, {
+                    color: emailMsg.startsWith('✅') ? '#059669' :
+                           emailMsg.startsWith('❌') ? '#ef4444' :
+                           theme.colors.accent,
+                  }]}>{emailMsg}</Text>
+                </View>
+              ) : null}
+            </View>
+
+          </ScrollView>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -1170,4 +1437,56 @@ const tabSt = StyleSheet.create({
   taskInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14 },
   addTaskBtn: { width: 42, height: 42, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   resetBtn: { borderWidth: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+});
+
+// ─── Email + Handtekening Modal Styles ────────────────────────────────────────
+
+const emailSt = StyleSheet.create({
+  modalRoot: { flex: 1 },
+  modalHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '800' },
+  closeBtn: { padding: 8 },
+  closeBtnText: { fontSize: 18, fontWeight: '700' },
+  modalScroll: { flex: 1 },
+  modalContent: { padding: 20, gap: 14, paddingBottom: 48 },
+
+  section: {
+    borderRadius: 14, borderWidth: 1, padding: 16, gap: 10,
+  },
+  sectionTitle: {
+    fontSize: 10, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase',
+  },
+  nameInput: {
+    height: 44, borderRadius: 10, borderWidth: 1,
+    paddingHorizontal: 12, fontSize: 14,
+  },
+  sigPreview: {
+    width: '100%', height: 100, borderRadius: 8,
+    backgroundColor: '#fafafa', borderWidth: 1, borderColor: '#e5e5e5',
+  },
+  clearSigBtn: { alignSelf: 'flex-end', paddingVertical: 4 },
+  clearSigText: { fontSize: 12, fontWeight: '700' },
+
+  fieldLabel: {
+    fontSize: 10, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase', marginTop: 6,
+  },
+  emailInput: {
+    height: 48, borderRadius: 12, borderWidth: 1,
+    paddingHorizontal: 14, fontSize: 15,
+  },
+  actionBtn: {
+    height: 48, borderRadius: 12, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  actionBtnPrimary: {
+    backgroundColor: '#A40D2F', borderColor: '#A40D2F',
+  },
+  actionBtnText: { fontSize: 14, fontWeight: '800' },
+  msgBanner: {
+    borderRadius: 10, borderWidth: 1, padding: 12,
+  },
+  msgText: { fontSize: 13, fontWeight: '600' },
 });

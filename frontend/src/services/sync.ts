@@ -57,7 +57,22 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
       try {
         onProgress?.(`Uploaden van beveiligd bewijs ${syncCount + 1}/${unsyncedData.length}...`);
         const complianceContext = getEvidenceComplianceContext(item.inspectionPointId);
-        const base64 = await new File(item.mediaUri).base64();
+
+        // Blob-URLs (mobiele PWA) en http-URLs: expo-file-system kan deze niet lezen.
+        // Gebruik fetch + ArrayBuffer voor de base64-conversie.
+        let base64: string;
+        if (item.mediaUri.startsWith('blob:') || item.mediaUri.startsWith('http')) {
+          const response = await fetch(item.mediaUri);
+          const arrayBuffer = await response.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          let binary = '';
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]!);
+          }
+          base64 = btoa(binary);
+        } else {
+          base64 = await new File(item.mediaUri).base64();
+        }
 
         const fileId = item.id || `bewijs-${Date.now()}`;
         const safeFileId = fileId.replace(/[^a-zA-Z0-9-_]/g, '');

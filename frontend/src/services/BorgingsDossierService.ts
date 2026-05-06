@@ -59,12 +59,24 @@ export interface DossierMeta {
   kwaliteitsborger?: string;
 }
 
+export interface DossierSignatures {
+  /** base64 PNG data URL van handtekening projectleider */
+  projectleider?: string;
+  projectleiderNaam?: string;
+  /** base64 PNG data URL van handtekening opdrachtgever */
+  opdrachtgever?: string;
+  opdrachtgeverNaam?: string;
+  /** ISO timestamp van ondertekening */
+  signedAt?: string;
+}
+
 export function generateDossierHtml(
   evidence: StoredWkbEvidence[],
   projectId: string,
   projectName: string,
   imageMap: Record<string, string> = {},
-  meta: DossierMeta = {}
+  meta: DossierMeta = {},
+  signatures: DossierSignatures = {}
 ): string {
   const now = new Date().toLocaleString('nl-NL', {
     dateStyle: 'long',
@@ -294,6 +306,31 @@ export function generateDossierHtml(
     .badge-pending { background: #f3f4f6; color: #6b7280; }
     .evidence-id { font-family: monospace; font-size: 9px; color: #bbb; margin-top: 6px; }
 
+    /* Handtekening sectie */
+    .sig-section {
+      margin-top: 36px; padding: 20px;
+      border: 1px solid #e5e5e5; border-radius: 10px;
+      background: #fafafa;
+    }
+    .sig-title {
+      font-size: 10px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; color: #888; margin-bottom: 16px;
+    }
+    .sig-grid { display: flex; gap: 24px; flex-wrap: wrap; }
+    .sig-box { flex: 1; min-width: 200px; }
+    .sig-label { font-size: 10px; color: #888; font-weight: 700; margin-bottom: 6px; }
+    .sig-img {
+      width: 100%; height: 90px; border: 1px solid #ddd; border-radius: 6px;
+      object-fit: contain; background: #fff;
+    }
+    .sig-name { font-size: 11px; color: #555; margin-top: 5px; font-weight: 600; }
+    .sig-date { font-size: 10px; color: #aaa; margin-top: 2px; }
+    .sig-empty {
+      width: 100%; height: 90px; border: 1px dashed #ddd; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: #ccc; font-size: 11px;
+    }
+
     /* Footer */
     .footer {
       margin-top: 36px; padding-top: 14px;
@@ -366,6 +403,29 @@ export function generateDossierHtml(
       : '<p style="color:#888;padding:32px;text-align:center;">Nog geen borgingspunten vastgelegd in dit project.</p>'
     }
 
+    <!-- Handtekeningen -->
+    ${(signatures.projectleider || signatures.opdrachtgever) ? `
+    <div class="sig-section">
+      <div class="sig-title">Ondertekening oplevering</div>
+      <div class="sig-grid">
+        <div class="sig-box">
+          <div class="sig-label">PROJECTLEIDER / AANNEMER</div>
+          ${signatures.projectleider
+            ? `<img src="${signatures.projectleider}" class="sig-img" alt="Handtekening projectleider" />`
+            : `<div class="sig-empty">Nog niet ondertekend</div>`}
+          ${signatures.projectleiderNaam ? `<div class="sig-name">${signatures.projectleiderNaam}</div>` : ''}
+          ${signatures.signedAt ? `<div class="sig-date">${new Date(signatures.signedAt).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' })}</div>` : ''}
+        </div>
+        <div class="sig-box">
+          <div class="sig-label">OPDRACHTGEVER</div>
+          ${signatures.opdrachtgever
+            ? `<img src="${signatures.opdrachtgever}" class="sig-img" alt="Handtekening opdrachtgever" />`
+            : `<div class="sig-empty">Nog niet ondertekend</div>`}
+          ${signatures.opdrachtgeverNaam ? `<div class="sig-name">${signatures.opdrachtgeverNaam}</div>` : ''}
+        </div>
+      </div>
+    </div>` : ''}
+
     <!-- Footer -->
     <div class="footer">
       <span>WKB Snap &amp; Sync — Spee Solutions</span>
@@ -385,14 +445,15 @@ export async function exportDossierAsPdf(
   evidence: StoredWkbEvidence[],
   projectId: string,
   projectName: string,
-  meta: DossierMeta = {}
+  meta: DossierMeta = {},
+  signatures: DossierSignatures = {}
 ): Promise<void> {
   if (typeof window === 'undefined') return;
 
   // Laad alle afbeeldingen als base64
   const imageMap = await loadEvidenceImages(evidence);
 
-  const html = generateDossierHtml(evidence, projectId, projectName, imageMap, meta);
+  const html = generateDossierHtml(evidence, projectId, projectName, imageMap, meta, signatures);
 
   const w = window.open('', '_blank', 'width=980,height=720');
 
@@ -410,4 +471,42 @@ export async function exportDossierAsPdf(
     // Kleine delay voor image rendering
     setTimeout(() => w.print(), 500);
   });
+}
+
+// ────────────────────────────────────────────────
+// Upload HTML dossier naar Supabase Storage
+// en geeft de publieke URL terug (voor e-mail link)
+// ────────────────────────────────────────────────
+
+import { supabase } from '../lib/supabase';
+
+export async function uploadDossierHtml(
+  evidence: StoredWkbEvidence[],
+  projectId: string,
+  projectName: string,
+  meta: DossierMeta = {},
+  signatures: DossierSignatures = {}
+): Promise<string | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    const imageMap = await loadEvidenceImages(evidence);
+    const html = generateDossierHtml(evidence, projectId, projectName, imageMap, meta, signatures);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const fileName = `dossiers/borgingsdossier_${projectId}_${Date.now()}.html`;
+
+    const { error } = await supabase.storage
+      .from('wkb-evidence')
+      .upload(fileName, blob, { contentType: 'text/html', upsert: true });
+
+    if (error) {
+      console.error('Dossier upload fout:', error.message);
+      return null;
+    }
+
+    const { data } = supabase.storage.from('wkb-evidence').getPublicUrl(fileName);
+    return data.publicUrl ?? null;
+  } catch (err) {
+    console.error('Dossier upload mislukt:', err);
+    return null;
+  }
 }
