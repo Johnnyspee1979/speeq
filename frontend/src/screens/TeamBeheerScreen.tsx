@@ -372,7 +372,7 @@ export default function TeamBeheerScreen() {
         .join(', ');
       const text =
         `Hoi ${member.displayName}! 👋\n\n` +
-        `Je bent uitgenodigd voor WKB Snap & Sync.\n` +
+        `Je bent uitgenodigd voor SpeeQ.\n` +
         `Tap de link om je account aan te maken:\n\n` +
         `${link}\n\n` +
         `Je ziet alleen de borgingspunten voor jouw discipline${member.disciplines.length > 1 ? 's' : ''}: ${disciplineLabels || 'alle taken'}.`;
@@ -388,7 +388,7 @@ export default function TeamBeheerScreen() {
   const shareNative = useCallback(
     (member: TeamMember) => {
       const link = getInviteUrl(member);
-      const text = `Hoi ${member.displayName}! Je bent uitgenodigd voor WKB Snap & Sync.\nMaak je account aan via:\n${link}`;
+      const text = `Hoi ${member.displayName}! Je bent uitgenodigd voor SpeeQ.\nMaak je account aan via:\n${link}`;
       if (typeof navigator !== 'undefined' && navigator.share) {
         void navigator.share({ title: 'WKB Uitnodiging', text, url: link });
       } else {

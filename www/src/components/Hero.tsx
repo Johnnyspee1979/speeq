@@ -1,4 +1,3 @@
-import React from 'react';
 import './Hero.css';
 
 export default function Hero() {
@@ -10,7 +9,7 @@ export default function Hero() {
           <span className="text-accent">Zonder de Complexiteit.</span>
         </h1>
         <p className="hero-subtitle">
-          Structura Wkb is dé premium SaaS-oplossing voor bouwbedrijven.
+          SpeeQ is dé WKB-app van Spee Solutions voor bouwbedrijven.
           Koppel direct met Afas, Exact, en het DSO. Voldoe vandaag nog
           aan de Wet kwaliteitsborging voor het bouwen.
         </p>

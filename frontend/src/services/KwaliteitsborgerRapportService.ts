@@ -359,7 +359,7 @@ export function generateKwaliteitsborgerRapportHtml(opts: KwaliteitsborgerRappor
 
   <!-- COVER ──────────────────────────────────────────────────────────────── -->
   <div class="cover">
-    <div class="cover-brand">WKB Snap &amp; Sync · Technisch Kwaliteitsrapport</div>
+    <div class="cover-brand">SpeeQ · Technisch Kwaliteitsrapport</div>
     <div class="cover-title">${opts.projectName}</div>
     <div class="cover-doc">Kwaliteitsborger Eindrapport — ${gevolgklasse}</div>
     <table class="cover-table">
@@ -453,7 +453,7 @@ export function generateKwaliteitsborgerRapportHtml(opts: KwaliteitsborgerRappor
 
   <div class="footer">
     Vertrouwelijk — Uitsluitend bestemd voor kwaliteitsborger en betrokken partijen ·
-    WKB Snap &amp; Sync · Spee Solutions · ${today} · Ref: ${opts.projectId}
+    SpeeQ · Spee Solutions · ${today} · Ref: ${opts.projectId}
   </div>
 
 </body>

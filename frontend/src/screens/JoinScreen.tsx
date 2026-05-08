@@ -264,7 +264,7 @@ export default function JoinScreen({ token }: JoinScreenProps) {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>UITNODIGING — WKB SNAP & SYNC</Text>
+          <Text style={styles.eyebrow}>UITNODIGING — SPEEQ</Text>
           <Text style={styles.title}>
             {inviteData?.displayName
               ? `Welkom, ${inviteData.displayName.split(' ')[0]}! 👋`

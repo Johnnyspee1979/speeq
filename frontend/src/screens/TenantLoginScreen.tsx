@@ -1,7 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { setTenantConfig } from '../config/tenant';
+import React, { useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { initSupabase } from '../lib/supabase';
+import { setTenantConfig } from '../config/tenant';
 import { BACKEND_URL } from '../config/app';
 
 interface Props {
@@ -12,67 +21,208 @@ export default function TenantLoginScreen({ onLoginSuccess }: Props) {
   const [companyId, setCompanyId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const inputRef = useRef<TextInput>(null);
 
   const handleLogin = async () => {
-    if (!companyId.trim()) {
-      setError('Vul een Bedrijfs-ID in');
+    const id = companyId.trim();
+    if (!id) {
+      setError('Vul je Bedrijfs-ID in');
+      inputRef.current?.focus();
       return;
     }
     setLoading(true);
     setError('');
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/tenants/resolve/${companyId}`);
-      const result = await response.json();
-      
+      const res = await fetch(`${BACKEND_URL}/api/v1/tenants/resolve/${encodeURIComponent(id)}`);
+      const result = await res.json();
+
       if (result.success) {
         const { supabaseUrl, supabaseAnonKey } = result.data;
-        await setTenantConfig({ companyId, supabaseUrl, supabaseAnonKey });
+        await setTenantConfig({ companyId: id, supabaseUrl, supabaseAnonKey });
         initSupabase(supabaseUrl, supabaseAnonKey);
         onLoginSuccess();
       } else {
-        setError(result.error || 'Er ging iets mis.');
+        setError(result.error ?? 'Bedrijfs-ID niet gevonden. Controleer je licentie.');
       }
-    } catch (e) {
-      setError('Kan de Master server niet bereiken.');
+    } catch {
+      setError('Geen verbinding met de server. Controleer je internet.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>SpeeQ</Text>
-      <Text style={styles.subtitle}>Log in met je Structura Wkb licentie</Text>
-      
-      <View style={styles.card}>
-        <Text style={styles.label}>Bedrijfs-ID</Text>
-        <TextInput 
-          style={styles.input}
-          placeholder="Bijv. demo"
-          placeholderTextColor="#666"
-          value={companyId}
-          onChangeText={setCompanyId}
-          autoCapitalize="none"
-        />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Verbinden</Text>}
-        </TouchableOpacity>
+    <KeyboardAvoidingView
+      style={styles.outer}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={styles.inner}>
+        {/* Logo / merk */}
+        <View style={styles.logoRow}>
+          <View style={styles.logoBadge}>
+            <Text style={styles.logoText}>W</Text>
+          </View>
+          <Text style={styles.appName}>WKB Snap & Sync</Text>
+        </View>
+        <Text style={styles.tagline}>Voer je Bedrijfs-ID in om te verbinden</Text>
+
+        {/* Card */}
+        <View style={styles.card}>
+          <Text style={styles.label}>Bedrijfs-ID</Text>
+          <TextInput
+            ref={inputRef}
+            style={styles.input}
+            placeholder="bijv. demo"
+            placeholderTextColor="#555"
+            value={companyId}
+            onChangeText={(v) => { setCompanyId(v); setError(''); }}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
+            editable={!loading}
+          />
+
+          {error ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>⚠️  {error}</Text>
+            </View>
+          ) : null}
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleLogin}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            {loading
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.buttonText}>Verbinden →</Text>
+            }
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.footer}>
+          Geen licentie?{' '}
+          <Text style={styles.footerLink}>Neem contact op met Spee Solutions</Text>
+        </Text>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, backgroundColor: '#0B0F19' },
-  title: { fontSize: 32, fontWeight: 'bold', color: '#fff', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 16, color: '#888', textAlign: 'center', marginBottom: 32 },
-  card: { backgroundColor: '#1E2433', padding: 24, borderRadius: 12 },
-  label: { color: '#fff', marginBottom: 8, fontSize: 14, fontWeight: 'bold' },
-  input: { backgroundColor: '#0B0F19', color: '#fff', padding: 12, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: '#333' },
-  button: { backgroundColor: '#A40D2F', padding: 14, borderRadius: 8, alignItems: 'center' },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  error: { color: '#ff4444', marginBottom: 16 }
+  outer: {
+    flex: 1,
+    backgroundColor: '#0B0F19',
+  },
+  inner: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 28,
+  },
+
+  // Logo
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  logoBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#A40D2F',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoText: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  appName: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  tagline: {
+    color: '#6B7280',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 36,
+  },
+
+  // Card
+  card: {
+    backgroundColor: '#161B2C',
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: '#1F2937',
+    marginBottom: 24,
+  },
+  label: {
+    color: '#9CA3AF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#0B0F19',
+    color: '#F9FAFB',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#374151',
+    fontSize: 16,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    letterSpacing: 1,
+  },
+  errorBox: {
+    backgroundColor: '#7F1D1D22',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#EF444440',
+  },
+  errorText: {
+    color: '#FCA5A5',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  button: {
+    backgroundColor: '#A40D2F',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 15,
+    letterSpacing: 0.3,
+  },
+
+  // Footer
+  footer: {
+    color: '#4B5563',
+    fontSize: 13,
+    textAlign: 'center',
+  },
+  footerLink: {
+    color: '#6B7280',
+    textDecorationLine: 'underline',
+  },
 });

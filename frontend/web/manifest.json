@@ -1,6 +1,6 @@
 {
-  "name": "WKB Snap & Sync",
-  "short_name": "WKB Snap",
+  "name": "SpeeQ",
+  "short_name": "SpeeQ",
   "description": "WKB bewijsdocumentatie voor bouwplaatsen — foto's, borgingspunten, dossier.",
   "start_url": "/",
   "display": "standalone",

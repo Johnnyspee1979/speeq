@@ -16,10 +16,25 @@ export const setTenantConfig = async (config: TenantConfig) => {
 };
 
 export const getTenantConfig = async (): Promise<TenantConfig | null> => {
+  // 1. In-memory cache (snelst)
   if (activeTenant) return activeTenant;
-  const config = await localforage.getItem<TenantConfig>(TENANT_KEY);
-  if (config) activeTenant = config;
-  return activeTenant;
+
+  // 2. Opgeslagen config (localforage — werkt op web + native)
+  const stored = await localforage.getItem<TenantConfig>(TENANT_KEY);
+  if (stored) {
+    activeTenant = stored;
+    return activeTenant;
+  }
+
+  // 3. Fallback op Expo env vars (Vercel-deploy / development)
+  //    Als EXPO_PUBLIC_SUPABASE_URL gezet is, sla TenantLoginScreen over.
+  const envUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  const envKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+  if (envUrl && envKey) {
+    return { companyId: 'env', supabaseUrl: envUrl, supabaseAnonKey: envKey };
+  }
+
+  return null;
 };
 
 export const clearTenantConfig = async () => {
@@ -27,6 +42,5 @@ export const clearTenantConfig = async () => {
   await localforage.removeItem(TENANT_KEY);
 };
 
-export const hasTenantConfig = () => {
-  return activeTenant !== null;
-};
+/** Synchrone check — alleen betrouwbaar ná een eerdere getTenantConfig()-aanroep */
+export const hasTenantConfig = () => activeTenant !== null;

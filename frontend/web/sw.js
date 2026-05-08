@@ -1,4 +1,4 @@
-/* WKB Snap & Sync — Service Worker v3 */
+/* SpeeQ — Service Worker v3 */
 const CACHE_NAME = 'wkb-snap-v3';
 const OFFLINE_SHELL = ['/'];
 
@@ -54,10 +54,10 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data.json();
   } catch {
-    data = { title: 'WKB Snap & Sync', body: event.data.text() };
+    data = { title: 'SpeeQ', body: event.data.text() };
   }
 
-  const title = data.title ?? 'WKB Snap & Sync';
+  const title = data.title ?? 'SpeeQ';
   const options = {
     body: data.body ?? '',
     icon: '/assets/icon.png',

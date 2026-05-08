@@ -1,4 +1,3 @@
-import React from 'react';
 import './Pricing.css';
 import { Check } from 'lucide-react';
 

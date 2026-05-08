@@ -157,7 +157,7 @@ export function generateQRStickerHtml(options: QRStickerSheetOptions, base: stri
 </div>
 
 <div class="footer">
-  <span>WKB Snap &amp; Sync — Spee Solutions</span>
+  <span>SpeeQ — Spee Solutions</span>
   <span>Project: ${projectId} · ${tasks.length} borgingspunten</span>
 </div>
 

@@ -518,7 +518,7 @@ export default function WerkvoorbereiderDashboard({
         `Geachte,\n\nHierbij het digitale borgingsdossier van project ${projectName}.\n\n` +
         `Bekijk of download het dossier via onderstaande link:\n${publicUrl}\n\n` +
         `Dit dossier bevat alle borgingspuntfoto's met GPS, tijdstempel en AI-validatie.\n\n` +
-        `Met vriendelijke groet,\nWKB Snap & Sync — Spee Solutions`
+        `Met vriendelijke groet,\nSpeeQ — Spee Solutions`
       );
 
       window.open(`mailto:${emailAddress.trim()}?subject=${subject}&body=${body}`, '_self');
@@ -865,7 +865,7 @@ export default function WerkvoorbereiderDashboard({
             <Text style={{ color: '#0078D4', fontWeight: '800', fontSize: 13 }}>☁️ OneDrive instellen — 3 stappen</Text>
             <Text style={{ color: theme.colors.textPrimary, fontSize: 12 }}>
               {'1. Ga naar portal.azure.com → App registrations → New registration\n'}
-              {'2. Naam: "WKB Snap & Sync" · Redirect URI: ' + window.location.origin + '\n'}
+              {'2. Naam: "SpeeQ" · Redirect URI: ' + window.location.origin + '\n'}
               {'3. Kopieer de Application (client) ID → stuur naar je developer'}
             </Text>
             <TouchableOpacity

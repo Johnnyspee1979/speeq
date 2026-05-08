@@ -309,7 +309,7 @@ export default function TekenGoedkeuringScreen({ token }: Props) {
       </View>
 
       <Text style={st.footer}>
-        WKB Snap Sync • Veilig en versleuteld
+        SpeeQ • Veilig en versleuteld
       </Text>
     </ScrollView>
   );

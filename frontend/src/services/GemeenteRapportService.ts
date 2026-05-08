@@ -266,7 +266,7 @@ export function generateGemeenteRapportHtml(opts: GemeenteRapportOptions): strin
       Besluit bouwwerken leefomgeving (Bbl), voor zover van toepassing op een
       bouwwerk van ${gevolgklasse}.<br /><br />
       De kwaliteitsborging is uitgevoerd conform de goedgekeurde borgingstool
-      van WKB Snap &amp; Sync (Spee Solutions). De borgingspunten zijn
+      van SpeeQ (Spee Solutions). De borgingspunten zijn
       systematisch gecontroleerd, gefotografeerd en beoordeeld. Dit dossier
       bevoegd gezag omvat alle bewijsstukken die zijn verzameld gedurende de
       bouwperiode.<br /><br />
@@ -371,7 +371,7 @@ export function generateGemeenteRapportHtml(opts: GemeenteRapportOptions): strin
   </div>
 
   <div class="footer">
-    Gegenereerd door WKB Snap &amp; Sync · Spee Solutions · ${today} ·
+    Gegenereerd door SpeeQ · Spee Solutions · ${today} ·
     Projectreferentie: ${opts.projectId} ·
     Wkb art. 2.17 / BKL art. 7.16
   </div>

@@ -346,7 +346,7 @@ export default function OpdrachtgeverPortaal({ projectId: propProjectId }: Opdra
       {/* ── Footer ── */}
       <Text style={[styles.footer, { color: theme.colors.textSecondary }]}>
         Gegenereerd op {new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
-        {' · '}WKB Snap & Sync
+        {' · '}SpeeQ
       </Text>
     </ScrollView>
   );

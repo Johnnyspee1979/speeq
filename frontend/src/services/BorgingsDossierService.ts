@@ -474,7 +474,7 @@ export function generateDossierHtml(
 
     <!-- Footer -->
     <div class="footer">
-      <span>WKB Snap &amp; Sync — Spee Solutions</span>
+      <span>SpeeQ — Spee Solutions</span>
       <span>Dossier ${projectId} · ${now}</span>
     </div>
 

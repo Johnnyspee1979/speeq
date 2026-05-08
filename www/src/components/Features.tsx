@@ -1,4 +1,3 @@
-import React from 'react';
 import { ShieldCheck, CloudLightning, Smartphone, Server } from 'lucide-react';
 import './Features.css';
 

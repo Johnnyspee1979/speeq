@@ -207,7 +207,7 @@ export function generateKeuringsrapportHtml(opts: KeuringsrapportOptions): strin
 
   <!-- Cover -->
   <div class="cover">
-    <div class="cover-brand">WKB Snap &amp; Sync · Spee Solutions</div>
+    <div class="cover-brand">SpeeQ · Spee Solutions</div>
     <div class="cover-title">${opts.projectName}</div>
     <div class="cover-sub">WKB Keuringsrapport</div>
     <table class="cover-table">
@@ -219,7 +219,7 @@ export function generateKeuringsrapportHtml(opts: KeuringsrapportOptions): strin
       ${opts.uitvoerder       ? `<tr><td>Uitvoerder / WV</td><td>${opts.uitvoerder}</td></tr>` : ''}
       <tr><td>Totaal borgingspunten</td><td><strong>${totaal}</strong></td></tr>
     </table>
-    <div class="cover-art">Gegenereerd door WKB Snap &amp; Sync (Spee Solutions) · Referentie: ${opts.projectId}</div>
+    <div class="cover-art">Gegenereerd door SpeeQ (Spee Solutions) · Referentie: ${opts.projectId}</div>
   </div>
 
   <!-- Samenvatting -->

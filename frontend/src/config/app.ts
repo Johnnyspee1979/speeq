@@ -70,7 +70,7 @@ export const DEFAULT_GEVOLGKLASSE =
   (process.env.EXPO_PUBLIC_GEVOLGKLASSE ?? '1').trim() || '1';
 export const DEFAULT_KWALITEITSBORGER =
   (process.env.EXPO_PUBLIC_KWALITEITSBORGER ?? '').trim();
-export const APP_TITLE = `Wkb Snap & Sync - ${DEFAULT_PROJECT_ID}`;
+export const APP_TITLE = 'SpeeQ';
 export const PROJECT_LOCATION =
   parseNumber(rawProjectLatitude) != null && parseNumber(rawProjectLongitude) != null
     ? {
