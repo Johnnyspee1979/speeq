@@ -1,6 +1,8 @@
 import { File } from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
+import { Platform } from 'react-native';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getOfflinePhotoBlob } from './OfflinePhotoStore';
 import {
   getConsumerDossierDocuments,
   getConsumerDossierItems,
@@ -60,20 +62,31 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
         onProgress?.(`Uploaden van beveiligd bewijs ${syncCount + 1}/${unsyncedData.length}...`);
         const complianceContext = getEvidenceComplianceContext(item.inspectionPointId);
 
-        // Blob-URLs (mobiele PWA) en http-URLs: expo-file-system kan deze niet lezen.
-        // Gebruik fetch + ArrayBuffer voor de base64-conversie.
-        let base64: string;
-        if (item.mediaUri.startsWith('blob:') || item.mediaUri.startsWith('http')) {
-          const response = await fetch(item.mediaUri);
-          const arrayBuffer = await response.arrayBuffer();
-          const bytes = new Uint8Array(arrayBuffer);
-          let binary = '';
-          for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]!);
+        // Sprint 8 — directe Blob/ArrayBuffer upload, geen base64-roundtrip.
+        // Voorheen: fetch → arrayBuffer → byte-loop → btoa → base64 → decode → upload.
+        // Dat verdrievoudigde het RAM-gebruik per foto en stapelde op bij 150+ items
+        // → OOM-crash op oudere Android-toestellen. Nu: één fetch().blob() (of native
+        // base64 als laatste fallback).
+        let uploadBody: Blob | ArrayBuffer;
+        if (Platform.OS === 'web') {
+          // 1) Probeer rechtstreeks de blob uit IndexedDB — geen extra fetch nodig.
+          const stored = await getOfflinePhotoBlob(item.id).catch(() => null);
+          if (stored) {
+            uploadBody = stored;
+          } else if (
+            item.mediaUri.startsWith('blob:') ||
+            item.mediaUri.startsWith('http') ||
+            item.mediaUri.startsWith('data:')
+          ) {
+            const response = await fetch(item.mediaUri);
+            uploadBody = await response.blob();
+          } else {
+            // Onbekend protocol op web — laatste redmiddel via native bridge.
+            uploadBody = decode(await new File(item.mediaUri).base64());
           }
-          base64 = btoa(binary);
         } else {
-          base64 = await new File(item.mediaUri).base64();
+          // Native (iOS/Android): file-path lezen met expo-file-system, decode → ArrayBuffer.
+          uploadBody = decode(await new File(item.mediaUri).base64());
         }
 
         const fileId = item.id || `bewijs-${Date.now()}`;
@@ -82,7 +95,7 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
 
         const { error: uploadError } = await supabase.storage
           .from('wkb-evidence')
-          .upload(fileName, decode(base64), {
+          .upload(fileName, uploadBody, {
             contentType: 'image/jpeg',
           });
 

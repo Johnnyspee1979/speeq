@@ -1,15 +1,22 @@
 /**
- * OfflinePhotoStore — slaat foto's op als base64 data-URL in IndexedDB
+ * OfflinePhotoStore — slaat foto's op in IndexedDB zodat ze een page-refresh
+ * overleven en later naar de cloud gesynchroniseerd kunnen worden.
  *
- * Waarom: blob:// URLs zijn vluchtig — ze verdwijnen bij page refresh of
- * tab-sluiting. IndexedDB overleeft dat wél. Zodra het netwerk terugkomt
- * laadt syncEvidenceQueue() de data-URL en upload hij de foto.
+ * Sprint 8 — opslagformaat verschoven van Base64 data-URL naar native Blob.
+ *   • IndexedDB ondersteunt Blob native → ~33% kleiner op disk dan Base64.
+ *   • Sync-loop kan blob direct uploaden, geen base64-roundtrip meer.
+ *   • Backward compatible: oude data-URL strings worden bij retrieval nog
+ *     herkend en correct behandeld zodat foto's uit eerdere sessies niet
+ *     verloren gaan.
  *
  * Gebruik:
  *   const dataUrl = await persistOfflinePhoto(blobUrl, evidenceId);
- *   // Sla dataUrl op als mediaUri in lokale database
+ *   // dataUrl wordt opgeslagen als mediaUri in lokale database (display-compat)
  *
- *   // Na succesvolle sync:
+ *   // Sync-pad gebruikt de raw Blob (sneller, geen base64-bloat):
+ *   const blob = await getOfflinePhotoBlob(evidenceId);
+ *
+ *   // Na succesvolle upload:
  *   await deleteOfflinePhoto(evidenceId);
  */
 
@@ -18,6 +25,8 @@ import { Platform } from 'react-native';
 const STORE_NAME = 'offline_photos';
 const DB_NAME    = 'wkb-offline-photos';
 const DB_VERSION = 1;
+
+type StoredValue = Blob | string; // Blob = nieuw formaat (Sprint 8), string = legacy data-URL
 
 let _db: IDBDatabase | null = null;
 
@@ -33,16 +42,16 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-function idbGet(db: IDBDatabase, key: string): Promise<string | null> {
+function idbGet(db: IDBDatabase, key: string): Promise<StoredValue | null> {
   return new Promise((resolve, reject) => {
     const tx  = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).get(key);
-    req.onsuccess = () => resolve((req.result as string) ?? null);
+    req.onsuccess = () => resolve((req.result as StoredValue) ?? null);
     req.onerror   = () => reject(req.error);
   });
 }
 
-function idbPut(db: IDBDatabase, key: string, value: string): Promise<void> {
+function idbPut(db: IDBDatabase, key: string, value: StoredValue): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx  = db.transaction(STORE_NAME, 'readwrite');
     const req = tx.objectStore(STORE_NAME).put(value, key);
@@ -69,7 +78,13 @@ function idbGetAllKeys(db: IDBDatabase): Promise<string[]> {
   });
 }
 
-/** Zet een blob:// of http URL om naar een data:// URL en sla op in IndexedDB */
+/**
+ * Persisteer een foto in IndexedDB als native Blob.
+ * Returnt nog steeds een data-URL string voor backward compat met de
+ * `mediaUri` velden in de lokale evidence-database; sync.ts pakt
+ * intern de Blob op via `getOfflinePhotoBlob` en omzeilt zo de
+ * base64-conversie tijdens upload.
+ */
 export async function persistOfflinePhoto(
   photoUri: string,
   evidenceId: string
@@ -78,20 +93,27 @@ export async function persistOfflinePhoto(
   if (typeof indexedDB === 'undefined') return null;
 
   try {
-    // Al een data-URL → direct opslaan (geen fetch nodig)
+    let blob: Blob;
+    let dataUrl: string;
+
     if (photoUri.startsWith('data:')) {
-      const db = await openDb();
-      await idbPut(db, evidenceId, photoUri);
-      return photoUri;
+      // Data-URL binnenkomend: zet om naar Blob voor opslag, maar de
+      // returnwaarde blijft de originele data-URL (geen extra conversie nodig).
+      const response = await fetch(photoUri);
+      blob = await response.blob();
+      dataUrl = photoUri;
+    } else {
+      // blob:// of http://: fetch → Blob → eenmalig data-URL voor caller.
+      const response = await fetch(photoUri);
+      blob = await response.blob();
+      dataUrl = await blobToDataUrl(blob);
     }
 
-    // blob:// of http:// → ophalen als blob → omzetten naar base64 data-URL
-    const response = await fetch(photoUri);
-    const blob     = await response.blob();
-    const dataUrl  = await blobToDataUrl(blob);
-    const db       = await openDb();
-    await idbPut(db, evidenceId, dataUrl);
-    console.log(`[OfflinePhotoStore] 💾 Foto opgeslagen (${(dataUrl.length / 1024).toFixed(0)} KB) voor ${evidenceId}`);
+    const db = await openDb();
+    await idbPut(db, evidenceId, blob);
+    console.log(
+      `[OfflinePhotoStore] 💾 Foto opgeslagen als Blob (${(blob.size / 1024).toFixed(0)} KB) voor ${evidenceId}`
+    );
     return dataUrl;
   } catch (err) {
     console.error('[OfflinePhotoStore] Opslaan mislukt:', err);
@@ -99,14 +121,45 @@ export async function persistOfflinePhoto(
   }
 }
 
-/** Lees opgeslagen offline foto op */
+/**
+ * Lees opgeslagen offline foto als data-URL string.
+ * Backward compatible: als IDB nog een legacy data-URL string bevat
+ * (van vóór Sprint 8) wordt die direct teruggegeven; nieuwe Blob-entries
+ * worden ad-hoc geconverteerd.
+ */
 export async function getOfflinePhoto(evidenceId: string): Promise<string | null> {
   if (Platform.OS !== 'web') return null;
   if (typeof indexedDB === 'undefined') return null;
   try {
     const db = await openDb();
-    return idbGet(db, evidenceId);
-  } catch { return null; }
+    const value = await idbGet(db, evidenceId);
+    if (!value) return null;
+    if (typeof value === 'string') return value;             // legacy entry
+    return await blobToDataUrl(value);                       // Sprint 8 entry
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sprint 8 — geef de raw Blob terug. Gebruikt door sync.ts om uploads
+ * zonder base64-roundtrip uit te voeren. Werkt ook voor legacy data-URL
+ * entries: die worden on-the-fly omgezet.
+ */
+export async function getOfflinePhotoBlob(evidenceId: string): Promise<Blob | null> {
+  if (Platform.OS !== 'web') return null;
+  if (typeof indexedDB === 'undefined') return null;
+  try {
+    const db = await openDb();
+    const value = await idbGet(db, evidenceId);
+    if (!value) return null;
+    if (value instanceof Blob) return value;
+    // Legacy: data-URL string → Blob via fetch
+    const response = await fetch(value);
+    return await response.blob();
+  } catch {
+    return null;
+  }
 }
 
 /** Verwijder na succesvolle upload */
