@@ -246,6 +246,19 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
         const reason = itemError instanceof Error ? itemError.message : String(itemError);
         console.error(`❌ Fout bij item ${item.id ?? 'onbekend'}: ${reason}`);
 
+        // Sprint 8 — WKB-lock: dossier is afgesloten. Geen retries; meteen FAILED.
+        // Postgres-trigger `evidence_insert_lock_guard` (zie 20260511 migratie) gooit
+        // 'WKB_LOCKED:' wanneer evidence van na `dossiers.locked_at` wordt ingebracht.
+        // Doorgaan met retries zou batterij + cellulair verkwisten op iets dat
+        // de DB juridisch nooit zal accepteren.
+        if (reason.includes('WKB_LOCKED')) {
+          console.warn(`🔒 Item ${item.id ?? 'onbekend'} geweigerd: dossier afgesloten`);
+          if (typeof item.rowId === 'number') {
+            await markEvidenceSyncFailed(item.rowId);
+          }
+          continue;
+        }
+
         if (typeof item.rowId === 'number') {
           const retryCount = (item as any).syncRetryCount ?? 0;
           if (retryCount >= MAX_SYNC_RETRIES) {
