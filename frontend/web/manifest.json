@@ -1,6 +1,6 @@
 {
-  "name": "SpeeQ",
-  "short_name": "SpeeQ",
+  "name": "SpeeQ WKB",
+  "short_name": "SpeeQ WKB",
   "description": "WKB bewijsdocumentatie voor bouwplaatsen — foto's, borgingspunten, dossier.",
   "start_url": "/",
   "display": "standalone",

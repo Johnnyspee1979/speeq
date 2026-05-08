@@ -13,7 +13,7 @@ export default function About() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>SpeeQ</Text>
+      <Text style={styles.title}>SpeeQ WKB</Text>
       <Text style={styles.subtitle}>Elevator pitch</Text>
 
       <View style={styles.grid}>

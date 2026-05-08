@@ -80,7 +80,7 @@ export default function PWAInstallBanner({ theme }: Props) {
     <View style={[styles.banner, { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent }]}>
       <Text style={styles.icon}>📲</Text>
       <View style={styles.textBlock}>
-        <Text style={styles.title}>Installeer SpeeQ</Text>
+        <Text style={styles.title}>Installeer SpeeQ WKB</Text>
         <Text style={styles.sub}>Gebruik als app op je telefoon of desktop — ook offline</Text>
       </View>
       <TouchableOpacity onPress={handleInstall} style={styles.installBtn} activeOpacity={0.85}>
