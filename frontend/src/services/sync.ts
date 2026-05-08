@@ -26,6 +26,9 @@ const PRESETS_TABLE = 'presets';
 const PROJECT_CHECKLISTS_TABLE = 'project_checklists';
 const CONSUMER_DOSSIER_DOCUMENTS_TABLE = 'consumer_dossier_documents';
 
+/** Max keer dat een FAILED item automatisch opnieuw geprobeerd wordt. */
+const MAX_SYNC_RETRIES = 3;
+
 export type SyncResult = {
   status: 'skipped' | 'idle' | 'synced' | 'error';
   count: number;
@@ -266,9 +269,20 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
         console.log(`✅ Bewijs ID ${item.id ?? fileName} volledig geüpload!`);
         syncCount += 1;
       } catch (itemError) {
-        console.error(`❌ Fout bij item ${item.id ?? 'onbekend'}:`, itemError);
+        const reason = itemError instanceof Error ? itemError.message : String(itemError);
+        console.error(`❌ Fout bij item ${item.id ?? 'onbekend'}: ${reason}`);
+
         if (typeof item.rowId === 'number') {
-          await markEvidenceSyncFailed(item.rowId);
+          const retryCount = (item as any).syncRetryCount ?? 0;
+          if (retryCount >= MAX_SYNC_RETRIES) {
+            // Te vaak gefaald — markeer definitief als FAILED zodat vakman gewaarschuwd wordt
+            console.warn(`⛔ Item ${item.id} heeft ${MAX_SYNC_RETRIES} pogingen gehad — definitief FAILED`);
+            await markEvidenceSyncFailed(item.rowId);
+          } else {
+            // Nog retries over — houd PENDING maar verhoog teller
+            console.warn(`🔄 Item ${item.id} retry ${retryCount + 1}/${MAX_SYNC_RETRIES}`);
+            await markEvidenceSyncFailed(item.rowId); // update status; autoSync probeert opnieuw bij volgende run
+          }
         }
       }
     }
