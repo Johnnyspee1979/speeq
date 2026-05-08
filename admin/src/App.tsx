@@ -1,6 +1,5 @@
-import React from 'react';
 import Sidebar from './components/Sidebar';
-import TenantsPage from './pages/TenantsPage';
+import TenantManager from './components/TenantManager';
 import './App.css'; // Optional if needed, but we rely on index.css
 
 function App() {
@@ -8,7 +7,9 @@ function App() {
     <div className="app-container">
       <Sidebar />
       <main className="main-content">
-        <TenantsPage />
+        {/* Sprint 5 — primaire dashboard. TenantsPage blijft beschikbaar als
+            uitgebreidere variant met Supabase-credential velden. */}
+        <TenantManager />
       </main>
     </div>
   );

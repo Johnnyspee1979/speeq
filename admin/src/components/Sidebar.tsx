@@ -1,4 +1,3 @@
-import React from 'react';
 import { LayoutDashboard, Users, ShieldAlert, Settings } from 'lucide-react';
 import './Sidebar.css';
 

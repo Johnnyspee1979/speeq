@@ -1,4 +1,3 @@
-import React from 'react';
 import { MoreVertical, Database, Users as UsersIcon, CheckCircle2 } from 'lucide-react';
 import './TenantCard.css';
 
