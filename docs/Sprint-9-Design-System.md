@@ -68,9 +68,41 @@ python3 scripts/search.py "<query>" --design-system --stack react-native --proje
 # Andere domeinen: --domain {style,color,chart,landing,product,ux,typography,icons,react,web,google-fonts}
 ```
 
+## 🎨 Standaard design-tool: 21st.dev Magic MCP
+
+**Per Sprint 9** is **21st.dev** (Magic MCP) de **standaard tool** voor het bouwen
+van nieuwe UI-componenten in SpeeQ WKB. Zie `CLAUDE.md` (project-root) voor de
+volledige tool-prioriteit.
+
+**Beschikbare 21st.dev tools:**
+| Tool | Wanneer |
+|---|---|
+| `21st_magic_component_inspiration` | Vóór implementatie, zien wat 21st.dev biedt |
+| `21st_magic_component_builder` | Snippet genereren voor button, card, modal, etc. |
+| `21st_magic_component_refiner` | Bestaand component opnieuw stylen |
+| `logo_search` | Bedrijfslogo's invoegen (TSX/JSX/SVG) |
+
+**Werkwijze (verplicht):**
+1. Inspiratie ophalen via `21st_magic_component_inspiration`
+2. Snippet genereren via `21st_magic_component_builder`
+3. **Aanpassen aan SpeeQ-theme** — Tailwind classes vervangen door:
+   - `theme.colors.*` voor kleuren
+   - `theme.spacing.*` voor padding/margin
+   - `theme.radius.*` voor border-radius
+   - Framer Motion wrappers (`MotionPressable`, `MotionPanel`) voor animaties
+4. Web-only? → wrap in `Platform.OS === 'web'`
+5. Pre-merge checklist in `CLAUDE.md` afvinken
+
+**Tool-stack (in volgorde van prioriteit):**
+```
+1. 21st.dev Magic MCP        → nieuwe componenten
+2. UI UX Pro Max skill       → design-system beslissingen
+3. SpeeQ theme + motion lib  → altijd consumeren
+```
+
 ## Roadmap (volgende passes)
-1. **Lucide-migratie** — emoji → SVG-icons in tab-labels, action-buttons
-2. **Bento-grid Werkvoorbereider Dashboard** — overview-tab herstructureren naar bento-layout
-3. **Hero op DSO-tab** — live status van mTLS-verbinding als hero-section
-4. **Skeleton-loaders** voor evidence-grid (200ms after paint, niet spinner)
+1. **Lucide-migratie** — emoji → SVG-icons in tab-labels, action-buttons (mogelijk via 21st.dev `logo_search`)
+2. **Bento-grid Werkvoorbereider Dashboard** — overview-tab herstructureren naar bento-layout (21st.dev: `bento grid dashboard`)
+3. **Hero op DSO-tab** — live status van mTLS-verbinding als hero-section (21st.dev: `status hero realtime`)
+4. **Skeleton-loaders** voor evidence-grid (200ms after paint, niet spinner) (21st.dev: `skeleton card grid`)
 5. **Per-stack RN guidelines** — `python3 search.py "list virtualization" --stack react-native`
