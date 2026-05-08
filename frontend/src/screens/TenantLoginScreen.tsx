@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { setTenantConfig } from '../config/tenant';
 import { initSupabase } from '../lib/supabase';
+import { BACKEND_URL } from '../config/app';
 
 interface Props {
   onLoginSuccess: () => void;
@@ -20,25 +21,23 @@ export default function TenantLoginScreen({ onLoginSuccess }: Props) {
     setLoading(true);
     setError('');
 
-    // Mock tenant validation: accept "demo" and fallback to local env
-    setTimeout(async () => {
-      try {
-        if (companyId.toLowerCase() === 'demo') {
-          const url = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://kgiuavfvhtdgwuygbyzo.supabase.co';
-          const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaXVhdmZ2aHRkZ3d1eWdieXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MzgzOTMsImV4cCI6MjA5MzAxNDM5M30.ezL6iv8bSXM4ZNZwtiesYdgiirUPKzh3fhu18HvLMpc';
-          
-          await setTenantConfig({ companyId, supabaseUrl: url, supabaseAnonKey: key });
-          initSupabase(url, key);
-          onLoginSuccess();
-        } else {
-          setError('Bedrijfs-ID onbekend. Probeer "demo".');
-        }
-      } catch (e) {
-        setError('Er ging iets mis bij het inloggen.');
-      } finally {
-        setLoading(false);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/v1/tenants/resolve/${companyId}`);
+      const result = await response.json();
+      
+      if (result.success) {
+        const { supabaseUrl, supabaseAnonKey } = result.data;
+        await setTenantConfig({ companyId, supabaseUrl, supabaseAnonKey });
+        initSupabase(supabaseUrl, supabaseAnonKey);
+        onLoginSuccess();
+      } else {
+        setError(result.error || 'Er ging iets mis.');
       }
-    }, 1000);
+    } catch (e) {
+      setError('Kan de Master server niet bereiken.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
