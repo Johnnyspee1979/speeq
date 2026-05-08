@@ -32,6 +32,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const { startKiKRetryJob } = require('./jobs/kikRetryCron');
 const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
+const { tenantRoutes } = require('./routes/tenant.routes');
 
 dotenv.config();
 
@@ -66,6 +67,7 @@ let supabaseClient: any | null = null;
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/v1/tenants', tenantRoutes);
 app.use('/api/wkb-evidence', evidenceRoutes);
 app.use('/api/wkb-dossier', dossierRoutes);
 app.use('/api/erp/afas', afasRoutes);
