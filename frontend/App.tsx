@@ -61,6 +61,9 @@ import VakmanWorkspace from './src/screens/VakmanWorkspace';
 import { ProjectProvider, useProject } from './src/context/ProjectContext';
 import { LanguageProvider } from './src/i18n';
 import { ActivityIndicator } from 'react-native';
+import { getTenantConfig } from './src/config/tenant';
+import { initSupabase } from './src/lib/supabase';
+import TenantLoginScreen from './src/screens/TenantLoginScreen';
 
 type Tab =
   | 'camera'
@@ -121,6 +124,35 @@ class AppErrorBoundary extends React.Component<
     }
     return this.props.children;
   }
+}
+
+function TenantGate({ children }: { children: React.ReactNode }) {
+  const [tenantReady, setTenantReady] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    getTenantConfig().then(config => {
+      if (config) {
+        initSupabase(config.supabaseUrl, config.supabaseAnonKey);
+        setTenantReady(true);
+      }
+      setChecking(false);
+    });
+  }, []);
+
+  if (checking) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#0B0F19', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#A40D2F" />
+      </SafeAreaView>
+    );
+  }
+
+  if (!tenantReady) {
+    return <TenantLoginScreen onLoginSuccess={() => setTenantReady(true)} />;
+  }
+
+  return <>{children}</>;
 }
 
 function AppShell() {
@@ -726,7 +758,9 @@ export default function App() {
       <ThemeProvider>
         <ProjectProvider>
           <AppErrorBoundary>
-            <AppShell />
+            <TenantGate>
+              <AppShell />
+            </TenantGate>
           </AppErrorBoundary>
         </ProjectProvider>
       </ThemeProvider>
