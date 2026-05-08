@@ -13,7 +13,23 @@
     <meta name="apple-mobile-web-app-title" content="SpeeQ WKB" />
     <link rel="apple-touch-icon" href="/assets/icon.png" />
     <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Sprint 9 — UI UX Pro Max typography: Fira Sans (body) + Fira Code (heading/mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700;900&display=swap" />
+
     <style>
+      /* ──────────────────────────────────────────────────────────
+         Sprint 9 — UI UX Pro Max foundation
+         ────────────────────────────────────────────────────────── */
+
+      /* Default font-stack op heel de PWA */
+      html, body, #root, button, input, textarea, select {
+        font-family: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+      }
+
       /* Globale scroll fix voor React Native Web op mobiel */
       html, body, #root {
         width: 100%;
@@ -21,8 +37,31 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-        background-color: #000;
+        background-color: #020617; /* slate-950 — sluit aan bij darkTheme */
+        color: #F8FAFC;
       }
+
+      /* Focus-visible ringen — verplicht voor keyboard nav (WCAG 2.4.7) */
+      :focus-visible {
+        outline: 2px solid #A40D2F;
+        outline-offset: 2px;
+        border-radius: 6px;
+      }
+      *:focus:not(:focus-visible) { outline: none; }
+
+      /* prefers-reduced-motion respect — Framer Motion luistert hier ook naar */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+
+      /* Cursor pointer op alle clickables (anti-pattern volgens UI UX Pro Max checklist) */
+      button, a, [role="button"], [data-pressable="true"] { cursor: pointer; }
+      button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 
       /* Alle React Native scroll containers scrollbaar maken op mobiel */
       div[style*="overflow: hidden"] {
