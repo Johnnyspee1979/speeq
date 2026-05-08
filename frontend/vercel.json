@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx expo export --platform web --output-dir dist",
+  "buildCommand": "npx expo export --platform web --output-dir dist && node scripts/postbuild-web.mjs && cp -r web/privacy dist/privacy && cp web/manifest.json dist/manifest.json && cp web/sw.js dist/sw.js",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
