@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "WKB Snap & Sync",
-    "slug": "wkb-snap-sync",
+    "name": "Structura Wkb",
+    "slug": "structura-wkb",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "scheme": "wkb-snap-sync",
+    "scheme": "structura-wkb",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -24,7 +24,7 @@
     },
 
     "ios": {
-      "bundleIdentifier": "nl.speesolutions.wkbsnapsync",
+      "bundleIdentifier": "nl.speesolutions.structurawkb",
       "buildNumber": "1",
       "supportsTablet": true,
       "minimumOsVersion": "16.0",
@@ -48,7 +48,7 @@
     },
 
     "android": {
-      "package": "nl.speesolutions.wkbsnapsync",
+      "package": "nl.speesolutions.structurawkb",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0B0F19",
