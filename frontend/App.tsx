@@ -16,6 +16,7 @@ import {
 } from 'lucide-react-native';
 import CameraView from './src/components/CameraView';
 import EvidenceList from './src/components/EvidenceList';
+import RejectionBanner from './src/components/RejectionBanner';
 import PresetsManager from './src/components/PresetsManager';
 import DsoLog from './src/components/DsoLog';
 import About from './src/components/About';
@@ -39,6 +40,7 @@ import {
   registerForReviewNotifications,
   requestNotificationPermissions,
 } from './src/services/NotificationService';
+import { subscribeToRejections } from './src/services/VakmanFeedbackService';
 import { useNotificationRouting } from './src/hooks/useNotificationRouting';
 import { useWkbAuth } from './src/hooks/useWkbAuth';
 import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
@@ -597,6 +599,33 @@ function AppShell() {
     });
   }, [user]);
 
+  // Vakman feedback loop: luister naar afgekeurde foto's (Sprint 3)
+  // Alleen voor rollen die zelf foto's maken — vakman & voorman.
+  useEffect(() => {
+    if (!user) return;
+    const eligibleRoles: typeof user.role[] = ['VAKMAN', 'VOORMAN'];
+    if (!eligibleRoles.includes(user.role)) return;
+
+    const stop = subscribeToRejections(user.id, (item) => {
+      console.warn(
+        `🔴 Foto afgekeurd voor borgingspunt ${item.inspectionPointId} (${item.reason})`,
+        item.notes ?? ''
+      );
+      // Dispatch een event zodat een eventueel banner-component hierop kan haken
+      if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+        try {
+          window.dispatchEvent(new CustomEvent('wkb:rejection', { detail: item }));
+        } catch {
+          /* native or older browsers */
+        }
+      }
+    });
+
+    return () => {
+      try { stop(); } catch (e) { console.warn('VakmanFeedback stop error:', e); }
+    };
+  }, [user?.id, user?.role]);
+
   // Opdrachtgever: stuur direct naar portaal tab
   useEffect(() => {
     if (user?.role === 'OPDRACHTGEVER' && activeTab !== 'portal') {
@@ -690,6 +719,7 @@ function AppShell() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar style={theme.name === 'dark' ? 'light' : 'dark'} />
+      {(user.role === 'VAKMAN' || user.role === 'VOORMAN') && <RejectionBanner />}
       <ResponsiveLayout
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab as Tab)}

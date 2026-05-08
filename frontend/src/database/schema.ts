@@ -17,7 +17,6 @@ export const wkbSchema = appSchema({
         { name: 'exif_hash', type: 'string' },
         { name: 'exif_verified', type: 'boolean' },
         { name: 'user_id', type: 'string', isOptional: true },
-        { name: 'ifc_guid', type: 'string', isOptional: true },
         { name: 'field_note', type: 'string', isOptional: true },
         { name: 'stop_moment_confirmed', type: 'boolean', isOptional: true },
         { name: 'measurement_tool_confirmed', type: 'boolean', isOptional: true },

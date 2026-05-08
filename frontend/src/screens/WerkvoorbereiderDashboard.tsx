@@ -32,7 +32,11 @@ import type { StoredWkbEvidence } from '../types/Evidence';
 import {
   uploadDossierHtml,
   exportDossierAsPdf,
+  getOrCreateOpenDossier,
+  attachEvidenceToDossier,
+  lockDossier,
   type DossierSignatures,
+  type DossierRow,
 } from '../services/BorgingsDossierService';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeProvider';
@@ -209,6 +213,13 @@ export default function WerkvoorbereiderDashboard({
   const [sigOG, setSigOG]                   = useState<string | null>(null);   // opdrachtgever handtekening
   const [sigOGNaam, setSigOGNaam]           = useState('');
   const [pdfLoading, setPdfLoading]         = useState(false);
+
+  // ── Dossier lock (Sprint 3 — WKB juridische bewaarplicht) ──────────────────
+  const [dossier, setDossier]               = useState<DossierRow | null>(null);
+  const [lockConfirmModal, setLockConfirmModal] = useState(false);
+  const [lockLoading, setLockLoading]       = useState(false);
+  const [lockMsg, setLockMsg]               = useState<string | null>(null);
+  const isDossierLocked = dossier?.status === 'LOCKED';
 
   // ── Opmerkingen ──────────────────────────────────────────────────────────────
   const [projectComments, setProjectComments] = useState<EvidenceComment[]>([]);
@@ -590,6 +601,55 @@ export default function WerkvoorbereiderDashboard({
     printKeuringsrapport(html);
   }, [evidence, projectId, projectName, sigPL, sigOG, sigPLNaam, sigOGNaam]);
 
+  // ── Dossier laden / aanmaken bij project-wissel ─────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    if (!projectId) return;
+    getOrCreateOpenDossier(projectId)
+      .then(d => { if (!cancelled) setDossier(d); })
+      .catch(err => console.warn('Dossier laden mislukt:', err));
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  // ── Lock-handler: dossier afsluiten (ONOMKEERBAAR) ──────────────────────────
+  const handleLockDossier = useCallback(async () => {
+    if (!dossier) {
+      setLockMsg('❌ Geen dossier gevonden voor dit project.');
+      return;
+    }
+    if (dossier.status === 'LOCKED') {
+      setLockMsg('🔒 Dossier is al afgesloten.');
+      return;
+    }
+    setLockLoading(true);
+    setLockMsg(null);
+    try {
+      // 1. Koppel alle nog niet-gekoppelde evidence aan dit dossier
+      const attached = await attachEvidenceToDossier(dossier.id, projectId);
+
+      // 2. Lock het dossier (server-side trigger maakt evidence read-only)
+      const result = await lockDossier(dossier.id, {
+        signedByPl: sigPLNaam || null,
+        signedByOg: sigOGNaam || null,
+      });
+
+      if (!result.success) {
+        setLockMsg(`❌ ${result.error ?? 'Afsluiten mislukt.'}`);
+        return;
+      }
+
+      // 3. UI bijwerken
+      setDossier({ ...dossier, status: 'LOCKED', lockedAt: new Date().toISOString() });
+      setLockMsg(`✅ Dossier afgesloten — ${attached} bewijs${attached === 1 ? '' : 'sen'} read-only gemaakt.`);
+      setTimeout(() => setLockConfirmModal(false), 1500);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setLockMsg(`❌ ${msg}`);
+    } finally {
+      setLockLoading(false);
+    }
+  }, [dossier, projectId, sigPLNaam, sigOGNaam]);
+
   const checkDone = checklist.filter(i => i.done).length;
 
   // ── Tab config ─────────────────────────────────────────────────────────────
@@ -672,6 +732,22 @@ export default function WerkvoorbereiderDashboard({
             >
               <Text style={[st.zipBtnText, { color: (sigPL || sigOG) ? '#059669' : theme.colors.textSecondary }]}>
                 {(sigPL || sigOG) ? t('header.signed') : t('header.sign')}
+              </Text>
+            </TouchableOpacity>
+
+            {/* 🔒 Dossier afsluiten knop (Sprint 3) */}
+            <TouchableOpacity
+              onPress={() => { setLockConfirmModal(true); setLockMsg(null); }}
+              disabled={isDossierLocked || !dossier}
+              style={[st.zipBtn, {
+                backgroundColor: isDossierLocked ? 'rgba(120,120,120,0.15)' : 'rgba(220,38,38,0.1)',
+                borderColor: isDossierLocked ? theme.colors.border : 'rgba(220,38,38,0.4)',
+                opacity: dossier ? 1 : 0.5,
+              }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[st.zipBtnText, { color: isDossierLocked ? theme.colors.textSecondary : '#dc2626' }]}>
+                {isDossierLocked ? '🔒 Afgesloten' : '🔒 Afsluiten'}
               </Text>
             </TouchableOpacity>
 
@@ -1204,6 +1280,78 @@ export default function WerkvoorbereiderDashboard({
             </View>
 
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* ── Dossier Lock bevestigings-modal (Sprint 3) ── */}
+      <Modal
+        visible={lockConfirmModal}
+        animationType="fade"
+        transparent
+        onRequestClose={() => !lockLoading && setLockConfirmModal(false)}
+      >
+        <View style={lockSt.backdrop}>
+          <View style={[lockSt.dialog, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <Text style={[lockSt.title, { color: theme.colors.textPrimary }]}>
+              🔒 Dossier afsluiten?
+            </Text>
+
+            <Text style={[lockSt.body, { color: theme.colors.textSecondary }]}>
+              Je staat op het punt het WKB-borgingsdossier af te sluiten. Dit is verplicht
+              vóór oplevering volgens de juridische bewaarplicht.
+            </Text>
+
+            <View style={[lockSt.warnBox, { backgroundColor: 'rgba(220,38,38,0.08)', borderColor: 'rgba(220,38,38,0.35)' }]}>
+              <Text style={[lockSt.warnTitle, { color: '#dc2626' }]}>⚠️ Onomkeerbaar</Text>
+              <Text style={[lockSt.warnBody, { color: '#b91c1c' }]}>
+                • Alle bewijzen worden read-only.{'\n'}
+                • Foto's, opmerkingen en statussen kunnen niet meer gewijzigd worden.{'\n'}
+                • Deze actie kan niet ongedaan gemaakt worden.
+              </Text>
+            </View>
+
+            {(sigPLNaam || sigOGNaam) ? (
+              <Text style={[lockSt.signed, { color: theme.colors.textSecondary }]}>
+                Ondertekend door: {sigPLNaam || '—'}{sigOGNaam ? ` & ${sigOGNaam}` : ''}
+              </Text>
+            ) : (
+              <Text style={[lockSt.signed, { color: '#d97706' }]}>
+                ℹ️ Tip: onderteken het dossier eerst (zie "{t('header.sign')}") voordat je afsluit.
+              </Text>
+            )}
+
+            {lockMsg ? (
+              <View style={[lockSt.msgBanner, {
+                backgroundColor: lockMsg.startsWith('✅') ? 'rgba(5,150,105,0.1)' : 'rgba(239,68,68,0.08)',
+                borderColor:     lockMsg.startsWith('✅') ? 'rgba(5,150,105,0.3)' : 'rgba(239,68,68,0.25)',
+              }]}>
+                <Text style={[lockSt.msgText, { color: lockMsg.startsWith('✅') ? '#059669' : '#ef4444' }]}>{lockMsg}</Text>
+              </View>
+            ) : null}
+
+            <View style={lockSt.buttonRow}>
+              <TouchableOpacity
+                onPress={() => setLockConfirmModal(false)}
+                disabled={lockLoading}
+                style={[lockSt.btn, lockSt.btnGhost, { borderColor: theme.colors.border }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[lockSt.btnText, { color: theme.colors.textSecondary }]}>Annuleren</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleLockDossier}
+                disabled={lockLoading || isDossierLocked}
+                style={[lockSt.btn, lockSt.btnDanger]}
+                activeOpacity={0.85}
+              >
+                {lockLoading
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={[lockSt.btnText, { color: '#fff' }]}>🔒 Definitief afsluiten</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
@@ -2196,4 +2344,38 @@ const emailSt = StyleSheet.create({
     borderRadius: 10, borderWidth: 1, padding: 12,
   },
   msgText: { fontSize: 13, fontWeight: '600' },
+});
+
+// ─── Dossier Lock dialog styles (Sprint 3) ───────────────────────────────────
+const lockSt = StyleSheet.create({
+  backdrop: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center', justifyContent: 'center', padding: 24,
+  },
+  dialog: {
+    width: '100%', maxWidth: 460, borderRadius: 16, borderWidth: 1,
+    padding: 22, gap: 14,
+  },
+  title: { fontSize: 18, fontWeight: '800' },
+  body: { fontSize: 13, lineHeight: 19 },
+  warnBox: {
+    borderRadius: 10, borderWidth: 1, padding: 12, gap: 6,
+  },
+  warnTitle: { fontSize: 13, fontWeight: '800' },
+  warnBody: { fontSize: 12, lineHeight: 18 },
+  signed: { fontSize: 12, fontStyle: 'italic' },
+  msgBanner: {
+    borderRadius: 10, borderWidth: 1, padding: 10,
+  },
+  msgText: { fontSize: 13, fontWeight: '700' },
+  buttonRow: {
+    flexDirection: 'row', gap: 10, marginTop: 4,
+  },
+  btn: {
+    flex: 1, height: 46, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  btnGhost: { borderWidth: 1, backgroundColor: 'transparent' },
+  btnDanger: { backgroundColor: '#dc2626' },
+  btnText: { fontSize: 14, fontWeight: '800' },
 });

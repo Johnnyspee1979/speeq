@@ -35,7 +35,6 @@ import {
   isNen1006TimerConfig,
   isNen1078TimerConfig,
 } from '../constants/Nen1006TimerProfiles';
-import WkbBimScanner from './WkbBimScanner';
 import Nen1006TimerOverlay from './Nen1006TimerOverlay';
 import Nen1078TimerOverlay from './Nen1078TimerOverlay';
 import {
@@ -309,8 +308,6 @@ export default function CameraView({
     binnenbuiten: selectedTask?.defaultBinnenBuiten ?? 'BINNEN',
     etage: selectedTask?.defaultEtage ?? '',
   }));
-  const [ifcGuid, setIfcGuid] = useState('');
-  const [scannerVisible, setScannerVisible] = useState(false);
   const [desktopPhoto, setDesktopPhoto] = useState<File | null>(null);
   const [mobileWebPhotoUri, setMobileWebPhotoUri] = useState<string | null>(null);
   const mobileWebInputRef = useRef<HTMLInputElement | null>(null);
@@ -964,7 +961,6 @@ export default function CameraView({
         exifHash,
         exifVerified: false,
         userId,
-        ifcGuid: ifcGuid.trim() || null,
         fieldNote: resolvedFieldNote,
         weatherLabel: weatherSnapshot?.label ?? null,
         stopMomentConfirmed: task.stopMoment ? stopMomentConfirmed : null,
@@ -1136,7 +1132,6 @@ export default function CameraView({
         exifHash,
         exifVerified,
         userId,
-        ifcGuid: ifcGuid.trim() || null,
         fieldNote: resolvedFieldNote,
         weatherLabel: weatherSnapshot?.label ?? null,
         stopMomentConfirmed: task.stopMoment ? stopMomentConfirmed : null,
@@ -1373,18 +1368,6 @@ export default function CameraView({
       'Foto, GPS, timestamp en hash zijn lokaal veilig vastgelegd.'
     );
   };
-
-  if (scannerVisible && !isWeb) {
-    return (
-      <WkbBimScanner
-        onGuidScanned={(scannedIfcGuid) => {
-          setIfcGuid(scannedIfcGuid);
-          setScannerVisible(false);
-        }}
-        onCancel={() => setScannerVisible(false)}
-      />
-    );
-  }
 
   if (isWeb) {
     // Na een succesvolle opslag → toon de deelkaart
@@ -2266,10 +2249,6 @@ export default function CameraView({
                     {formatCoordinate(liveLocation?.longitude ?? null)}
                   </Text>
                 </View>
-                <View style={styles.stampItem}>
-                  <Text style={styles.stampLabel}>IFC / BIM</Text>
-                  <Text style={styles.stampValue}>{ifcGuid || 'Niet gekoppeld'}</Text>
-                </View>
               </View>
               <Text style={styles.stampMeta}>
                 GPS nauwkeurigheid: {formatAccuracy(liveLocation?.accuracy ?? null)}
@@ -2347,32 +2326,6 @@ export default function CameraView({
                     </Text>
                   </TouchableOpacity>
                 ))}
-              </View>
-
-              <Text style={styles.formLabel}>BIM / IFC koppeling</Text>
-              <View style={styles.bimRow}>
-                <TouchableOpacity
-                  style={styles.bimScanButton}
-                  onPress={() => setScannerVisible(true)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={styles.bimScanButtonText}>
-                    {ifcGuid ? 'Scan opnieuw' : 'Scan BIM/IFC sticker'}
-                  </Text>
-                </TouchableOpacity>
-                {ifcGuid ? (
-                  <TouchableOpacity
-                    style={styles.bimClearButton}
-                    onPress={() => setIfcGuid('')}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.bimClearButtonText}>Wis</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-              <View style={styles.bimGuidCard}>
-                <Text style={styles.bimGuidLabel}>Gekoppeld 3D-element</Text>
-                <Text style={styles.bimGuidValue}>{ifcGuid || 'Nog geen IFC GUID gescand'}</Text>
               </View>
 
               <Text style={styles.formLabel}>Veldnotitie</Text>
@@ -2980,62 +2933,6 @@ const createStyles = (theme: { name?: string; colors: Record<string, string> }) 
     captureChecklistState: {
       color: '#AEBFD3',
       fontSize: 12,
-      fontWeight: '700',
-    },
-    bimRow: {
-      flexDirection: 'row',
-      gap: 10,
-      marginBottom: 10,
-    },
-    bimScanButton: {
-      flex: 1,
-      minHeight: 48,
-      borderRadius: 14,
-      backgroundColor: 'rgba(59, 130, 246, 0.22)',
-      borderWidth: 1,
-      borderColor: 'rgba(59, 130, 246, 0.35)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 14,
-    },
-    bimScanButtonText: {
-      color: '#D9E9FF',
-      fontSize: 14,
-      fontWeight: '800',
-    },
-    bimClearButton: {
-      minWidth: 72,
-      minHeight: 48,
-      borderRadius: 14,
-      backgroundColor: 'rgba(239, 68, 68, 0.18)',
-      borderWidth: 1,
-      borderColor: 'rgba(239, 68, 68, 0.26)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 12,
-    },
-    bimClearButtonText: {
-      color: '#FFD3D3',
-      fontSize: 13,
-      fontWeight: '800',
-    },
-    bimGuidCard: {
-      backgroundColor: 'rgba(15, 23, 42, 0.56)',
-      borderRadius: 14,
-      paddingHorizontal: 12,
-      paddingVertical: 11,
-      marginBottom: 12,
-    },
-    bimGuidLabel: {
-      color: '#8FA0B6',
-      fontSize: 11,
-      marginBottom: 4,
-      textTransform: 'uppercase',
-      letterSpacing: 0.4,
-    },
-    bimGuidValue: {
-      color: '#F8FAFC',
-      fontSize: 13,
       fontWeight: '700',
     },
     presetRow: {

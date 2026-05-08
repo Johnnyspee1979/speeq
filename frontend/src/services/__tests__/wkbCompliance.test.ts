@@ -22,7 +22,6 @@ const createEvidence = (
   exifHash: `hash-${inspectionPointId}`,
   exifVerified: true,
   userId: 'user-1',
-  ifcGuid: null,
   fieldNote: null,
   stopMomentConfirmed: true,
   measurementToolConfirmed: true,

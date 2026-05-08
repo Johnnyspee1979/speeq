@@ -12,7 +12,6 @@ export interface WkbEvidence {
   exifHash: string; // SHA-256 hash van de originele foto
   exifVerified: boolean; // Bevestigt dat EXIF metadata meegeleverd is
   userId?: string | null; // Herleidt wie het bewijs vastlegde
-  ifcGuid?: string | null; // Optionele BIM/IFC koppeling via QR-sticker
   fieldNote?: string | null; // Korte notitie van de vakman op de steiger
   weatherLabel?: string | null; // Automatisch opgehaald weer op het moment van de foto
   stopMomentConfirmed?: boolean | null; // Bevestigt dat het verplichte stopmoment is gerespecteerd

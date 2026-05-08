@@ -190,7 +190,6 @@ export default function EvidenceList() {
         item.aiStatus,
         item.aiNotes,
         item.fieldNote,
-        item.ifcGuid,
         item.exifHash,
         item.timestamp,
         item.locationVerified ? 'locatie bevestigd' : 'locatie open',
@@ -688,12 +687,6 @@ export default function EvidenceList() {
                 <Text style={styles.detailLabel}>SHA-256 hash</Text>
                 <Text style={styles.hashValue}>{item.exifHash}</Text>
               </View>
-              {item.ifcGuid ? (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>IFC GUID</Text>
-                  <Text style={styles.hashValue}>{item.ifcGuid}</Text>
-                </View>
-              ) : null}
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>AI status</Text>
                 <Text style={styles.detailValue}>
@@ -1193,12 +1186,6 @@ export default function EvidenceList() {
                           <Text style={styles.detailLabel}>SHA-256 hash</Text>
                           <Text style={styles.hashValue}>{selectedEvidence.exifHash}</Text>
                         </View>
-                        {selectedEvidence.ifcGuid ? (
-                          <View style={styles.detailRow}>
-                            <Text style={styles.detailLabel}>IFC GUID</Text>
-                            <Text style={styles.hashValue}>{selectedEvidence.ifcGuid}</Text>
-                          </View>
-                        ) : null}
                         {context.stopMoment ? (
                           <View style={styles.detailRow}>
                             <Text style={styles.detailLabel}>Stopmoment</Text>

@@ -83,7 +83,6 @@ type EvidenceRow = {
   exif_hash?: string | null;
   exif_verified?: number | null;
   user_id?: string | null;
-  ifc_guid?: string | null;
   field_note?: string | null;
   stop_moment_confirmed?: number | null;
   measurement_tool_confirmed?: number | null;
@@ -288,7 +287,6 @@ const normalizeEvidence = (evidence: StoredWkbEvidence): StoredWkbEvidence => ({
   exifHash: evidence.exifHash,
   exifVerified: Boolean(evidence.exifVerified),
   userId: evidence.userId ?? null,
-  ifcGuid: evidence.ifcGuid ?? null,
   fieldNote: evidence.fieldNote ?? null,
   stopMomentConfirmed:
     typeof evidence.stopMomentConfirmed === 'boolean'
@@ -573,7 +571,6 @@ const mapRowToEvidence = (row: EvidenceRow): StoredWkbEvidence =>
     exifHash: row.exif_hash ?? 'hash-niet-beschikbaar',
     exifVerified: Boolean(row.exif_verified),
     userId: row.user_id ?? null,
-    ifcGuid: row.ifc_guid ?? null,
     fieldNote: row.field_note ?? null,
     stopMomentConfirmed:
       typeof row.stop_moment_confirmed === 'number'
@@ -1115,7 +1112,6 @@ const nativeAdapter: DatabaseAdapter = {
           exif_hash TEXT,
           exif_verified INTEGER DEFAULT 0,
           user_id TEXT,
-          ifc_guid TEXT,
           field_note TEXT,
           stop_moment_confirmed INTEGER,
           measurement_tool_confirmed INTEGER,
@@ -1225,7 +1221,6 @@ const nativeAdapter: DatabaseAdapter = {
         'ALTER TABLE evidence ADD COLUMN exif_hash TEXT;',
         "ALTER TABLE evidence ADD COLUMN exif_verified INTEGER DEFAULT 0;",
         'ALTER TABLE evidence ADD COLUMN user_id TEXT;',
-        'ALTER TABLE evidence ADD COLUMN ifc_guid TEXT;',
         'ALTER TABLE evidence ADD COLUMN field_note TEXT;',
         'ALTER TABLE evidence ADD COLUMN stop_moment_confirmed INTEGER;',
         'ALTER TABLE evidence ADD COLUMN measurement_tool_confirmed INTEGER;',
@@ -1331,7 +1326,6 @@ const nativeAdapter: DatabaseAdapter = {
             exif_hash,
             exif_verified,
             user_id,
-            ifc_guid,
             field_note,
             stop_moment_confirmed,
             measurement_tool_confirmed,
@@ -1348,7 +1342,7 @@ const nativeAdapter: DatabaseAdapter = {
             floor_plan_id,
             pin_x,
             pin_y
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           evidence.id,
@@ -1365,7 +1359,6 @@ const nativeAdapter: DatabaseAdapter = {
           evidence.exifHash,
           evidence.exifVerified ? 1 : 0,
           evidence.userId ?? null,
-          evidence.ifcGuid ?? null,
           evidence.fieldNote ?? null,
           typeof evidence.stopMomentConfirmed === 'boolean'
             ? evidence.stopMomentConfirmed
@@ -1822,7 +1815,6 @@ export const insertEvidence = async (evidence: StoredWkbEvidence) =>
     exifHash: evidence.exifHash,
     exifVerified: evidence.exifVerified,
     userId: evidence.userId ?? null,
-    ifcGuid: evidence.ifcGuid ?? null,
     fieldNote: evidence.fieldNote ?? null,
     syncStatus: evidence.syncStatus,
   });

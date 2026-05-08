@@ -16,7 +16,6 @@ export default class Evidence extends Model {
   @text('exif_hash') exifHash?: string;
   @field('exif_verified') exifVerified?: boolean;
   @text('user_id') userId?: string | null;
-  @text('ifc_guid') ifcGuid?: string | null;
   @text('field_note') fieldNote?: string | null;
   @field('stop_moment_confirmed') stopMomentConfirmed?: boolean | null;
   @field('measurement_tool_confirmed') measurementToolConfirmed?: boolean | null;

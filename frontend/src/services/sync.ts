@@ -1,6 +1,5 @@
 import { File } from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
-import { BACKEND_URL } from '../config/app';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import {
   getConsumerDossierDocuments,
@@ -107,7 +106,6 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
           exif_hash: item.exifHash,
           exif_verified: item.exifVerified,
           user_id: item.userId ?? authUser?.id ?? null,
-          ifc_guid: item.ifcGuid ?? null,
           field_note: item.fieldNote ?? null,
           etage: item.etage ?? null,
           ruimtenummer: item.ruimtenummer ?? null,
@@ -242,30 +240,6 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
             await markEvidenceSyncedWithCloudId(item.rowId, insertedEvidence?.id ?? null);
           }
 
-        if (item.ifcGuid && insertedEvidence?.id) {
-          try {
-            const bimResponse = await fetch(`${BACKEND_URL}/api/integrations/bim/sync-bcf`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                evidenceId: String(insertedEvidence.id),
-                ifcGuid: item.ifcGuid,
-                projectId: item.projectId,
-              }),
-            });
-
-            if (!bimResponse.ok) {
-              console.error(
-                `❌ BIM/BCF sync faalde voor bewijs ${item.id}: HTTP ${bimResponse.status}`
-              );
-            }
-          } catch (bimError) {
-            console.error('❌ BIM/BCF sync request faalde:', bimError);
-          }
-        }
-
         console.log(`✅ Bewijs ID ${item.id ?? fileName} volledig geüpload!`);
         syncCount += 1;
       } catch (itemError) {
@@ -348,7 +322,6 @@ export const uploadEvidenceDirectly = async (
       exif_hash: evidence.exifHash,
       exif_verified: evidence.exifVerified,
       user_id: evidence.userId ?? authUser?.id ?? null,
-      ifc_guid: evidence.ifcGuid ?? null,
       field_note: evidence.fieldNote ?? null,
       etage: evidence.etage ?? null,
       ruimtenummer: evidence.ruimtenummer ?? null,
