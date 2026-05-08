@@ -24,6 +24,19 @@ import {
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeProvider';
 import { useWkbAuth } from '../hooks/useWkbAuth';
+import { getMyTaskAssignments, type TaskAssignment } from '../services/TaskAssignmentService';
+import EvidenceComments from '../components/EvidenceComments';
+import {
+  getProjectComments,
+  buildCommentCountMap,
+  type EvidenceComment,
+} from '../services/EvidenceCommentService';
+import PushNotificationBanner from '../components/PushNotificationBanner';
+import OfflineSyncBanner from '../components/OfflineSyncBanner';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import { subscribeToWebPush, isPushSupported, getPushPermission } from '../services/WebPushService';
+import { Platform } from 'react-native';
+import { useTranslation } from '../i18n';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -85,6 +98,7 @@ export default function VakmanWorkspace({
 }: VakmanWorkspaceProps) {
   const { theme } = useTheme();
   const { user } = useWkbAuth();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
 
@@ -92,6 +106,13 @@ export default function VakmanWorkspace({
   const [evidence, setEvidence]   = useState<EvidenceRow[]>([]);
   const [loading, setLoading]     = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [myAssignments, setMyAssignments] = useState<TaskAssignment[]>([]);
+  const [projectComments, setProjectComments] = useState<EvidenceComment[]>([]);
+
+  const commentCountMap = useMemo(
+    () => buildCommentCountMap(projectComments),
+    [projectComments]
+  );
 
   const fetchEvidence = useCallback(async () => {
     setLoading(true);
@@ -114,7 +135,45 @@ export default function VakmanWorkspace({
     finally { setLoading(false); }
   }, [projectId, user?.id]);
 
-  useEffect(() => { void fetchEvidence(); }, [fetchEvidence]);
+  useEffect(() => {
+    void fetchEvidence();
+    getProjectComments(projectId).then(setProjectComments).catch(() => {});
+  }, [fetchEvidence, projectId]);
+
+  useEffect(() => {
+    if (user?.id) {
+      getMyTaskAssignments(projectId, user.id).then(setMyAssignments).catch(() => {});
+    }
+  }, [projectId, user?.id]);
+
+  // ── Web Push: stil subscriben als toestemming al eerder is gegeven ─────────
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (!user?.id || !projectId) return;
+    if (!isPushSupported()) return;
+    if (getPushPermission() !== 'granted') return; // banner doet de eerste vraag
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.access_token) return;
+      subscribeToWebPush(projectId, user.id!, session.access_token).catch(() => {});
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, projectId]);
+
+  // ── Luister naar push-klik events vanuit de service worker ────────────────
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'PUSH_CLICK') {
+        // Navigeer naar 'alles' tab en refresh evidence
+        setActiveTab('alles');
+        void fetchEvidence();
+      }
+    };
+    navigator.serviceWorker?.addEventListener('message', handler);
+    return () => navigator.serviceWorker?.removeEventListener('message', handler);
+  }, [fetchEvidence]);
+
 
   // ── Metrics ────────────────────────────────────────────────────────────────
   const vandaagItems  = useMemo(() => evidence.filter(e => isToday(e.timestamp)), [evidence]);
@@ -149,13 +208,20 @@ export default function VakmanWorkspace({
   }, [evidence]);
 
   const TABS: { id: VakTab; label: string; badge?: number }[] = [
-    { id: 'vandaag', label: '📅 Vandaag',   badge: vandaagItems.length || undefined },
-    { id: 'taken',   label: '📋 Mijn taken', badge: afgekeurdCount > 0 ? afgekeurdCount : undefined },
-    { id: 'alles',   label: '🗂 Alle uploads' },
+    { id: 'vandaag', label: t('vak.vandaag'),    badge: vandaagItems.length || undefined },
+    { id: 'taken',   label: t('vak.mijn_taken'), badge: afgekeurdCount > 0 ? afgekeurdCount : undefined },
+    { id: 'alles',   label: t('vak.alle') },
   ];
 
   return (
     <View style={[st.root, { backgroundColor: theme.colors.background }]}>
+      {/* Offline sync banner — toont status bij geen internet */}
+      <OfflineSyncBanner theme={theme} />
+
+      {/* Push notificatie banner — vraagt toestemming als nog niet gegeven */}
+      {user?.id && Platform.OS === 'web' && (
+        <PushNotificationBanner projectId={projectId} userId={user.id} />
+      )}
       <ScrollView
         style={st.scroll}
         contentContainerStyle={[st.content, { padding: isDesktop ? 28 : 16, maxWidth: 800, alignSelf: 'center', width: '100%' }]}
@@ -169,7 +235,7 @@ export default function VakmanWorkspace({
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[st.userName, { color: theme.colors.textPrimary }]}>
-                {user?.companyName ?? 'Mijn werkruimte'}
+                {user?.companyName ?? t('vak.title')}
               </Text>
               <Text style={[st.projectName, { color: theme.colors.textSecondary }]}>
                 📍 {projectName}
@@ -178,17 +244,19 @@ export default function VakmanWorkspace({
             {/* Vandaag badge */}
             <View style={[st.todayBadge, { backgroundColor: theme.colors.accent + '18', borderColor: theme.colors.accent + '40' }]}>
               <Text style={[st.todayBadgeNum, { color: theme.colors.accent }]}>{vandaagItems.length}</Text>
-              <Text style={[st.todayBadgeLabel, { color: theme.colors.accent }]}>vandaag</Text>
+              <Text style={[st.todayBadgeLabel, { color: theme.colors.accent }]}>{t('dash.today').toLowerCase()}</Text>
             </View>
+            {/* Taalwisselaar */}
+            <LanguageSwitcher theme={theme} />
           </View>
 
           {/* Stats strip */}
           <View style={[st.statsStrip, { borderTopColor: theme.colors.border }]}>
             {[
-              { label: 'Totaal',    value: evidence.length,    color: theme.colors.textPrimary },
-              { label: 'Akkoord',   value: akkoordCount,       color: '#059669' },
-              { label: 'In review', value: reviewCount,        color: '#d97706' },
-              { label: 'Afgekeurd', value: afgekeurdCount,     color: afgekeurdCount > 0 ? '#ef4444' : theme.colors.textSecondary },
+              { label: t('vak.total'),    value: evidence.length,    color: theme.colors.textPrimary },
+              { label: t('vak.approved'), value: akkoordCount,       color: '#059669' },
+              { label: t('vak.in_review'),value: reviewCount,        color: '#d97706' },
+              { label: t('vak.rejected'), value: afgekeurdCount,     color: afgekeurdCount > 0 ? '#ef4444' : theme.colors.textSecondary },
             ].map(s => (
               <View key={s.label} style={st.statItem}>
                 <Text style={[st.statNum, { color: s.color }]}>{s.value}</Text>
@@ -203,14 +271,14 @@ export default function VakmanWorkspace({
               <Text style={{ fontSize: 18 }}>❗</Text>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: '#991b1b', fontWeight: '800', fontSize: 14 }}>
-                  {afgekeurdCount} foto{afgekeurdCount !== 1 ? "'s" : ''} afgekeurd
+                  {t('vak.rejected_alert', { n: afgekeurdCount, s: afgekeurdCount !== 1 ? "'s" : '' })}
                 </Text>
                 <Text style={{ color: '#b91c1c', fontSize: 12, marginTop: 2 }}>
-                  Bekijk de feedback en maak nieuwe foto's van deze punten.
+                  {t('vak.rejected_btn')}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setActiveTab('taken')}>
-                <Text style={{ color: '#ef4444', fontWeight: '700', fontSize: 13 }}>Bekijken →</Text>
+                <Text style={{ color: '#ef4444', fontWeight: '700', fontSize: 13 }}>{t('btn.approve')} →</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -249,18 +317,53 @@ export default function VakmanWorkspace({
             setExpandedId={setExpandedId}
             theme={theme}
             onRefresh={fetchEvidence}
+            commentCountMap={commentCountMap}
           />
         )}
 
         {/* ── Tab: Taken ── */}
         {activeTab === 'taken' && (
-          <TakenTab
-            takenMap={takenMap}
-            loading={loading}
-            theme={theme}
-            expandedId={expandedId}
-            setExpandedId={setExpandedId}
-          />
+          <>
+            {/* Toegewezen taken banner */}
+            {myAssignments.length > 0 && (
+              <View style={{
+                backgroundColor: theme.colors.accent + '15',
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 12,
+                borderWidth: 1.5,
+                borderColor: theme.colors.accent + '40',
+              }}>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: theme.colors.accent, marginBottom: 6 }}>
+                  📋 {myAssignments.length} taak{myAssignments.length !== 1 ? 'en' : ''} toegewezen door WV
+                </Text>
+                {myAssignments.map(a => (
+                  <View key={a.id} style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 8,
+                    paddingVertical: 4, borderTopWidth: 1, borderTopColor: theme.colors.border,
+                  }}>
+                    <Text style={{ fontSize: 12, color: theme.colors.textPrimary, flex: 1 }} numberOfLines={1}>
+                      {a.inspectionPointId}
+                    </Text>
+                    {a.priority === 'URGENT' && <Text style={{ fontSize: 10, color: '#ef4444', fontWeight: '700' }}>🚨 URGENT</Text>}
+                    {a.priority === 'HOOG'   && <Text style={{ fontSize: 10, color: '#f59e0b', fontWeight: '700' }}>⬆️ HOOG</Text>}
+                    {a.deadline && (
+                      <Text style={{ fontSize: 10, color: theme.colors.textSecondary }}>
+                        📅 {new Date(a.deadline).toLocaleDateString('nl-NL')}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+            <TakenTab
+              takenMap={takenMap}
+              loading={loading}
+              theme={theme}
+              expandedId={expandedId}
+              setExpandedId={setExpandedId}
+            />
+          </>
         )}
 
         {/* ── Tab: Alles ── */}
@@ -271,6 +374,7 @@ export default function VakmanWorkspace({
             expandedId={expandedId}
             setExpandedId={setExpandedId}
             theme={theme}
+            commentCountMap={commentCountMap}
           />
         )}
 
@@ -282,12 +386,13 @@ export default function VakmanWorkspace({
 // ─── Tab: Vandaag ─────────────────────────────────────────────────────────────
 
 function VandaagTab({
-  items, loading, expandedId, setExpandedId, theme, onRefresh,
+  items, loading, expandedId, setExpandedId, theme, onRefresh, commentCountMap,
 }: {
   items: EvidenceRow[]; loading: boolean;
   expandedId: string | null; setExpandedId: (id: string | null) => void;
   theme: { colors: Record<string, string> };
   onRefresh: () => void;
+  commentCountMap: Map<string, number>;
 }) {
   if (loading) return <View style={tabSt.centered}><ActivityIndicator size="large" color={theme.colors.accent} /></View>;
 
@@ -339,6 +444,7 @@ function VandaagTab({
           onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
           theme={theme}
           showPointId
+          commentCountMap={commentCountMap}
         />
       ))}
     </View>
@@ -459,11 +565,12 @@ function TakenTab({
 // ─── Tab: Alles ───────────────────────────────────────────────────────────────
 
 function AllesTab({
-  evidence, loading, expandedId, setExpandedId, theme,
+  evidence, loading, expandedId, setExpandedId, theme, commentCountMap,
 }: {
   evidence: EvidenceRow[]; loading: boolean;
   expandedId: string | null; setExpandedId: (id: string | null) => void;
   theme: { colors: Record<string, string> };
+  commentCountMap: Map<string, number>;
 }) {
   // Groepeer op datum
   const grouped = useMemo(() => {
@@ -507,6 +614,7 @@ function AllesTab({
               onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
               theme={theme}
               showPointId
+              commentCountMap={commentCountMap}
             />
           ))}
         </View>
@@ -518,13 +626,16 @@ function AllesTab({
 // ─── EvidenceCard ─────────────────────────────────────────────────────────────
 
 function EvidenceCard({
-  item, isOpen, onToggle, theme, showPointId,
+  item, isOpen, onToggle, theme, showPointId, commentCountMap,
 }: {
   item: EvidenceRow; isOpen: boolean; onToggle: () => void;
   theme: { colors: Record<string, string> }; showPointId?: boolean;
+  commentCountMap?: Map<string, number>;
 }) {
   const cfg = statusConfig(item.ai_status);
   const uri = item.media_uri ?? item.photo_uri ?? null;
+  const commentCount = commentCountMap?.get(item.id) ?? 0;
+  const needsRetake = item.ai_status === 'FAILED' || item.ai_status === 'NEEDS_REVIEW';
 
   return (
     <TouchableOpacity
@@ -564,7 +675,14 @@ function EvidenceCard({
               {cfg.icon} {cfg.label}
             </Text>
           </View>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: 11 }}>{isOpen ? '▲' : '▼'}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            {commentCount > 0 && (
+              <View style={[tabSt.commentBadge, { backgroundColor: 'rgba(37,99,235,0.1)', borderColor: 'rgba(37,99,235,0.25)' }]}>
+                <Text style={{ color: '#1d4ed8', fontSize: 9, fontWeight: '800' }}>💬 {commentCount}</Text>
+              </View>
+            )}
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 11 }}>{isOpen ? '▲' : '▼'}</Text>
+          </View>
         </View>
       </View>
 
@@ -574,14 +692,43 @@ function EvidenceCard({
           {uri && (
             <Image source={{ uri }} style={tabSt.thumbLarge} resizeMode="contain" />
           )}
-          {item.field_note ? (
-            <View style={[tabSt.feedbackBox, { backgroundColor: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.3)', marginTop: 10 }]}>
+
+          {/* Retake hint boven aan als afgekeurd */}
+          {item.ai_status === 'FAILED' && (
+            <View style={[tabSt.retakeHint, { backgroundColor: 'rgba(239,68,68,0.07)', borderColor: 'rgba(239,68,68,0.25)' }]}>
+              <Text style={{ fontSize: 20 }}>📸</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#991b1b', fontWeight: '800', fontSize: 13, marginBottom: 3 }}>
+                  Foto opnieuw maken
+                </Text>
+                <Text style={{ color: '#b91c1c', fontSize: 12, lineHeight: 18 }}>
+                  {item.field_note
+                    ? `Reden: "${item.field_note}" — open de Camera tab, kies hetzelfde borgingspunt en upload een nieuwe foto.`
+                    : 'Open de Camera tab, selecteer dit borgingspunt en maak een nieuwe, duidelijke foto.'}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {item.ai_status === 'NEEDS_REVIEW' && !item.field_note && (
+            <View style={[tabSt.retakeHint, { backgroundColor: 'rgba(245,158,11,0.07)', borderColor: 'rgba(245,158,11,0.25)' }]}>
+              <Text style={{ fontSize: 18 }}>⏳</Text>
+              <Text style={{ color: '#92400e', fontSize: 12, flex: 1, lineHeight: 18 }}>
+                Wacht op beoordeling door de werkvoorbereider. Je ontvangt feedback als er actie nodig is.
+              </Text>
+            </View>
+          )}
+
+          {/* Feedback van WV */}
+          {item.field_note && item.ai_status !== 'FAILED' ? (
+            <View style={[tabSt.feedbackBox, { backgroundColor: 'rgba(245,158,11,0.1)', borderColor: 'rgba(245,158,11,0.3)' }]}>
               <Text style={{ color: '#92400e', fontWeight: '800', fontSize: 12, marginBottom: 4 }}>
                 💬 Feedback werkvoorbereider
               </Text>
               <Text style={{ color: '#78350f', fontSize: 13, lineHeight: 20 }}>{item.field_note}</Text>
             </View>
           ) : null}
+
           {item.ai_notes ? (
             <View style={[tabSt.feedbackBox, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}>
               <Text style={{ color: theme.colors.textSecondary, fontWeight: '800', fontSize: 12, marginBottom: 4 }}>
@@ -590,17 +737,31 @@ function EvidenceCard({
               <Text style={{ color: theme.colors.textSecondary, fontSize: 13, lineHeight: 20 }}>{item.ai_notes}</Text>
             </View>
           ) : null}
+
           {item.gps_lat != null && (
             <Text style={{ color: theme.colors.textSecondary, fontSize: 11, marginTop: 4 }}>
               📍 {item.gps_lat.toFixed(4)}, {item.gps_lng?.toFixed(4)}
             </Text>
           )}
-          {item.ai_status === 'FAILED' && (
-            <View style={[tabSt.actionHint, { backgroundColor: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.2)', marginTop: 8 }]}>
-              <Text style={{ color: '#991b1b', fontWeight: '700', fontSize: 13 }}>
-                ↑ Maak een nieuwe foto via de Camera tab voor dit borgingspunt.
-              </Text>
-            </View>
+
+          {/* Opmerkingen-thread (zichtbaar voor vakman bij FAILED/NEEDS_REVIEW) */}
+          {needsRetake && (
+            <EvidenceComments
+              evidenceId={item.id}
+              projectId={item.project_id}
+              role="VAKMAN"
+              readOnly={false}
+              theme={{
+                colors: {
+                  background: theme.colors.background,
+                  surface: theme.colors.surface,
+                  border: theme.colors.border,
+                  textPrimary: theme.colors.textPrimary,
+                  textSecondary: theme.colors.textSecondary,
+                  accent: theme.colors.accent,
+                },
+              }}
+            />
           )}
         </View>
       )}
@@ -677,4 +838,7 @@ const tabSt = StyleSheet.create({
 
   statusPill: { paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, borderWidth: 1 },
   statusPillText: { fontSize: 11, fontWeight: '700' },
+
+  commentBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1 },
+  retakeHint: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 1, borderRadius: 10, padding: 12 },
 });

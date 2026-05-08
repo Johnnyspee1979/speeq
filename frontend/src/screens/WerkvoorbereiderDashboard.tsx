@@ -24,6 +24,11 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import SignaturePad from '../components/SignaturePad';
+import FloorPlanViewer from '../components/FloorPlanViewer';
+import QRStickerSheet from '../components/QRStickerSheet';
+import TaskAssignmentPanel from '../components/TaskAssignmentPanel';
+import RapportagePanel from '../components/RapportagePanel';
+import type { StoredWkbEvidence } from '../types/Evidence';
 import {
   uploadDossierHtml,
   exportDossierAsPdf,
@@ -32,6 +37,26 @@ import {
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeProvider';
 import EvidenceMapView from '../components/EvidenceMapView';
+import { ProjectProgressBlock } from '../components/ProgressChart';
+import { evidenceToCsv, downloadCsv, makeExportFilename, type ExportEvidenceRow } from '../services/ExportService';
+import NotificatiePanel from '../components/NotificatiePanel';
+import EvidenceComments from '../components/EvidenceComments';
+import { shareViaWhatsApp } from '../services/ShareService';
+import {
+  getProjectComments,
+  buildCommentCountMap,
+  type EvidenceComment,
+} from '../services/EvidenceCommentService';
+import PWAInstallBanner from '../components/PWAInstallBanner';
+import OfflineSyncBanner from '../components/OfflineSyncBanner';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useTranslation } from '../i18n';
+import {
+  generateKeuringsrapportHtml,
+  printKeuringsrapport,
+  type KeuringsrapportEvidence,
+} from '../services/KeuringsrapportService';
 import { exportProjectAsZip, type ZipExportProgress } from '../services/ZipExportService';
 import {
   isFolderSyncSupported,
@@ -54,7 +79,7 @@ import {
 
 type AiStatus = 'PASSED' | 'FAILED' | 'NEEDS_REVIEW' | 'PENDING' | null;
 type FilterStatus = 'alle' | 'review' | 'akkoord' | 'afgekeurd' | 'pending';
-type WvTab = 'dashboard' | 'bewijs' | 'checklist' | 'kaart';
+type WvTab = 'dashboard' | 'bewijs' | 'checklist' | 'kaart' | 'tekening' | 'stickers' | 'taken' | 'rapportage';
 
 interface EvidenceRow {
   id: string;
@@ -70,6 +95,9 @@ interface EvidenceRow {
   gps_lat: number | null;
   gps_lng: number | null;
   field_note: string | null;
+  floor_plan_id: string | null;
+  pin_x: number | null;
+  pin_y: number | null;
 }
 
 interface ChecklistItem {
@@ -108,6 +136,12 @@ function isToday(ts: string | null): boolean {
   catch { return false; }
 }
 
+function isStale(ts: string | null, status: AiStatus): boolean {
+  if (status !== 'NEEDS_REVIEW' || !ts) return false;
+  try { return Date.now() - new Date(ts).getTime() > 24 * 60 * 60 * 1000; }
+  catch { return false; }
+}
+
 const DEFAULT_CHECKLIST: ChecklistItem[] = [
   { id: '1', label: 'Dagelijkse ronde inspectiepunten', done: false },
   { id: '2', label: 'Nieuwe bewijsstukken gecontroleerd', done: false },
@@ -141,6 +175,7 @@ export default function WerkvoorbereiderDashboard({
   projectName = 'Project',
 }: WerkvoorbereiderDashboardProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
   const isDark = theme.name === 'dark';
   const { width, height } = useWindowDimensions();
   const isDesktop = width >= 768;
@@ -175,6 +210,16 @@ export default function WerkvoorbereiderDashboard({
   const [sigOGNaam, setSigOGNaam]           = useState('');
   const [pdfLoading, setPdfLoading]         = useState(false);
 
+  // ── Opmerkingen ──────────────────────────────────────────────────────────────
+  const [projectComments, setProjectComments] = useState<EvidenceComment[]>([]);
+  const commentCountMap = useMemo(
+    () => buildCommentCountMap(projectComments),
+    [projectComments]
+  );
+  const reloadComments = useCallback(() => {
+    getProjectComments(projectId).then(setProjectComments).catch(() => {});
+  }, [projectId]);
+
   // ── PC-map sync state ─────────────────────────────────────────────────────────
   const [linkedFolder, setLinkedFolder]     = useState<string | null>(null);
   const [folderSyncing, setFolderSyncing]   = useState(false);
@@ -203,7 +248,7 @@ export default function WerkvoorbereiderDashboard({
     try {
       const { data } = await supabase
         .from('evidence')
-        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, user_id, gps_lat, gps_lng, field_note')
+        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, user_id, gps_lat, gps_lng, field_note, floor_plan_id, pin_x, pin_y')
         .eq('project_id', projectId)
         .order('timestamp', { ascending: false })
         .limit(300);
@@ -232,6 +277,7 @@ export default function WerkvoorbereiderDashboard({
 
   useEffect(() => {
     void fetchEvidence();
+    reloadComments();
     // Laad gekoppelde mapnaam + OneDrive account
     getLinkedFolderName(projectId).then(name => setLinkedFolder(name)).catch(() => {});
     if (oneDriveReady) {
@@ -255,7 +301,7 @@ export default function WerkvoorbereiderDashboard({
       })
       .subscribe(() => setIsLive(true));
     return () => { supabase.removeChannel(channel); };
-  }, [fetchEvidence, projectId, projectName, showToast, runFolderSync]);
+  }, [fetchEvidence, projectId, projectName, showToast, runFolderSync, reloadComments]);
 
   // Reset checklist when project changes
   useEffect(() => {
@@ -270,6 +316,76 @@ export default function WerkvoorbereiderDashboard({
     const vandaag   = evidence.filter(e => isToday(e.timestamp)).length;
     return { total: evidence.length, akkoord, review, afgekeurd, vandaag };
   }, [evidence]);
+
+  // ── 7-daagse upload trend ─────────────────────────────────────────────────
+  const trendDays = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() - (6 - i));
+      const label = d.toLocaleDateString('nl-NL', { weekday: 'short' });
+      const count = evidence.filter(e => {
+        if (!e.timestamp) return false;
+        try { return new Date(e.timestamp).toDateString() === d.toDateString(); }
+        catch { return false; }
+      }).length;
+      return { day: label, count };
+    });
+  }, [evidence]);
+
+  // ── Categorie stats (borgingspunt-prefix als groep) ───────────────────────
+  const categoryStats = useMemo(() => {
+    const map = new Map<string, { passed: number; total: number }>();
+    for (const e of evidence) {
+      const raw = e.inspection_point_id ?? 'Overig';
+      // Groep = tekens vóór eerste koppelteken of spatie (bijv. "S" uit "S-01")
+      const cat = raw.split(/[-\s]/)[0] ?? raw;
+      if (!map.has(cat)) map.set(cat, { passed: 0, total: 0 });
+      const s = map.get(cat)!;
+      s.total++;
+      if (toBucket(e.ai_status) === 'akkoord') s.passed++;
+    }
+    return Array.from(map.entries())
+      .map(([label, { passed, total }]) => ({ label, passed, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 8);
+  }, [evidence]);
+
+  // ── Vakman statistieken ───────────────────────────────────────────────────
+  const vakmanStats = useMemo(() => {
+    const map = new Map<string, { total: number; akkoord: number; vandaag: number }>();
+    for (const e of evidence) {
+      const uid = e.user_id ?? 'onbekend';
+      if (!map.has(uid)) map.set(uid, { total: 0, akkoord: 0, vandaag: 0 });
+      const s = map.get(uid)!;
+      s.total++;
+      if (toBucket(e.ai_status) === 'akkoord') s.akkoord++;
+      if (isToday(e.timestamp)) s.vandaag++;
+    }
+    return Array.from(map.entries())
+      .map(([userId, stats]) => ({
+        userId,
+        label: userId.length > 20 ? userId.slice(0, 8) + '…' + userId.slice(-4) : userId,
+        ...stats,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 6);
+  }, [evidence]);
+
+  // ── Batch approve / reject ────────────────────────────────────────────────
+  const batchApprove = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return;
+    setEvidence(prev => prev.map(e => ids.includes(e.id) ? { ...e, ai_status: 'PASSED' as AiStatus } : e));
+    try { await supabase.from('evidence').update({ ai_status: 'PASSED' }).in('id', ids); }
+    catch { void fetchEvidence(); }
+  }, [fetchEvidence]);
+
+  const batchReject = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return;
+    setEvidence(prev => prev.map(e => ids.includes(e.id) ? { ...e, ai_status: 'FAILED' as AiStatus } : e));
+    try { await supabase.from('evidence').update({ ai_status: 'FAILED' }).in('id', ids); }
+    catch { void fetchEvidence(); }
+  }, [fetchEvidence]);
 
   // ── Borgingspunt grid ──────────────────────────────────────────────────────
   const borgingspuntGrid = useMemo(() => {
@@ -305,6 +421,19 @@ export default function WerkvoorbereiderDashboard({
       await supabase.from('evidence').update({ ai_status: status }).eq('id', id);
     } catch {
       // Revert on error
+      void fetchEvidence();
+    }
+  }, [fetchEvidence]);
+
+  // ── Bewerken (keyuser / projectleider / WV / admin) ─────────────────────────
+  const editEvidence = useCallback(async (
+    id: string,
+    updates: { field_note?: string; inspection_point_id?: string; ai_status?: string }
+  ) => {
+    setEvidence(prev => prev.map(e => e.id === id ? { ...e, ...updates, ai_status: (updates.ai_status as EvidenceRow['ai_status']) ?? e.ai_status } : e));
+    try {
+      await supabase.from('evidence').update(updates).eq('id', id);
+    } catch {
       void fetchEvidence();
     }
   }, [fetchEvidence]);
@@ -432,18 +561,57 @@ export default function WerkvoorbereiderDashboard({
     }
   }, [evidence, projectId, projectName, sigPL, sigPLNaam, sigOG, sigOGNaam]);
 
+  // ── Keuringsrapport genereren ─────────────────────────────────────────────
+  const handleKeuringsrapport = useCallback(() => {
+    const ev: KeuringsrapportEvidence[] = evidence.map(e => ({
+      id: e.id,
+      inspectionPointId: e.inspection_point_id,
+      mediaUri: e.media_uri ?? e.photo_uri ?? null,
+      timestamp: e.timestamp,
+      aiStatus: e.ai_status,
+      aiNotes: e.ai_notes,
+      fieldNote: e.field_note,
+      userId: e.user_id,
+      latitude: e.gps_lat,
+      longitude: e.gps_lng,
+    }));
+    const html = generateKeuringsrapportHtml({
+      projectName,
+      projectId,
+      evidence: ev,
+      signatures: {
+        kwaliteitsborger: sigPL ?? null,
+        uitvoerder: sigOG ?? null,
+        datum: new Intl.DateTimeFormat('nl-NL', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date()),
+      },
+      kwaliteitsborger: sigPLNaam || undefined,
+      uitvoerder: sigOGNaam || undefined,
+    });
+    printKeuringsrapport(html);
+  }, [evidence, projectId, projectName, sigPL, sigOG, sigPLNaam, sigOGNaam]);
+
   const checkDone = checklist.filter(i => i.done).length;
 
   // ── Tab config ─────────────────────────────────────────────────────────────
   const TABS: { id: WvTab; label: string; badge?: number }[] = [
-    { id: 'dashboard', label: '📊 Dashboard' },
-    { id: 'bewijs',    label: '📸 Bewijs', badge: metrics.review > 0 ? metrics.review : undefined },
-    { id: 'checklist', label: '✅ Checklist', badge: checklist.filter(i => !i.done).length || undefined },
-    { id: 'kaart',     label: '🗺️ GPS Kaart' },
+    { id: 'dashboard', label: `📊 ${t('nav.dashboard')}` },
+    { id: 'bewijs',    label: `📸 ${t('nav.bewijs')}`,    badge: metrics.review > 0 ? metrics.review : undefined },
+    { id: 'checklist', label: `✅ ${t('nav.checklist')}`, badge: checklist.filter(i => !i.done).length || undefined },
+    { id: 'kaart',     label: `🗺️ ${t('nav.kaart')}` },
+    { id: 'tekening',  label: `📐 ${t('nav.tekening')}` },
+    { id: 'stickers',   label: `🏷️ ${t('nav.stickers')}` },
+    { id: 'taken',      label: `📋 ${t('nav.taken')}` },
+    { id: 'rapportage', label: `📑 ${t('nav.rapportage')}` },
   ];
 
   return (
     <View style={[st.root, { backgroundColor: theme.colors.background }]}>
+
+      {/* ── Offline sync banner ── */}
+      <OfflineSyncBanner theme={theme} />
+
+      {/* ── PWA installatie banner ── */}
+      <PWAInstallBanner theme={theme} />
 
       {/* ── Toast ── */}
       {toastMsg ? (
@@ -457,7 +625,7 @@ export default function WerkvoorbereiderDashboard({
 
       <ScrollView
         style={st.scroll}
-        contentContainerStyle={[st.content, { padding: activeTab === 'kaart' ? 0 : isDesktop ? 28 : 16, maxWidth: activeTab === 'kaart' ? undefined : 1000, alignSelf: activeTab === 'kaart' ? undefined : 'center', width: '100%' }]}
+        contentContainerStyle={[st.content, { padding: (['kaart', 'tekening', 'stickers', 'taken'] as WvTab[]).includes(activeTab) ? 0 : isDesktop ? 28 : 16, maxWidth: (['kaart', 'tekening', 'stickers', 'taken'] as WvTab[]).includes(activeTab) ? undefined : 1000, alignSelf: (['kaart', 'tekening', 'stickers', 'taken'] as WvTab[]).includes(activeTab) ? undefined : 'center', width: '100%' }]}
         showsVerticalScrollIndicator={false}
         scrollEnabled={activeTab !== 'kaart'}
       >
@@ -473,13 +641,19 @@ export default function WerkvoorbereiderDashboard({
                 Werkvoorbereider / Uitvoerder
               </Text>
             </View>
+            {/* Notificatie centrum */}
+            <NotificatiePanel projectId={projectId} theme={theme} />
+
             {/* LIVE pill */}
             <View style={[st.livePill, { backgroundColor: isLive ? 'rgba(5,150,105,0.12)' : theme.colors.border }]}>
               <View style={[st.liveDot, { backgroundColor: isLive ? '#059669' : theme.colors.textSecondary }]} />
               <Text style={[st.liveText, { color: isLive ? '#059669' : theme.colors.textSecondary }]}>
-                {isLive ? `LIVE${lastUpdate ? `  ·  ${lastUpdate}` : ''}` : 'Verbinden…'}
+                {isLive ? `${t('vak.live')}${lastUpdate ? `  ·  ${lastUpdate}` : ''}` : t('vak.connecting')}
               </Text>
             </View>
+
+            {/* Taalwisselaar */}
+            <LanguageSwitcher theme={theme} />
 
             {/* 📧 Mail dossier knop */}
             <TouchableOpacity
@@ -487,7 +661,7 @@ export default function WerkvoorbereiderDashboard({
               style={[st.zipBtn, { backgroundColor: 'rgba(37,99,235,0.1)', borderColor: 'rgba(37,99,235,0.35)' }]}
               activeOpacity={0.7}
             >
-              <Text style={[st.zipBtnText, { color: '#2563eb' }]}>📧 Mailen</Text>
+              <Text style={[st.zipBtnText, { color: '#2563eb' }]}>{t('header.mail')}</Text>
             </TouchableOpacity>
 
             {/* ✍️ Ondertekenen knop */}
@@ -497,8 +671,17 @@ export default function WerkvoorbereiderDashboard({
               activeOpacity={0.7}
             >
               <Text style={[st.zipBtnText, { color: (sigPL || sigOG) ? '#059669' : theme.colors.textSecondary }]}>
-                {(sigPL || sigOG) ? '✍️ Getekend' : '✍️ Tekenen'}
+                {(sigPL || sigOG) ? t('header.signed') : t('header.sign')}
               </Text>
+            </TouchableOpacity>
+
+            {/* Keuringsrapport knop */}
+            <TouchableOpacity
+              onPress={handleKeuringsrapport}
+              style={[st.zipBtn, { backgroundColor: 'rgba(124,58,237,0.1)', borderColor: 'rgba(124,58,237,0.35)' }]}
+              activeOpacity={0.7}
+            >
+              <Text style={[st.zipBtnText, { color: '#7c3aed' }]}>{t('header.rapport')}</Text>
             </TouchableOpacity>
 
             {/* ZIP download knop */}
@@ -638,11 +821,11 @@ export default function WerkvoorbereiderDashboard({
           {/* Stats strip */}
           <View style={[st.statsStrip, { borderTopColor: theme.colors.border }]}>
             {[
-              { label: "Foto's", value: metrics.total,    color: theme.colors.textPrimary },
-              { label: 'Vandaag',    value: metrics.vandaag,  color: theme.colors.accent },
-              { label: 'Akkoord',    value: metrics.akkoord,  color: '#059669' },
-              { label: 'Review',     value: metrics.review,   color: metrics.review > 0 ? '#d97706' : theme.colors.textSecondary },
-              { label: 'Afgekeurd',  value: metrics.afgekeurd,color: metrics.afgekeurd > 0 ? '#ef4444' : theme.colors.textSecondary },
+              { label: t('dash.total'),    value: metrics.total,    color: theme.colors.textPrimary },
+              { label: t('dash.today'),    value: metrics.vandaag,  color: theme.colors.accent },
+              { label: t('dash.approved'), value: metrics.akkoord,  color: '#059669' },
+              { label: t('dash.review'),   value: metrics.review,   color: metrics.review > 0 ? '#d97706' : theme.colors.textSecondary },
+              { label: t('dash.rejected'), value: metrics.afgekeurd,color: metrics.afgekeurd > 0 ? '#ef4444' : theme.colors.textSecondary },
             ].map(s => (
               <View key={s.label} style={st.statItem}>
                 <Text style={[st.statNum, { color: s.color }]}>{s.value}</Text>
@@ -736,12 +919,23 @@ export default function WerkvoorbereiderDashboard({
         )}
 
         {/* ── Tabs ── */}
-        <View style={[st.tabRow, { borderBottomColor: theme.colors.border }]}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={[st.tabRow, { borderBottomColor: theme.colors.border }]}
+          contentContainerStyle={{ flexDirection: 'row' }}
+        >
           {TABS.map(tab => (
             <TouchableOpacity
               key={tab.id}
               style={[st.tabItem, activeTab === tab.id && st.tabItemActive]}
-              onPress={() => setActiveTab(tab.id)}
+              onPress={() => {
+                // Refresh evidence wanneer de gebruiker terugkomt naar bewijs/dashboard
+                if (tab.id === 'bewijs' || tab.id === 'dashboard') {
+                  void fetchEvidence();
+                }
+                setActiveTab(tab.id);
+              }}
               activeOpacity={0.7}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -757,7 +951,7 @@ export default function WerkvoorbereiderDashboard({
               {activeTab === tab.id && <View style={[st.tabUnderline, { backgroundColor: theme.colors.accent }]} />}
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
         {/* ── Tab: Dashboard ── */}
         {activeTab === 'dashboard' && (
@@ -767,6 +961,9 @@ export default function WerkvoorbereiderDashboard({
             metrics={metrics}
             theme={theme}
             onGotoReview={() => { setActiveTab('bewijs'); setFilter('review'); }}
+            categoryStats={categoryStats}
+            trendDays={trendDays}
+            vakmanStats={vakmanStats}
           />
         )}
 
@@ -774,6 +971,7 @@ export default function WerkvoorbereiderDashboard({
         {activeTab === 'bewijs' && (
           <BewijsTab
             evidence={filtered}
+            allEvidence={evidence}
             filter={filter}
             setFilter={setFilter}
             metrics={metrics}
@@ -782,6 +980,11 @@ export default function WerkvoorbereiderDashboard({
             isDark={isDark}
             onApprove={(id) => setStatus(id, 'PASSED')}
             onReject={(id) => setStatus(id, 'FAILED')}
+            onBulkApprove={batchApprove}
+            onBulkReject={batchReject}
+            onEdit={editEvidence}
+            projectId={projectId}
+            commentCountMap={commentCountMap}
           />
         )}
 
@@ -805,6 +1008,63 @@ export default function WerkvoorbereiderDashboard({
           <View style={{ height: Math.max(height - 180, 500) }}>
             <EvidenceMapView />
           </View>
+        )}
+
+        {/* ── Tab: Bouwtekening ── */}
+        {activeTab === 'tekening' && (() => {
+          const evidenceForViewer: StoredWkbEvidence[] = evidence.map(e => ({
+            id: e.id,
+            projectId: e.project_id ?? '',
+            inspectionPointId: e.inspection_point_id ?? '',
+            mediaUri: e.media_uri ?? e.photo_uri ?? '',
+            timestamp: e.timestamp ?? new Date().toISOString(),
+            latitude: e.gps_lat ?? 0,
+            longitude: e.gps_lng ?? 0,
+            gpsAccuracy: null,
+            exifHash: '',
+            exifVerified: false,
+            fieldNote: e.field_note ?? null,
+            syncStatus: 'SYNCED' as const,
+            aiStatus: (e.ai_status ?? 'PENDING') as StoredWkbEvidence['aiStatus'],
+            aiNotes: e.ai_notes ?? null,
+            floorPlanId: e.floor_plan_id ?? null,
+            pinX: e.pin_x ?? null,
+            pinY: e.pin_y ?? null,
+          }));
+          return (
+            <FloorPlanViewer
+              projectId={projectId ?? ''}
+              evidence={evidenceForViewer}
+              theme={theme}
+            />
+          );
+        })()}
+
+        {/* ── Tab: QR-stickers ── */}
+        {activeTab === 'stickers' && (
+          <QRStickerSheet
+            projectId={projectId ?? ''}
+            projectName={projectName ?? 'Project'}
+            theme={theme}
+          />
+        )}
+
+        {/* ── Tab: Taakverdeling ── */}
+        {activeTab === 'taken' && (
+          <TaskAssignmentPanel
+            projectId={projectId ?? ''}
+            theme={theme}
+          />
+        )}
+
+        {/* ── Tab: Rapportage ── */}
+        {activeTab === 'rapportage' && (
+          <RapportagePanel
+            projectId={projectId ?? ''}
+            projectName={projectName ?? 'Project'}
+            evidence={evidence}
+            theme={theme}
+          />
         )}
 
       </ScrollView>
@@ -959,9 +1219,12 @@ interface DashboardTabProps {
   metrics: { total: number; akkoord: number; review: number; afgekeurd: number; vandaag: number };
   theme: { colors: Record<string, string> };
   onGotoReview: () => void;
+  categoryStats: { label: string; passed: number; total: number }[];
+  trendDays: { day: string; count: number }[];
+  vakmanStats: { userId: string; label: string; total: number; akkoord: number; vandaag: number }[];
 }
 
-function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview }: DashboardTabProps) {
+function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview, categoryStats, trendDays, vakmanStats }: DashboardTabProps) {
   if (loading) {
     return <View style={tabSt.centered}><ActivityIndicator size="large" color={theme.colors.accent} /></View>;
   }
@@ -1000,6 +1263,19 @@ function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview 
         </TouchableOpacity>
       )}
 
+      {/* 📊 Voortgangsgrafiek */}
+      <ProjectProgressBlock
+        total={metrics.total}
+        passed={metrics.akkoord}
+        review={metrics.review}
+        failed={metrics.afgekeurd}
+        pending={metrics.total - metrics.akkoord - metrics.review - metrics.afgekeurd}
+        vandaag={metrics.vandaag}
+        categoryStats={categoryStats}
+        trendDays={trendDays}
+        theme={theme as Parameters<typeof ProjectProgressBlock>[0]['theme']}
+      />
+
       <Text style={[tabSt.sectionTitle, { color: theme.colors.textSecondary }]}>
         BORGINGSPUNTEN VOORTGANG
       </Text>
@@ -1016,6 +1292,52 @@ function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview 
           );
         })}
       </View>
+
+      {/* Vakman statistieken */}
+      {vakmanStats.length > 0 && (
+        <>
+          <Text style={[tabSt.sectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
+            VAKMENSEN — UPLOADS
+          </Text>
+          <View style={[tabSt.vakmanCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            {vakmanStats.map((v, i) => {
+              const pct = v.total > 0 ? Math.round((v.akkoord / v.total) * 100) : 0;
+              const maxTotal = vakmanStats[0].total;
+              const barW = maxTotal > 0 ? (v.total / maxTotal) * 100 : 0;
+              return (
+                <View key={v.userId} style={[tabSt.vakmanRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.colors.border }]}>
+                  <View style={[tabSt.vakmanRank, { backgroundColor: i === 0 ? theme.colors.accent + '20' : theme.colors.border + '40' }]}>
+                    <Text style={{ fontSize: 11, fontWeight: '900', color: i === 0 ? theme.colors.accent : theme.colors.textSecondary }}>
+                      {i + 1}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: theme.colors.textPrimary }} numberOfLines={1}>
+                        {v.label}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: theme.colors.textSecondary }}>
+                        {v.total} foto{v.total !== 1 ? "'s" : ''}{v.vandaag > 0 ? ` · ${v.vandaag} vandaag` : ''}
+                      </Text>
+                    </View>
+                    <View style={[tabSt.vakmanBar, { backgroundColor: theme.colors.border }]}>
+                      <View style={[tabSt.vakmanBarFill, { width: `${barW}%` as `${number}%`, backgroundColor: theme.colors.accent + '50' }]} />
+                      <View style={[tabSt.vakmanBarFill, {
+                        position: 'absolute', left: 0,
+                        width: `${(v.akkoord / (vakmanStats[0].total || 1)) * 100}%` as `${number}%`,
+                        backgroundColor: '#059669',
+                      }]} />
+                    </View>
+                    <Text style={{ fontSize: 10, color: pct >= 80 ? '#059669' : pct >= 40 ? '#d97706' : theme.colors.textSecondary, fontWeight: '700' }}>
+                      {pct}% akkoord
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -1033,6 +1355,7 @@ function bucketConfig(bucket: string) {
 
 interface BewijsTabProps {
   evidence: EvidenceRow[];
+  allEvidence: EvidenceRow[];
   filter: FilterStatus;
   setFilter: (f: FilterStatus) => void;
   metrics: { total: number; akkoord: number; review: number; afgekeurd: number; vandaag: number };
@@ -1041,6 +1364,11 @@ interface BewijsTabProps {
   isDark: boolean;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+  onBulkApprove: (ids: string[]) => Promise<void>;
+  onBulkReject: (ids: string[]) => Promise<void>;
+  onEdit: (id: string, updates: { field_note?: string; inspection_point_id?: string; ai_status?: string }) => void;
+  projectId: string;
+  commentCountMap: Map<string, number>;
 }
 
 const FILTERS: { id: FilterStatus; label: string }[] = [
@@ -1051,11 +1379,231 @@ const FILTERS: { id: FilterStatus; label: string }[] = [
   { id: 'pending',   label: '○ Pending' },
 ];
 
-function BewijsTab({ evidence, filter, setFilter, metrics, loading, theme, isDark, onApprove, onReject }: BewijsTabProps) {
+function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading, theme, isDark, onApprove, onReject, onBulkApprove, onBulkReject, onEdit, projectId, commentCountMap }: BewijsTabProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [commentsOpenId, setCommentsOpenId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFieldNote, setEditFieldNote] = useState('');
+  const [editPointId, setEditPointId] = useState('');
+  const [editStatus, setEditStatus] = useState<string>('');
+
+  // Advanced search filter
+  const displayed = useMemo(() => {
+    if (!searchQuery && !dateFrom && !dateTo) return evidence;
+    const q = searchQuery.toLowerCase();
+    return evidence.filter(e => {
+      if (q && !e.inspection_point_id?.toLowerCase().includes(q) &&
+          !e.field_note?.toLowerCase().includes(q) &&
+          !e.ai_notes?.toLowerCase().includes(q)) return false;
+      if (dateFrom && e.timestamp && e.timestamp < dateFrom) return false;
+      if (dateTo && e.timestamp && e.timestamp > dateTo + 'T23:59:59') return false;
+      return true;
+    });
+  }, [evidence, searchQuery, dateFrom, dateTo]);
+
+  const hasActiveSearch = !!(searchQuery || dateFrom || dateTo);
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery(''); setDateFrom(''); setDateTo('');
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const selectAllReview = useCallback(() => {
+    setSelectedIds(new Set(evidence.filter(e => toBucket(e.ai_status) === 'review').map(e => e.id)));
+  }, [evidence]);
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+  const handleBulkApprove = useCallback(async () => {
+    setBatchBusy(true);
+    await onBulkApprove(Array.from(selectedIds));
+    setSelectedIds(new Set());
+    setBatchBusy(false);
+  }, [selectedIds, onBulkApprove]);
+
+  const handleBulkReject = useCallback(async () => {
+    setBatchBusy(true);
+    await onBulkReject(Array.from(selectedIds));
+    setSelectedIds(new Set());
+    setBatchBusy(false);
+  }, [selectedIds, onBulkReject]);
+
+  const handleCsvExport = useCallback(() => {
+    const rows: ExportEvidenceRow[] = allEvidence.map(e => ({
+      id: e.id,
+      projectId: e.project_id,
+      inspectionPointId: e.inspection_point_id,
+      timestamp: e.timestamp,
+      aiStatus: e.ai_status,
+      aiNotes: e.ai_notes,
+      fieldNote: e.field_note,
+      userId: e.user_id,
+      latitude: e.gps_lat,
+      longitude: e.gps_lng,
+      mediaUri: e.media_uri ?? e.photo_uri,
+      floorPlanId: e.floor_plan_id,
+      pinX: e.pin_x,
+      pinY: e.pin_y,
+    }));
+    downloadCsv(evidenceToCsv(rows), makeExportFilename(projectId, 'csv'));
+  }, [allEvidence, projectId]);
+
+  const reviewCount = evidence.filter(e => toBucket(e.ai_status) === 'review').length;
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────────
+  useKeyboardShortcuts([
+    {
+      key: 'a',
+      handler: () => { if (selectedIds.size > 0) void handleBulkApprove(); },
+      description: 'Geselecteerde foto\'s goedkeuren',
+    },
+    {
+      key: 'r',
+      handler: () => { if (selectedIds.size > 0) void handleBulkReject(); },
+      description: 'Geselecteerde foto\'s afkeuren',
+    },
+    {
+      key: 'Escape',
+      handler: clearSelection,
+      description: 'Selectie wissen',
+    },
+  ], selectedIds.size > 0);
 
   return (
     <View style={{ gap: 12 }}>
+      {/* Bewijs header: CSV export + batch selectie snelkoppelingen */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <TouchableOpacity
+          onPress={handleCsvExport}
+          style={[tabSt.filterChip, { backgroundColor: 'rgba(5,150,105,0.1)', borderColor: 'rgba(5,150,105,0.3)' }]}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: '#059669', fontSize: 12, fontWeight: '800' }}>📊 CSV exporteren</Text>
+        </TouchableOpacity>
+        {reviewCount > 0 && selectedIds.size === 0 && (
+          <TouchableOpacity
+            onPress={selectAllReview}
+            style={[tabSt.filterChip, { backgroundColor: 'rgba(217,119,6,0.1)', borderColor: 'rgba(217,119,6,0.3)' }]}
+            activeOpacity={0.8}
+          >
+            <Text style={{ color: '#d97706', fontSize: 12, fontWeight: '800' }}>☑ {reviewCount} review selecteren</Text>
+          </TouchableOpacity>
+        )}
+        {selectedIds.size > 0 && (
+          <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: '700', flex: 1 }}>
+            {selectedIds.size} geselecteerd
+          </Text>
+        )}
+      </View>
+
+      {/* Batch actie balk */}
+      {selectedIds.size > 0 && (
+        <View style={[tabSt.batchBar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: '700' }}>
+              {selectedIds.size} foto{selectedIds.size !== 1 ? "'s" : ''} geselecteerd
+            </Text>
+            <Text style={{ color: theme.colors.textSecondary + '88', fontSize: 10, marginTop: 2 }}>
+              A = goedkeuren · R = afkeuren · Esc = wissen
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[tabSt.approveBtn, { opacity: batchBusy ? 0.5 : 1 }]}
+            onPress={handleBulkApprove}
+            disabled={batchBusy}
+            activeOpacity={0.8}
+          >
+            <Text style={tabSt.approveBtnText}>✓ Alles goedkeuren</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[tabSt.rejectBtn, { borderColor: '#ef4444', opacity: batchBusy ? 0.5 : 1 }]}
+            onPress={handleBulkReject}
+            disabled={batchBusy}
+            activeOpacity={0.8}
+          >
+            <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>✗ Alles afkeuren</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={clearSelection} style={{ padding: 6 }}>
+            <Text style={{ color: theme.colors.textSecondary, fontWeight: '700' }}>✕</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Zoeken toggle */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <TouchableOpacity
+          onPress={() => setShowSearch(v => !v)}
+          style={[tabSt.filterChip, {
+            backgroundColor: (showSearch || hasActiveSearch) ? theme.colors.accent + '15' : theme.colors.surface,
+            borderColor: hasActiveSearch ? theme.colors.accent : theme.colors.border,
+          }]}
+          activeOpacity={0.8}
+        >
+          <Text style={{ fontSize: 12, fontWeight: '800', color: hasActiveSearch ? theme.colors.accent : theme.colors.textSecondary }}>
+            🔍 Zoeken{hasActiveSearch ? ` (actief)` : ''}
+          </Text>
+        </TouchableOpacity>
+        {hasActiveSearch && (
+          <TouchableOpacity onPress={clearSearch} style={{ padding: 4 }}>
+            <Text style={{ fontSize: 12, color: '#ef4444', fontWeight: '700' }}>✕ Wissen</Text>
+          </TouchableOpacity>
+        )}
+        {hasActiveSearch && (
+          <Text style={{ fontSize: 12, color: theme.colors.textSecondary, flex: 1, textAlign: 'right' }}>
+            {displayed.length} resultaten
+          </Text>
+        )}
+      </View>
+
+      {/* Zoekpaneel */}
+      {showSearch && (
+        <View style={[tabSt.searchPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <TextInput
+            style={[tabSt.searchInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.background, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Borgingspunt, notitie of AI-bevinding..."
+            placeholderTextColor={theme.colors.textSecondary + '88'}
+            autoCorrect={false}
+          />
+          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+            <View style={{ flex: 1, minWidth: 120 }}>
+              <Text style={{ fontSize: 10, fontWeight: '800', color: theme.colors.textSecondary, marginBottom: 4, letterSpacing: 1 }}>DATUM VAN</Text>
+              <TextInput
+                style={[tabSt.searchInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.background, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
+                value={dateFrom}
+                onChangeText={setDateFrom}
+                placeholder="2026-05-01"
+                placeholderTextColor={theme.colors.textSecondary + '88'}
+              />
+            </View>
+            <View style={{ flex: 1, minWidth: 120 }}>
+              <Text style={{ fontSize: 10, fontWeight: '800', color: theme.colors.textSecondary, marginBottom: 4, letterSpacing: 1 }}>DATUM TOT</Text>
+              <TextInput
+                style={[tabSt.searchInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.background, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
+                value={dateTo}
+                onChangeText={setDateTo}
+                placeholder="2026-05-31"
+                placeholderTextColor={theme.colors.textSecondary + '88'}
+              />
+            </View>
+          </View>
+        </View>
+      )}
+
       {/* Filter chips */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexShrink: 0 }}>
         <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 4 }}>
@@ -1091,32 +1639,37 @@ function BewijsTab({ evidence, filter, setFilter, metrics, loading, theme, isDar
 
       {loading ? (
         <View style={tabSt.centered}><ActivityIndicator color={theme.colors.accent} /></View>
-      ) : evidence.length === 0 ? (
+      ) : displayed.length === 0 ? (
         <View style={tabSt.emptyBox}>
-          <Text style={{ fontSize: 40 }}>📭</Text>
+          <Text style={{ fontSize: 40 }}>{hasActiveSearch ? '🔍' : '📭'}</Text>
           <Text style={[tabSt.emptyTitle, { color: theme.colors.textPrimary }]}>
-            {filter === 'alle' ? 'Nog geen bewijsstukken' : `Geen ${filter} items`}
+            {hasActiveSearch ? 'Geen resultaten' : filter === 'alle' ? 'Nog geen bewijsstukken' : `Geen ${filter} items`}
           </Text>
           <Text style={[tabSt.emptyBody, { color: theme.colors.textSecondary }]}>
-            {filter === 'alle'
-              ? 'Vaklieden uploaden foto\'s via de app. Ze verschijnen hier zodra ze binnenkomen.'
-              : 'Alle foto\'s in deze categorie zijn verwerkt.'}
+            {hasActiveSearch
+              ? 'Pas je zoekterm of datum aan.'
+              : filter === 'alle'
+                ? 'Vaklieden uploaden foto\'s via de app. Ze verschijnen hier zodra ze binnenkomen.'
+                : 'Alle foto\'s in deze categorie zijn verwerkt.'}
           </Text>
         </View>
       ) : (
         <View style={{ gap: 8 }}>
-          {evidence.map(item => {
+          {displayed.map(item => {
             const bucket   = toBucket(item.ai_status);
             const cfg      = bucketConfig(bucket);
             const uri      = item.media_uri ?? item.photo_uri ?? null;
             const isOpen   = expandedId === item.id;
+            const stale    = isStale(item.timestamp, item.ai_status);
+
+            const isSelected = selectedIds.has(item.id);
 
             return (
               <View
                 key={item.id}
                 style={[tabSt.evidenceCard, {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: isOpen ? theme.colors.accent : bucket === 'review' ? '#d97706' : theme.colors.border,
+                  backgroundColor: isSelected ? theme.colors.accent + '08' : theme.colors.surface,
+                  borderColor: isSelected ? theme.colors.accent : isOpen ? theme.colors.accent : stale ? '#ef4444' : bucket === 'review' ? '#d97706' : theme.colors.border,
                 }]}
               >
                 {/* Collapsed rij */}
@@ -1125,6 +1678,18 @@ function BewijsTab({ evidence, filter, setFilter, metrics, loading, theme, isDar
                   onPress={() => setExpandedId(isOpen ? null : item.id)}
                   activeOpacity={0.75}
                 >
+                  {/* Selectie checkbox */}
+                  <TouchableOpacity
+                    style={[tabSt.checkBox, {
+                      borderColor: isSelected ? theme.colors.accent : theme.colors.border,
+                      backgroundColor: isSelected ? theme.colors.accent : 'transparent',
+                      width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                    }]}
+                    onPress={() => toggleSelect(item.id)}
+                    activeOpacity={0.7}
+                  >
+                    {isSelected && <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900' }}>✓</Text>}
+                  </TouchableOpacity>
                   {/* Thumbnail */}
                   <View style={{ position: 'relative', flexShrink: 0 }}>
                     {uri
@@ -1165,6 +1730,11 @@ function BewijsTab({ evidence, filter, setFilter, metrics, loading, theme, isDar
                         {cfg.icon} {bucket.charAt(0).toUpperCase() + bucket.slice(1)}
                       </Text>
                     </View>
+                    {stale && (
+                      <View style={[tabSt.statusBadge, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
+                        <Text style={[tabSt.statusBadgeText, { color: '#ef4444' }]}>⏰ 24u+</Text>
+                      </View>
+                    )}
                     <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>{isOpen ? '▲' : '▼'}</Text>
                   </View>
                 </TouchableOpacity>
@@ -1177,7 +1747,7 @@ function BewijsTab({ evidence, filter, setFilter, metrics, loading, theme, isDar
                     disabled={bucket === 'akkoord'}
                     activeOpacity={0.8}
                   >
-                    <Text style={tabSt.approveBtnText}>✓ Goedkeuren</Text>
+                    <Text style={tabSt.approveBtnText}>✓ Goed</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[tabSt.rejectBtn, { opacity: bucket === 'afgekeurd' ? 0.45 : 1, borderColor: theme.colors.border }]}
@@ -1185,14 +1755,67 @@ function BewijsTab({ evidence, filter, setFilter, metrics, loading, theme, isDar
                     disabled={bucket === 'afgekeurd'}
                     activeOpacity={0.8}
                   >
-                    <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>✗ Afkeuren</Text>
+                    <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>✗ Afkeur</Text>
+                  </TouchableOpacity>
+                  {/* WhatsApp delen */}
+                  <TouchableOpacity
+                    style={[tabSt.rejectBtn, { borderColor: 'rgba(37,211,102,0.4)', backgroundColor: 'rgba(37,211,102,0.08)' }]}
+                    onPress={() => shareViaWhatsApp({
+                      projectId,
+                      taskTitle: item.inspection_point_id ?? 'Borgingspunt',
+                      inspectionPointId: item.inspection_point_id ?? item.id,
+                      timestamp: item.timestamp ?? new Date().toISOString(),
+                      latitude: item.gps_lat ?? 0,
+                      longitude: item.gps_lng ?? 0,
+                      evidenceId: item.id,
+                    })}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ color: '#25D366', fontSize: 12, fontWeight: '800' }}>📱</Text>
+                  </TouchableOpacity>
+                  {/* Opmerkingen toggle */}
+                  <TouchableOpacity
+                    style={[tabSt.rejectBtn, {
+                      borderColor: commentsOpenId === item.id ? theme.colors.accent + '60' : theme.colors.border,
+                      backgroundColor: commentsOpenId === item.id ? theme.colors.accent + '10' : 'transparent',
+                    }]}
+                    onPress={() => {
+                      setCommentsOpenId(prev => prev === item.id ? null : item.id);
+                      if (expandedId !== item.id) setExpandedId(item.id);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontSize: 12, color: commentsOpenId === item.id ? theme.colors.accent : theme.colors.textSecondary, fontWeight: '800' }}>
+                      💬{(commentCountMap.get(item.id) ?? 0) > 0 ? ` ${commentCountMap.get(item.id)}` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                  {/* Bewerken — keyuser / projectleider / WV */}
+                  <TouchableOpacity
+                    style={[tabSt.rejectBtn, {
+                      borderColor: editingId === item.id ? theme.colors.accent + '60' : theme.colors.border,
+                      backgroundColor: editingId === item.id ? theme.colors.accent + '10' : 'transparent',
+                    }]}
+                    onPress={() => {
+                      if (editingId === item.id) {
+                        setEditingId(null);
+                      } else {
+                        setEditingId(item.id);
+                        setEditFieldNote(item.field_note ?? '');
+                        setEditPointId(item.inspection_point_id ?? '');
+                        setEditStatus(item.ai_status ?? 'PENDING');
+                        if (expandedId !== item.id) setExpandedId(item.id);
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontSize: 12, color: editingId === item.id ? theme.colors.accent : theme.colors.textSecondary }}>✏️</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={{ marginLeft: 'auto' as unknown as number, padding: 8 }}
                     onPress={() => setExpandedId(isOpen ? null : item.id)}
                   >
                     <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
-                      {isOpen ? 'Inklappen ▲' : 'Details ▼'}
+                      {isOpen ? '▲' : '▼'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1223,6 +1846,78 @@ function BewijsTab({ evidence, filter, setFilter, metrics, loading, theme, isDar
                         </View>
                       )}
                     </View>
+                    {/* Inline bewerken */}
+                    {editingId === item.id && (
+                      <View style={[tabSt.editBox, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent + '40' }]}>
+                        <Text style={[tabSt.editTitle, { color: theme.colors.accent }]}>✏️ BEWERKEN</Text>
+                        {/* Borgingspunt */}
+                        <Text style={[tabSt.editLabel, { color: theme.colors.textSecondary }]}>Borgingspunt ID</Text>
+                        {/* @ts-ignore web TextInput */}
+                        <input
+                          value={editPointId}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditPointId(e.target.value)}
+                          style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.colors.border}`, background: theme.colors.surface, color: theme.colors.textPrimary, fontSize: 13, outline: 'none', marginBottom: 8 }}
+                        />
+                        {/* Feedback notitie */}
+                        <Text style={[tabSt.editLabel, { color: theme.colors.textSecondary }]}>WV feedback / notitie</Text>
+                        {/* @ts-ignore web textarea */}
+                        <textarea
+                          value={editFieldNote}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditFieldNote(e.target.value)}
+                          rows={3}
+                          style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.colors.border}`, background: theme.colors.surface, color: theme.colors.textPrimary, fontSize: 13, resize: 'vertical', outline: 'none', marginBottom: 8, fontFamily: 'inherit' }}
+                        />
+                        {/* Status */}
+                        <Text style={[tabSt.editLabel, { color: theme.colors.textSecondary }]}>Status</Text>
+                        <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12, flexWrap: 'wrap' as 'wrap' }}>
+                          {(['PASSED', 'NEEDS_REVIEW', 'FAILED', 'PENDING'] as const).map(s => (
+                            <TouchableOpacity
+                              key={s}
+                              onPress={() => setEditStatus(s)}
+                              style={[tabSt.statusChip, {
+                                backgroundColor: editStatus === s ? theme.colors.accent : theme.colors.surface,
+                                borderColor: editStatus === s ? theme.colors.accent : theme.colors.border,
+                              }]}
+                            >
+                              <Text style={{ fontSize: 11, fontWeight: '700', color: editStatus === s ? '#fff' : theme.colors.textSecondary }}>
+                                {s === 'PASSED' ? '✓ Akkoord' : s === 'FAILED' ? '✗ Afgekeurd' : s === 'NEEDS_REVIEW' ? '⚠ Review' : '○ Pending'}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <TouchableOpacity
+                            style={[tabSt.approveBtn, { flex: 1 }]}
+                            onPress={() => {
+                              onEdit(item.id, {
+                                field_note: editFieldNote.trim() || (null as unknown as string),
+                                inspection_point_id: editPointId.trim() || (item.inspection_point_id ?? ''),
+                                ai_status: editStatus,
+                              });
+                              setEditingId(null);
+                            }}
+                          >
+                            <Text style={tabSt.approveBtnText}>Opslaan</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[tabSt.rejectBtn, { flex: 1, borderColor: theme.colors.border }]}
+                            onPress={() => setEditingId(null)}
+                          >
+                            <Text style={[tabSt.rejectBtnText, { color: theme.colors.textSecondary }]}>Annuleren</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Opmerkingen thread */}
+                    {commentsOpenId === item.id && (
+                      <EvidenceComments
+                        evidenceId={item.id}
+                        projectId={projectId}
+                        role="WV"
+                        theme={theme as Parameters<typeof EvidenceComments>[0]['theme']}
+                      />
+                    )}
                   </View>
                 )}
               </View>
@@ -1354,7 +2049,7 @@ const st = StyleSheet.create({
 
   // Header card
   headerCard: { borderRadius: 16, borderWidth: 1, marginBottom: 16, overflow: 'hidden' },
-  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
+  headerTop: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, flexWrap: 'wrap' },
   projectTitle: { fontSize: 18, fontWeight: '900', letterSpacing: -0.3 },
   projectRole: { fontSize: 12, fontWeight: '600', marginTop: 2 },
 
@@ -1376,7 +2071,7 @@ const st = StyleSheet.create({
   statLabel: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
 
   // Tabs
-  tabRow: { flexDirection: 'row', borderBottomWidth: 1, marginBottom: 16 },
+  tabRow: { borderBottomWidth: 1, marginBottom: 16 },
   tabItem: { paddingHorizontal: 16, paddingVertical: 10, position: 'relative' },
   tabItemActive: {},
   tabLabel: { fontSize: 14, fontWeight: '700' },
@@ -1401,6 +2096,14 @@ const tabSt = StyleSheet.create({
   borgingId: { fontSize: 11, fontWeight: '700', textAlign: 'center' },
   borgingCount: { fontSize: 10, marginTop: 2 },
 
+  batchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, borderWidth: 1, padding: 10, flexWrap: 'wrap' },
+  searchPanel: { borderRadius: 12, borderWidth: 1, padding: 12, gap: 10 },
+  searchInput: { height: 40, borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, fontSize: 13 },
+  vakmanCard: { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
+  vakmanRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10 },
+  vakmanRank: { width: 24, height: 24, borderRadius: 6, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  vakmanBar: { height: 6, borderRadius: 3, overflow: 'hidden', position: 'relative' },
+  vakmanBarFill: { height: 6, borderRadius: 3 },
   filterChip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1 },
   filterChipText: { fontSize: 13, fontWeight: '700' },
   filterChipCount: { fontSize: 11, fontWeight: '700' },
@@ -1423,6 +2126,10 @@ const tabSt = StyleSheet.create({
   rejectBtnText: { fontWeight: '800', fontSize: 13 },
 
   expanded: { borderTopWidth: 1, padding: 12, gap: 8 },
+  editBox: { borderRadius: 10, borderWidth: 1, padding: 12, gap: 4 },
+  editTitle: { fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 6 },
+  editLabel: { fontSize: 11, fontWeight: '700', marginBottom: 4 },
+  statusChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
   infoRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', padding: 8, borderRadius: 8 },
   infoLabel: { fontSize: 11, fontWeight: '700', width: 100 },
   infoValue: { flex: 1, fontSize: 12 },

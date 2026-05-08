@@ -26,6 +26,9 @@ export interface WkbEvidence {
   binnenbuiten?: 'BINNEN' | 'BUITEN' | null;
   locatieDetail?: string | null; // bijv. "Gevel West", "Achtergevel", "Badkamer"
   context_extra?: Record<string, unknown> | null;
+  floorPlanId?: string | null;   // Verwijzing naar geüploade bouwtekening
+  pinX?: number | null;          // 0.0–1.0 genormaliseerde x-positie op tekening
+  pinY?: number | null;          // 0.0–1.0 genormaliseerde y-positie op tekening
   syncStatus: 'PENDING' | 'SYNCED' | 'FAILED'; // Offline-first syncstatus
 }
 

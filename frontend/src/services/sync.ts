@@ -124,6 +124,9 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
           ai_status: item.aiStatus ?? 'PENDING',
           ai_confidence: item.aiConfidence ?? null,
           ai_notes: item.aiNotes ?? null,
+          floor_plan_id: item.floorPlanId ?? null,
+          pin_x: item.pinX ?? null,
+          pin_y: item.pinY ?? null,
         };
         const legacyPayload = {
           photo_uri: publicUrlData.publicUrl,
@@ -274,6 +277,99 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
   } catch (error) {
     console.error('❌ Fatale fout in de Sync-Engine:', error);
     return 0;
+  }
+};
+
+// ─── Directe Supabase upload (bypasses lokale SQLite) ────────────────────────
+// Gebruik op web voor onmiddellijke zichtbaarheid in het dashboard.
+export const uploadEvidenceDirectly = async (
+  evidence: import('../types/Evidence').WkbEvidence,
+  photoUri: string
+): Promise<{ supabaseId: number; publicUrl: string } | null> => {
+  if (!isSupabaseConfigured()) return null;
+
+  try {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+
+    // Foto ophalen als Blob/ArrayBuffer — geen base64 roundtrip nodig
+    let uploadBody: ArrayBuffer | Blob;
+    if (photoUri.startsWith('blob:') || photoUri.startsWith('http') || photoUri.startsWith('data:')) {
+      const response = await fetch(photoUri);
+      uploadBody = await response.blob();
+    } else {
+      // Native file path (iOS/Android) — lees als base64 via expo-file-system
+      try {
+        const b64 = await new (await import('expo-file-system')).File(photoUri).base64();
+        uploadBody = decode(b64);
+      } catch {
+        const r = await fetch(photoUri);
+        uploadBody = await r.blob();
+      }
+    }
+
+    const safeId = (evidence.id ?? `direct-${Date.now()}`).replace(/[^a-zA-Z0-9-_]/g, '');
+    const fileName = `wkb_foto_${safeId}_${Date.now()}.jpg`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('wkb-evidence')
+      .upload(fileName, uploadBody, { contentType: 'image/jpeg' });
+
+    if (uploadError) throw new Error(`Storage upload gefaald: ${uploadError.message}`);
+
+    const { data: urlData } = supabase.storage.from('wkb-evidence').getPublicUrl(fileName);
+    const publicUrl = urlData.publicUrl;
+
+    const { getEvidenceComplianceContext } = await import('./wkbCompliance');
+    const complianceContext = getEvidenceComplianceContext(evidence.inspectionPointId);
+
+    const payload = {
+      photo_uri: publicUrl,
+      media_uri: publicUrl,
+      latitude: evidence.latitude,
+      longitude: evidence.longitude,
+      gps_accuracy: evidence.gpsAccuracy ?? null,
+      timestamp: evidence.timestamp,
+      project_id: evidence.projectId,
+      inspection_point_id: evidence.inspectionPointId,
+      exif_hash: evidence.exifHash,
+      exif_verified: evidence.exifVerified,
+      user_id: evidence.userId ?? authUser?.id ?? null,
+      ifc_guid: evidence.ifcGuid ?? null,
+      field_note: evidence.fieldNote ?? null,
+      etage: evidence.etage ?? null,
+      ruimtenummer: evidence.ruimtenummer ?? null,
+      binnenbuiten: evidence.binnenbuiten ?? null,
+      locatie_detail: evidence.locatieDetail ?? null,
+      weather_label: evidence.weatherLabel ?? null,
+      discipline_id: complianceContext.disciplineId ?? null,
+      dossier_scope: complianceContext.dossierScope ?? null,
+      stop_moment_label: complianceContext.stopMoment ?? null,
+      requires_measurement_tool: complianceContext.requiresMeasurementTool,
+      stop_moment_confirmed: evidence.stopMomentConfirmed ?? null,
+      measurement_tool_confirmed: evidence.measurementToolConfirmed ?? null,
+      location_verified: evidence.locationVerified ?? null,
+      location_spoof_risk: evidence.locationSpoofRisk ?? null,
+      location_security_message: evidence.locationSecurityMessage ?? null,
+      sync_status: 'SYNCED',
+      ai_status: 'PENDING',
+      floor_plan_id: evidence.floorPlanId ?? null,
+      pin_x: evidence.pinX ?? null,
+      pin_y: evidence.pinY ?? null,
+    };
+
+    const { data, error: dbError } = await supabase
+      .from(EVIDENCE_TABLE)
+      .insert([payload])
+      .select('id')
+      .single();
+
+    if (dbError || !data) throw new Error(`Database insert gefaald: ${dbError?.message}`);
+
+    console.log(`✅ Direct geüpload naar Supabase: ID ${(data as { id: number }).id}`);
+    return { supabaseId: (data as { id: number }).id, publicUrl };
+  } catch (err) {
+    console.error('❌ uploadEvidenceDirectly fout:', err);
+    return null;
   }
 };
 

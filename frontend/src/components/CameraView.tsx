@@ -21,7 +21,9 @@ import {
   getProjectPresets,
   saveEvidenceLocally,
 } from '../database/database';
-import { syncEvidenceQueue } from '../services/sync';
+import { syncEvidenceQueue, uploadEvidenceDirectly } from '../services/sync';
+import { persistOfflinePhoto } from '../services/OfflinePhotoStore';
+import { registerBgSync } from '../hooks/useNetworkSync';
 import {
   findNenTaskContextByInspectionPointId,
   toNenCaptureTask,
@@ -58,6 +60,8 @@ import {
 } from '../services/NotificationService';
 import { useTheme } from '../theme/ThemeProvider';
 import CaptureSuccessCard from './CaptureSuccessCard';
+import FloorPlanPinPicker from './FloorPlanPinPicker';
+import { getFloorPlansForProject, type FloorPlan } from '../services/FloorPlanService';
 import type { SharePayload } from '../services/ShareService';
 import type {
   CaptureTask,
@@ -195,6 +199,8 @@ interface CameraViewProps {
   selectedTask?: CaptureTask | null;
   focusRequest?: (InspectionRouteIntent & { nonce: number }) | null;
   onBackToTasks?: () => void;
+  onBackToProject?: () => void;  // ↩️ Ander borgingspunt in zelfde project
+  onBackToMain?: () => void;     // 🏠 Terug naar hoofdmenu
 }
 
 // ─── Discipline-specifieke locatie opties ─────────────────────────────────────
@@ -287,6 +293,8 @@ export default function CameraView({
   selectedTask = null,
   focusRequest = null,
   onBackToTasks,
+  onBackToProject,
+  onBackToMain,
 }: CameraViewProps) {
   const { theme } = useTheme();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
@@ -331,6 +339,10 @@ export default function CameraView({
   const [timerFixedDurationMinutes, setTimerFixedDurationMinutes] = useState(0);
   const [timerExtraVolumeBlocks, setTimerExtraVolumeBlocks] = useState(0);
   const [lastCapture, setLastCapture] = useState<SharePayload | null>(null);
+  // Floor plan annotation state
+  const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
+  const [showFloorPlanPicker, setShowFloorPlanPicker] = useState(false);
+  const pendingEvidenceRef = useRef<WkbEvidence | null>(null);
   const styles = useMemo(() => createStyles(theme), [theme]);
   const activeTask = useMemo(
     () => selectedTask ?? inferTaskByInspectionPointId(inspectionPointId),
@@ -348,6 +360,11 @@ export default function CameraView({
   const nen1078TimerConfig: Nen1078CaptureTimerConfig | null =
     isNen1078TimerConfig(activeTimerConfig) ? activeTimerConfig : null;
   const timerBadgeLabel = getCaptureTimerBadgeLabel(activeTask ?? {});
+
+  // Laad beschikbare bouwtekeningen voor het huidige project
+  useEffect(() => {
+    getFloorPlansForProject(projectId).then(setFloorPlans).catch(() => {});
+  }, [projectId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -962,13 +979,49 @@ export default function CameraView({
         binnenbuiten: contextData.binnenbuiten,
         locatieDetail: contextData.locatieDetail.trim() || null,
         context_extra: Object.keys(contextData.extra).length > 0 ? contextData.extra : null,
+        floorPlanId: null,
+        pinX: null,
+        pinY: null,
         syncStatus: 'PENDING',
       };
 
-      await saveEvidenceLocally(newEvidence);
+      // Toon floor plan picker als tekeningen beschikbaar zijn
+      if (floorPlans.length > 0) {
+        pendingEvidenceRef.current = newEvidence;
+        setShowFloorPlanPicker(true);
+        setIsCapturing(false);
+        return null;
+      }
 
-      // Auto-sync op achtergrond — gebruiker hoeft niets te doen
-      void syncEvidenceQueue();
+      // Directe upload naar Supabase — onmiddellijk zichtbaar in dashboard
+      let uploadOk = false;
+      try {
+        const uploadResult = await uploadEvidenceDirectly(newEvidence, permanentUri);
+        uploadOk = !!uploadResult;
+      } catch {
+        uploadOk = false;
+      }
+
+      if (!uploadOk) {
+        // Fallback: foto persisteren in IndexedDB (overleeft page refresh)
+        // dan metadata opslaan + background sync registreren
+        try {
+          // Blob-URL → base64 data-URL → IndexedDB (overleeft tab-sluiting)
+          const persistedUri = await persistOfflinePhoto(permanentUri, newEvidence.id);
+          const evidenceToSave = persistedUri
+            ? { ...newEvidence, mediaUri: persistedUri }
+            : newEvidence;
+          await saveEvidenceLocally(evidenceToSave);
+          // Registreer SW Background Sync — sync ook als app in achtergrond is
+          void registerBgSync();
+          // Directe poging als al online
+          if (typeof navigator !== 'undefined' && navigator.onLine) {
+            void syncEvidenceQueue();
+          }
+        } catch {
+          console.warn('Zowel Supabase upload als lokale opslag mislukt — bewijs getoond maar nog niet gesynchroniseerd');
+        }
+      }
 
       if (!options?.preserveFieldNote) {
         setFieldNote('');
@@ -982,10 +1035,11 @@ export default function CameraView({
         timestamp,
         aiStatus: aiResult.status,
         aiNotes: aiResult.notes,
+        uploadOk,
       };
     } catch (error) {
       console.error('Desktop bewijs opslaan faalde:', error);
-      Alert.alert('Opslaan mislukt', 'Kon bewijs niet lokaal vastleggen.');
+      Alert.alert('Opslaan mislukt', String(error));
       return null;
     } finally {
       setIsCapturing(false);
@@ -1097,12 +1151,24 @@ export default function CameraView({
         binnenbuiten: contextData.binnenbuiten,
         locatieDetail: contextData.locatieDetail.trim() || null,
         context_extra: Object.keys(contextData.extra).length > 0 ? contextData.extra : null,
+        floorPlanId: null,
+        pinX: null,
+        pinY: null,
         syncStatus: 'PENDING',
       };
 
-      await saveEvidenceLocally(newEvidence);
+      // Op web: foto persisteren in IndexedDB zodat ze ook na page-refresh bewaard blijven
+      let evidenceToSave = newEvidence;
+      if (isWeb) {
+        const captureUri = (newEvidence as { mediaUri?: string }).mediaUri ?? '';
+        const persistedUri = await persistOfflinePhoto(captureUri, newEvidence.id).catch(() => null);
+        if (persistedUri) evidenceToSave = { ...newEvidence, mediaUri: persistedUri };
+      }
+
+      await saveEvidenceLocally(evidenceToSave);
 
       // Auto-sync op achtergrond — gebruiker hoeft niets te doen
+      void registerBgSync();
       void syncEvidenceQueue();
 
       if (!options?.preserveFieldNote) {
@@ -1158,6 +1224,11 @@ export default function CameraView({
         'Bewijs opgeslagen met waarschuwing',
         result.aiNotes ?? 'Edge check markeert deze desktopfoto als onvoldoende.'
       );
+    }
+
+    if (!(result as { uploadOk?: boolean }).uploadOk) {
+      // Niet blokkeren — bewijs staat lokaal opgeslagen en sync loopt op achtergrond
+      console.info('Bewijs lokaal opgeslagen — wordt gesynchroniseerd zodra verbinding beschikbaar is.');
     }
 
     // Toon de success card met deel-opties
@@ -1326,9 +1397,14 @@ export default function CameraView({
               setLastCapture(null);
               setDesktopPhoto(null);
             }}
-            onBack={() => {
+            onBackToProject={onBackToProject ? () => {
               setLastCapture(null);
-              onBackToTasks?.();
+              setDesktopPhoto(null);
+              onBackToProject();
+            } : undefined}
+            onBackToMain={() => {
+              setLastCapture(null);
+              (onBackToMain ?? onBackToTasks)?.();
             }}
           />
         </View>
@@ -2462,6 +2538,84 @@ export default function CameraView({
           </View>
         </SafeAreaView>
       </ExpoCameraView>
+
+      {/* Floor Plan Pin Picker modal */}
+      {showFloorPlanPicker && (
+        <View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.7)',
+          alignItems: 'center', justifyContent: 'center',
+          padding: 16, zIndex: 999,
+        }}>
+          <View style={{ width: '100%', maxWidth: 560 }}>
+            <FloorPlanPinPicker
+              floorPlans={floorPlans}
+              theme={theme}
+              onConfirm={(pin) => {
+                setShowFloorPlanPicker(false);
+                const base = pendingEvidenceRef.current;
+                pendingEvidenceRef.current = null;
+                if (base) {
+                  const withPin: WkbEvidence = { ...base, floorPlanId: pin.floorPlanId, pinX: pin.pinX, pinY: pin.pinY };
+                  uploadEvidenceDirectly(withPin, withPin.mediaUri)
+                    .catch(async () => {
+                      const persisted = await persistOfflinePhoto(withPin.mediaUri, withPin.id).catch(() => null);
+                      const ev = persisted ? { ...withPin, mediaUri: persisted } : withPin;
+                      await saveEvidenceLocally(ev);
+                      void registerBgSync();
+                      void syncEvidenceQueue();
+                    })
+                    .finally(() => {
+                      setDesktopPhoto(null);
+                      setMobileWebPhotoUri(null);
+                      const lat = parseFloat(desktopLatitude);
+                      const lon = parseFloat(desktopLongitude);
+                      setLastCapture({
+                        projectId: withPin.projectId,
+                        taskTitle: withPin.inspectionPointId,
+                        inspectionPointId: withPin.inspectionPointId,
+                        timestamp: withPin.timestamp,
+                        latitude: Number.isFinite(lat) ? lat : withPin.latitude,
+                        longitude: Number.isFinite(lon) ? lon : withPin.longitude,
+                        weatherLabel: withPin.weatherLabel ?? null,
+                      });
+                    });
+                }
+              }}
+              onSkip={() => {
+                setShowFloorPlanPicker(false);
+                const base = pendingEvidenceRef.current;
+                pendingEvidenceRef.current = null;
+                if (base) {
+                  uploadEvidenceDirectly(base, base.mediaUri)
+                    .catch(async () => {
+                      const persisted = await persistOfflinePhoto(base.mediaUri, base.id).catch(() => null);
+                      const ev = persisted ? { ...base, mediaUri: persisted } : base;
+                      await saveEvidenceLocally(ev);
+                      void registerBgSync();
+                      void syncEvidenceQueue();
+                    })
+                    .finally(() => {
+                      setDesktopPhoto(null);
+                      setMobileWebPhotoUri(null);
+                      const lat = parseFloat(desktopLatitude);
+                      const lon = parseFloat(desktopLongitude);
+                      setLastCapture({
+                        projectId: base.projectId,
+                        taskTitle: base.inspectionPointId,
+                        inspectionPointId: base.inspectionPointId,
+                        timestamp: base.timestamp,
+                        latitude: Number.isFinite(lat) ? lat : base.latitude,
+                        longitude: Number.isFinite(lon) ? lon : base.longitude,
+                        weatherLabel: base.weatherLabel ?? null,
+                      });
+                    });
+                }
+              }}
+            />
+          </View>
+        </View>
+      )}
     </View>
   );
 }

@@ -112,13 +112,21 @@ function enrichDisciplines(): DisciplineCard[] {
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
+export interface StartFlowResumeContext {
+  project: { id: string; name: string; address: string | null; initiatorName: string | null };
+  disciplineId: string;
+  locatie: BinnenBuiten;
+  verdieping: string;
+}
+
 interface StartFlowProps {
-  onSelectTask: (task: CaptureTask) => void;
+  onSelectTask: (task: CaptureTask, context: StartFlowResumeContext) => void;
+  resumeContext?: StartFlowResumeContext | null;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function StartFlow({ onSelectTask }: StartFlowProps) {
+export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProps) {
   const { theme } = useTheme();
   const isDark = theme.name === 'dark';
   const { width } = useWindowDimensions();
@@ -128,13 +136,32 @@ export default function StartFlow({ onSelectTask }: StartFlowProps) {
   const { user } = useWkbAuth();
   const { setActiveProject } = useProject();
 
-  // ── Flow state ──────────────────────────────────────────────────────────────
-  const [step, setStep] = useState<FlowStep>('welkom');
-  const [selectedKlant, setSelectedKlant] = useState<Klant | null>(null);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [selectedDiscipline, setSelectedDiscipline] = useState<DisciplineCard | null>(null);
-  const [selectedLocatie, setSelectedLocatie] = useState<BinnenBuiten>('BINNEN');
-  const [selectedVerdieping, setSelectedVerdieping] = useState<string>('BG');
+  // ── Flow state (initialiseer vanuit resumeContext als beschikbaar) ───────────
+  const [step, setStep] = useState<FlowStep>(() => resumeContext ? 'borgingspunt' : 'welkom');
+  const [selectedKlant, setSelectedKlant] = useState<Klant | null>(() =>
+    resumeContext ? { name: resumeContext.project.initiatorName ?? resumeContext.project.name, projectCount: 1 } : null
+  );
+  const [selectedProject, setSelectedProject] = useState<Project | null>(() =>
+    resumeContext ? { id: resumeContext.project.id, name: resumeContext.project.name, address: resumeContext.project.address, initiatorName: resumeContext.project.initiatorName } : null
+  );
+  const [selectedDiscipline, setSelectedDiscipline] = useState<DisciplineCard | null>(() =>
+    resumeContext ? (DISCIPLINES.find(d => d.id === resumeContext.disciplineId) ?? null) : null
+  );
+  const [selectedLocatie, setSelectedLocatie] = useState<BinnenBuiten>(() => resumeContext?.locatie ?? 'BINNEN');
+  const [selectedVerdieping, setSelectedVerdieping] = useState<string>(() => resumeContext?.verdieping ?? 'BG');
+
+  // Herstel actief project als we vanuit context terugkomen
+  useEffect(() => {
+    if (resumeContext) {
+      setActiveProject({
+        id: resumeContext.project.id,
+        name: resumeContext.project.name,
+        address: resumeContext.project.address,
+        initiatorName: resumeContext.project.initiatorName,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Data ────────────────────────────────────────────────────────────────────
   const [klanten, setKlanten] = useState<Klant[]>([]);
@@ -226,8 +253,19 @@ export default function StartFlow({ onSelectTask }: StartFlowProps) {
       defaultBinnenBuiten: selectedLocatie,
       defaultEtage: selectedVerdieping,
     };
-    onSelectTask(task);
-  }, [onSelectTask, selectedLocatie, selectedVerdieping]);
+    const context: StartFlowResumeContext = {
+      project: {
+        id: selectedProject?.id ?? '',
+        name: selectedProject?.name ?? '',
+        address: selectedProject?.address ?? null,
+        initiatorName: selectedProject?.initiatorName ?? null,
+      },
+      disciplineId: selectedDiscipline?.id ?? '',
+      locatie: selectedLocatie,
+      verdieping: selectedVerdieping,
+    };
+    onSelectTask(task, context);
+  }, [onSelectTask, selectedProject, selectedDiscipline, selectedLocatie, selectedVerdieping]);
 
   // Voornaam: display_name → eerste deel van email
   const firstName = useMemo(() => {
@@ -633,15 +671,18 @@ function StepBar({
       backgroundColor: theme.colors.background,
       borderBottomColor: theme.colors.border,
     }]}>
+      {/* Terugknop */}
       <TouchableOpacity onPress={onBack} style={stepBarStyles.back} activeOpacity={0.7}>
         <Text style={[stepBarStyles.backText, { color: theme.colors.accent }]}>← Terug</Text>
       </TouchableOpacity>
-      <Text style={[stepBarStyles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
+      {/* Breadcrumb: discipline boven de titel */}
       {subtitle ? (
-        <Text style={[stepBarStyles.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+        <Text style={[stepBarStyles.breadcrumb, { color: theme.colors.textSecondary }]} numberOfLines={1}>
           {subtitle}
         </Text>
       ) : null}
+      {/* Staptitel */}
+      <Text style={[stepBarStyles.title, { color: theme.colors.textPrimary }]}>{title}</Text>
     </View>
   );
 }
@@ -649,14 +690,20 @@ function StepBar({
 const stepBarStyles = StyleSheet.create({
   wrapper: {
     paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 12,
+    paddingTop: 12,
+    paddingBottom: 14,
     borderBottomWidth: 1,
   },
-  back: { paddingBottom: 6 },
+  back: { marginBottom: 4 },
   backText: { fontSize: 14, fontWeight: '700' },
-  title: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, marginTop: 2 },
+  breadcrumb: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  title: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
 });
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -844,41 +891,44 @@ const createStyles = (
     locatieScreen: {
       flex: 1,
       padding: 16,
-      gap: 14,
+      paddingTop: 28,
+      gap: 12,
       justifyContent: 'center',
       maxWidth: isDesktop ? 500 : undefined,
       alignSelf: isDesktop ? 'center' : undefined,
       width: isDesktop ? '100%' : undefined,
     },
     locatieCard: {
-      borderRadius: 20,
+      borderRadius: 16,
       borderWidth: 2,
-      padding: 28,
+      paddingVertical: 20,
+      paddingHorizontal: 20,
       alignItems: 'center',
-      gap: 8,
-      minHeight: 130,
+      gap: 6,
       justifyContent: 'center',
+      overflow: 'hidden',
     },
     locatieCardActive: {},
-    locatieEmoji: { fontSize: 44 },
+    locatieEmoji: { fontSize: 34 },
     locatieLabel: {
-      fontSize: 24,
+      fontSize: 20,
       fontWeight: '900',
       letterSpacing: -0.5,
     },
     locatieSub: {
-      fontSize: 14,
+      fontSize: 13,
       textAlign: 'center',
+      lineHeight: 18,
     },
     locatieNextBtn: {
-      borderRadius: 16,
-      paddingVertical: 20,
+      borderRadius: 14,
+      paddingVertical: 15,
       alignItems: 'center',
-      marginTop: 8,
+      marginTop: 4,
     },
     locatieNextBtnText: {
       color: '#fff',
-      fontSize: 17,
+      fontSize: 15,
       fontWeight: '800',
     },
 

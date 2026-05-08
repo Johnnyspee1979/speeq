@@ -1,0 +1,34 @@
+WKB Snap & Sync — Digitaal borgingsdossier voor de bouwplaats.
+
+Speciaal ontwikkeld voor vakmensen, werkvoorbereiders en kwaliteitsborgers die werken onder de Wet Kwaliteitsborging voor het bouwen (Wkb).
+
+📸 BEWIJS VASTLEGGEN
+• Maak direct foto's van borgingspunten op de bouwplaats
+• Automatische GPS-verrijking voor juridisch houdbaar bewijs
+• AI-controle op beeldkwaliteit en technische eisen
+• Werkt ook volledig offline — bewijs wordt automatisch gesynchroniseerd zodra u weer online bent
+
+✅ BORGINGSPUNTEN BEHEREN
+• Structureer bewijs per borgingspunt en NEN-norm
+• Dagelijkse checklist voor systematische kwaliteitscontrole
+• Real-time statusoverzicht: akkoord / review / afgekeurd
+• Bouwtekening annotatie — pin locaties direct op de plattegrond
+
+📋 OFFICIËLE RAPPORTEN
+• Dossier Bevoegd Gezag voor de gemeente (Wkb art. 2.17)
+• Technisch kwaliteitsrapport voor de kwaliteitsborger
+• Digitaal ondertekend borgingsdossier als PDF
+• Exporteer als ZIP, CSV of direct via e-mail
+
+🔧 VOOR VAKMENSEN
+• Persoonlijke werkruimte met eigen taken en uploads
+• Push-meldingen bij afkeuring — meteen opnieuw vastleggen
+• Meertalig: NL · EN · DE · PL
+
+🏗️ VOLDOET AAN
+• Wet Kwaliteitsborging voor het bouwen (Wkb)
+• Besluit kwaliteitsborging voor het bouwen (BKL)
+• Gevolgklasse 1 bouweisen (Bbl)
+• NEN 1006, NEN 3215, NEN 1010, NEN 5077 en meer
+
+Ontwikkeld door Spee Solutions — software voor de Nederlandse bouwsector.

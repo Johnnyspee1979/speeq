@@ -46,18 +46,20 @@ import type { CaptureTask } from './src/types/CaptureTask';
 import { findNenCaptureTaskByInspectionPointId } from './src/constants/NenStandards';
 import { wkbTaskTemplates } from './src/data/WkbTemplates';
 import type { InspectionRouteIntent } from './src/services/deepLinking';
-import StartFlow from './src/screens/StartFlow';
+import StartFlow, { type StartFlowResumeContext } from './src/screens/StartFlow';
 import ConsumentenDossierScherm from './src/screens/ConsumentenDossierScherm';
 import WerkvoorbereiderDashboard from './src/screens/WerkvoorbereiderDashboard';
 import LoginScreen from './src/screens/LoginScreen';
 import TeamBeheerScreen from './src/screens/TeamBeheerScreen';
 import EvidenceMapView from './src/components/EvidenceMapView';
 import JoinScreen from './src/screens/JoinScreen';
+import TekenGoedkeuringScreen from './src/screens/TekenGoedkeuringScreen';
 import OpdrachtgeverPortaal from './src/screens/OpdrachtgeverPortaal';
 import ProjectPicker from './src/components/ProjectPicker';
 import ProjectleiderOverzicht from './src/screens/ProjectleiderOverzicht';
 import VakmanWorkspace from './src/screens/VakmanWorkspace';
 import { ProjectProvider, useProject } from './src/context/ProjectContext';
+import { LanguageProvider } from './src/i18n';
 import { ActivityIndicator } from 'react-native';
 
 type Tab =
@@ -135,8 +137,19 @@ function AppShell() {
       return null;
     }
   }, []);
+
+  // Detecteer ?approve=TOKEN in URL voor bouwtekening-goedkeuring (publiek, geen login)
+  const approveToken = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return new URLSearchParams(window.location.search).get('approve');
+    } catch {
+      return null;
+    }
+  }, []);
   const [activeTab, setActiveTab] = useState<Tab>('camera');
   const [selectedTask, setSelectedTask] = useState<CaptureTask | null>(null);
+  const [startFlowResumeContext, setStartFlowResumeContext] = useState<StartFlowResumeContext | null>(null);
   const [cameraEntryContext, setCameraEntryContext] =
     useState<CameraEntryContext>('selector');
   const [opleveringView, setOpleveringView] =
@@ -212,9 +225,10 @@ function AppShell() {
     return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'portal', 'overzicht'].includes(item.key));
   }, [user, isMobile]);
 
-  const handleSelectTask = (task: CaptureTask) => {
+  const handleSelectTask = (task: CaptureTask, context?: StartFlowResumeContext) => {
     setCameraEntryContext('selector');
     setCameraFocusRequest(null);
+    setStartFlowResumeContext(context ?? null);
     setSelectedTask({
       ...task,
       selectionSource: task.selectionSource ?? 'WKB',
@@ -273,14 +287,27 @@ function AppShell() {
 
   useNotificationRouting(handleRouteToInspectionPoint);
 
-  const handleBackFromCamera = () => {
+  // ↩️ Ander borgingspunt: bewaar resumeContext, terug naar StartFlow borgingspunt-stap
+  const handleBackToProject = () => {
+    setCameraFocusRequest(null);
+    setSelectedTask(null);          // StartFlow mount fresh met resumeContext
+    setCameraEntryContext('selector');
+    // startFlowResumeContext blijft behouden → StartFlow opent op borgingspunt-stap
+  };
+
+  // 🏠 Hoofdmenu: wis alles
+  const handleBackToMain = () => {
     if (cameraEntryContext === 'oplevering') {
       setActiveTab('oplevering');
     }
     setCameraFocusRequest(null);
     setSelectedTask(null);
+    setStartFlowResumeContext(null);  // wis context → StartFlow begint bij welkom
     setCameraEntryContext('selector');
   };
+
+  // Backward compat (voor terug-knopen buiten CaptureSuccessCard)
+  const handleBackFromCamera = handleBackToMain;
 
   const renderActiveTab = () => {
     if (activeTab === 'overzicht') return (
@@ -296,11 +323,13 @@ function AppShell() {
             selectedTask={selectedTask}
             focusRequest={cameraFocusRequest}
             onBackToTasks={handleBackFromCamera}
+            onBackToProject={startFlowResumeContext ? handleBackToProject : undefined}
+            onBackToMain={handleBackToMain}
           />
         );
       }
       // Begeleide startflow: welkom → klant → project → discipline → borgingspunt
-      return <StartFlow onSelectTask={handleSelectTask} />;
+      return <StartFlow onSelectTask={handleSelectTask} resumeContext={startFlowResumeContext} />;
     }
     if (activeTab === 'dossier') return (
       <View style={{ flex: 1 }}>
@@ -612,6 +641,11 @@ function AppShell() {
     );
   }
 
+  // Goedkeuring bouwtekening: iedereen mag dit zien, geen login vereist
+  if (approveToken) {
+    return <TekenGoedkeuringScreen token={approveToken} />;
+  }
+
   // Invite flow: vakman opent /?join=TOKEN
   if (joinToken && !user) {
     return <JoinScreen token={joinToken} />;
@@ -688,12 +722,14 @@ const createOpleveringStyles = (
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <ProjectProvider>
-        <AppErrorBoundary>
-          <AppShell />
-        </AppErrorBoundary>
-      </ProjectProvider>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <ProjectProvider>
+          <AppErrorBoundary>
+            <AppShell />
+          </AppErrorBoundary>
+        </ProjectProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }

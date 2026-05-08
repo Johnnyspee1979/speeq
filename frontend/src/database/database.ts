@@ -101,6 +101,9 @@ type EvidenceRow = {
   binnenbuiten?: string | null;
   locatie_detail?: string | null;
   weather_label?: string | null;
+  floor_plan_id?: string | null;
+  pin_x?: number | null;
+  pin_y?: number | null;
 };
 
 type PunchlistRow = {
@@ -304,6 +307,9 @@ const normalizeEvidence = (evidence: StoredWkbEvidence): StoredWkbEvidence => ({
   aiConfidence: evidence.aiConfidence ?? null,
   aiNotes: evidence.aiNotes ?? null,
   cloudRecordId: evidence.cloudRecordId ?? null,
+  floorPlanId: evidence.floorPlanId ?? null,
+  pinX: evidence.pinX ?? null,
+  pinY: evidence.pinY ?? null,
 });
 
 const normalizePunchlistItem = (
@@ -1239,6 +1245,9 @@ const nativeAdapter: DatabaseAdapter = {
         'ALTER TABLE evidence ADD COLUMN binnenbuiten TEXT;',
         'ALTER TABLE evidence ADD COLUMN locatie_detail TEXT;',
         'ALTER TABLE evidence ADD COLUMN weather_label TEXT;',
+        'ALTER TABLE evidence ADD COLUMN floor_plan_id TEXT;',
+        'ALTER TABLE evidence ADD COLUMN pin_x REAL;',
+        'ALTER TABLE evidence ADD COLUMN pin_y REAL;',
       ];
 
       for (const statement of migrations) {
@@ -1335,8 +1344,11 @@ const nativeAdapter: DatabaseAdapter = {
             ruimtenummer,
             binnenbuiten,
             locatie_detail,
-            weather_label
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            weather_label,
+            floor_plan_id,
+            pin_x,
+            pin_y
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           evidence.id,
@@ -1379,6 +1391,9 @@ const nativeAdapter: DatabaseAdapter = {
           evidence.binnenbuiten ?? null,
           evidence.locatieDetail ?? null,
           evidence.weatherLabel ?? null,
+          evidence.floorPlanId ?? null,
+          evidence.pinX ?? null,
+          evidence.pinY ?? null,
         ]
       );
 

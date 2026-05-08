@@ -24,6 +24,7 @@ import {
 import { useProject } from '../context/ProjectContext';
 import { useTheme } from '../theme/ThemeProvider';
 import type { Project } from '../context/ProjectContext';
+import ProjectAanmakenModal from './ProjectAanmakenModal';
 
 // ─── Recents helpers ──────────────────────────────────────────────────────────
 
@@ -61,6 +62,7 @@ export default function ProjectPicker() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [recentIds, setRecentIds] = useState<string[]>(() => loadRecents());
+  const [showNieuwProject, setShowNieuwProject] = useState(false);
   const searchRef = useRef<TextInput>(null);
 
   // Focusseer zoekbalk zodra modal opent
@@ -249,11 +251,38 @@ export default function ProjectPicker() {
             </View>
           )}
 
+          {/* Nieuw project aanmaken */}
+          <TouchableOpacity
+            style={[styles.cancelBtn, {
+              backgroundColor: theme.colors.accent + '15',
+              borderWidth: 1,
+              borderColor: theme.colors.accent + '40',
+              marginBottom: 6,
+            }]}
+            onPress={() => { setOpen(false); setShowNieuwProject(true); }}
+          >
+            <Text style={[styles.cancelBtnText, { color: theme.colors.accent, fontWeight: '700' }]}>
+              + Nieuw project aanmaken
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.cancelBtn} onPress={() => setOpen(false)}>
             <Text style={styles.cancelBtnText}>Annuleren</Text>
           </TouchableOpacity>
         </View>
       </Modal>
+
+      {/* Nieuw project modal */}
+      <ProjectAanmakenModal
+        visible={showNieuwProject}
+        onClose={() => setShowNieuwProject(false)}
+        onCreated={(project) => {
+          // Reload projects list — trigger via ProjectContext refresh
+          setActiveProject({ id: project.id, name: project.name, address: project.address, initiatorName: project.initiatorName });
+          setShowNieuwProject(false);
+        }}
+        theme={theme}
+      />
     </>
   );
 }

@@ -5,7 +5,7 @@ const rawProjectLatitude = (process.env.EXPO_PUBLIC_PROJECT_LATITUDE ?? '').trim
 const rawProjectLongitude = (process.env.EXPO_PUBLIC_PROJECT_LONGITUDE ?? '').trim();
 const rawProjectRadiusMeters = (process.env.EXPO_PUBLIC_PROJECT_RADIUS_METERS ?? '250').trim();
 const rawLocationAccuracyMeters = (
-  process.env.EXPO_PUBLIC_LOCATION_MAX_ACCURACY_METERS ?? '25'
+  process.env.EXPO_PUBLIC_LOCATION_MAX_ACCURACY_METERS ?? '150'
 ).trim();
 const rawWkbProjectKind = (process.env.EXPO_PUBLIC_WKB_PROJECT_KIND ?? 'NIEUWBOUW').trim();
 const rawWkbVergunningplichtig = (

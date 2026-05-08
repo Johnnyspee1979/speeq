@@ -1,48 +1,131 @@
 {
   "expo": {
-    "name": "Wkb Snap & Sync",
+    "name": "WKB Snap & Sync",
     "slug": "wkb-snap-sync",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "scheme": "wkb-snap-sync",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
+
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#0B0F19"
     },
-    "ios": {
-      "supportsTablet": true
+
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     },
+
+    "ios": {
+      "bundleIdentifier": "nl.speesolutions.wkbsnapsync",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "minimumOsVersion": "16.0",
+
+      "infoPlist": {
+        "NSCameraUsageDescription": "Maak foto's om WKB-bewijs op de bouwplaats vast te leggen.",
+        "NSLocationWhenInUseUsageDescription": "Gebruik locatie om juridisch houdbaar WKB-bewijs te verrijken met GPS-coördinaten.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Gebruik locatie voor continue GPS-verrijking van bewijs.",
+        "NSPhotoLibraryUsageDescription": "Importeer bestaande bouwfoto's als WKB-bewijs.",
+        "NSPhotoLibraryAddUsageDescription": "Sla WKB-bewijsfoto's op in uw fotobibliotheek.",
+        "NSMicrophoneUsageDescription": "Microfoon voor videoclips als aanvullend WKB-bewijs.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification", "fetch"]
+      },
+
+      "entitlements": {
+        "aps-environment": "production"
+      },
+
+      "usesAppleSignIn": false
+    },
+
     "android": {
+      "package": "nl.speesolutions.wkbsnapsync",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0B0F19",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ],
       "predictiveBackGestureEnabled": false
     },
+
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
+
     "plugins": [
       [
         "expo-camera",
         {
-          "cameraPermission": "Maak foto's om Wkb-bewijs op de bouwplaats vast te leggen."
+          "cameraPermission": "Maak foto's om WKB-bewijs op de bouwplaats vast te leggen.",
+          "microphonePermission": "Microfoon voor videoclips als aanvullend WKB-bewijs.",
+          "recordAudioAndroid": true
         }
       ],
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Gebruik locatie om juridisch houdbaar Wkb-bewijs te verrijken."
+          "locationWhenInUsePermission": "Gebruik locatie om juridisch houdbaar WKB-bewijs te verrijken met GPS-coördinaten.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
         }
       ],
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#A40D2F",
+          "defaultChannel": "wkb-updates",
+          "sounds": []
+        }
+      ],
       "expo-sqlite",
-      "expo-sharing"
-    ]
+      "expo-sharing",
+      "expo-updates",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "16.0",
+            "newArchEnabled": false,
+            "privacyManifestAggregationEnabled": true
+          },
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 24,
+            "newArchEnabled": false
+          }
+        }
+      ]
+    ],
+
+    "extra": {
+      "eas": {
+        "projectId": "VERVANG-MET-EAS-PROJECT-ID"
+      }
+    },
+
+    "owner": "spee-solutions"
   }
 }

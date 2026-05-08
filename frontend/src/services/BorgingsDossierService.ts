@@ -59,6 +59,19 @@ export interface DossierMeta {
   kwaliteitsborger?: string;
 }
 
+export interface FloorPlanAnnotationPin {
+  x: number;
+  y: number;
+  pointId: string;
+  aiStatus: string | null;
+}
+
+export interface FloorPlanAnnotation {
+  name: string;
+  imageBase64: string;
+  pins: FloorPlanAnnotationPin[];
+}
+
 export interface DossierSignatures {
   /** base64 PNG data URL van handtekening projectleider */
   projectleider?: string;
@@ -70,13 +83,23 @@ export interface DossierSignatures {
   signedAt?: string;
 }
 
+function pinColorHex(aiStatus: string | null): string {
+  switch (aiStatus) {
+    case 'PASSED': return '#059669';
+    case 'NEEDS_REVIEW': return '#d97706';
+    case 'FAILED': return '#ef4444';
+    default: return '#9ca3af';
+  }
+}
+
 export function generateDossierHtml(
   evidence: StoredWkbEvidence[],
   projectId: string,
   projectName: string,
   imageMap: Record<string, string> = {},
   meta: DossierMeta = {},
-  signatures: DossierSignatures = {}
+  signatures: DossierSignatures = {},
+  floorPlanAnnotations: FloorPlanAnnotation[] = []
 ): string {
   const now = new Date().toLocaleString('nl-NL', {
     dateStyle: 'long',
@@ -402,6 +425,29 @@ export function generateDossierHtml(
       ? sections
       : '<p style="color:#888;padding:32px;text-align:center;">Nog geen borgingspunten vastgelegd in dit project.</p>'
     }
+
+    <!-- Bouwtekening locaties -->
+    ${floorPlanAnnotations.length > 0 ? `
+    <div class="floor-section">
+      <h2>📐 Locaties op tekening</h2>
+      ${floorPlanAnnotations.map(fp => `
+        <div class="floor-plan-block">
+          <h3>${fp.name}</h3>
+          <div style="position:relative;display:inline-block;width:100%">
+            <img src="${fp.imageBase64}" style="width:100%;display:block;border-radius:8px" />
+            <svg style="position:absolute;top:0;left:0;width:100%;height:100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+              ${fp.pins.map(p => `
+                <circle cx="${(p.x * 100).toFixed(2)}" cy="${(p.y * 100).toFixed(2)}" r="1.8"
+                  fill="${pinColorHex(p.aiStatus)}" stroke="white" stroke-width="0.4" opacity="0.9" />
+              `).join('')}
+            </svg>
+          </div>
+          <div style="font-size:11px;color:#888;margin-top:6px">
+            ${fp.pins.length} pin${fp.pins.length !== 1 ? 's' : ''} op deze tekening
+          </div>
+        </div>
+      `).join('')}
+    </div>` : ''}
 
     <!-- Handtekeningen -->
     ${(signatures.projectleider || signatures.opdrachtgever) ? `

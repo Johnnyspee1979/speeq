@@ -1,0 +1,34 @@
+{
+  "name": "WKB Snap & Sync",
+  "short_name": "WKB Snap",
+  "description": "WKB bewijsdocumentatie voor bouwplaatsen — foto's, borgingspunten, dossier.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0F19",
+  "theme_color": "#A40D2F",
+  "lang": "nl",
+  "categories": ["business", "utilities"],
+  "icons": [
+    { "src": "/assets/favicon.png", "sizes": "48x48",   "type": "image/png" },
+    { "src": "/assets/icon.png",    "sizes": "192x192",  "type": "image/png", "purpose": "any maskable" },
+    { "src": "/assets/icon.png",    "sizes": "512x512",  "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Camera openen",
+      "short_name": "Camera",
+      "description": "Direct naar de veldcamera",
+      "url": "/?tab=camera",
+      "icons": [{ "src": "/assets/favicon.png", "sizes": "48x48" }]
+    },
+    {
+      "name": "Mijn Werkruimte",
+      "short_name": "Werkruimte",
+      "description": "Vakman werkruimte",
+      "url": "/?tab=vakman",
+      "icons": [{ "src": "/assets/favicon.png", "sizes": "48x48" }]
+    }
+  ]
+}

@@ -30,13 +30,17 @@ import { useTheme } from '../theme/ThemeProvider';
 interface CaptureSuccessCardProps {
   payload: SharePayload;
   onNewCapture: () => void;
-  onBack: () => void;
+  onBack?: () => void;            // legacy — use onBackToProject / onBackToMain instead
+  onBackToProject?: () => void;   // ↩️ Ander borgingspunt (zelfde project/discipline)
+  onBackToMain?: () => void;      // 🏠 Terug naar hoofdmenu
 }
 
 export default function CaptureSuccessCard({
   payload,
   onNewCapture,
   onBack,
+  onBackToProject,
+  onBackToMain,
 }: CaptureSuccessCardProps) {
   const { theme } = useTheme();
   const isDark = theme.name === 'dark';
@@ -179,23 +183,57 @@ export default function CaptureSuccessCard({
       </View>
 
       {/* Actie knoppen */}
-      <View style={styles.actionRow}>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.actionBtnPrimary, { backgroundColor: theme.colors.accent }]}
-          onPress={onNewCapture}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.actionBtnPrimaryText}>📸  Nieuwe foto</Text>
-        </TouchableOpacity>
+      {(onBackToProject || onBackToMain) ? (
+        // Nieuwe 3-knops navigatie na registratie
+        <View style={styles.actionColumn}>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.actionBtnPrimary, { backgroundColor: theme.colors.accent }]}
+            onPress={onNewCapture}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.actionBtnPrimaryText}>📸  Zelfde borgingspunt opnieuw</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionBtn, { borderColor: theme.colors.border, borderWidth: 1 }]}
-          onPress={onBack}
-          activeOpacity={0.75}
-        >
-          <Text style={[styles.actionBtnText, { color: theme.colors.textSecondary }]}>Terug</Text>
-        </TouchableOpacity>
-      </View>
+          {onBackToProject && (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.actionBtnProject, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)', borderColor: theme.colors.border }]}
+              onPress={onBackToProject}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.actionBtnText, { color: theme.colors.textPrimary, fontWeight: '700' }]}>↩️  Ander borgingspunt</Text>
+            </TouchableOpacity>
+          )}
+
+          {onBackToMain && (
+            <TouchableOpacity
+              style={[styles.actionBtn, { borderColor: theme.colors.border, borderWidth: 1 }]}
+              onPress={onBackToMain}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.actionBtnText, { color: theme.colors.textSecondary }]}>🏠  Hoofdmenu</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        // Legacy 2-knops lay-out (voor backward compat)
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.actionBtnPrimary, { backgroundColor: theme.colors.accent }]}
+            onPress={onNewCapture}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.actionBtnPrimaryText}>📸  Nieuwe foto</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionBtn, { borderColor: theme.colors.border, borderWidth: 1 }]}
+            onPress={onBack}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.actionBtnText, { color: theme.colors.textSecondary }]}>Terug</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </Animated.View>
   );
 }
@@ -326,12 +364,21 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 10,
   },
+  actionColumn: {
+    flexDirection: 'column',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 8,
+  },
   actionBtn: {
     flex: 1,
     minHeight: 48,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  actionBtnProject: {
+    borderWidth: 1,
   },
   actionBtnPrimary: {},
   actionBtnPrimaryText: {
