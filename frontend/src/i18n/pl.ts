@@ -200,6 +200,31 @@ export const pl: Record<string, string> = {
   'export.cancel':           'Anuluj',
   'export.generating':       'Generowanie raportu…',
 
+  // ── Sprint 6 — Samouczek dla wykonawców ────────────────────────────────────
+  'tutorial.skip':           'Pomiń',
+  'tutorial.back':           '← Wstecz',
+  'tutorial.next':           'Dalej →',
+  'tutorial.start':          'Zaczynamy 🚀',
+  'tutorial.step_of':        'Krok {current} z {total}',
+
+  'tutorial.step1_title':    'Szybkie robienie zdjęć',
+  'tutorial.step1_body':     'Dotknij ikony aparatu, wybierz punkt kontroli i zrób zdjęcie. Aplikacja automatycznie dodaje GPS, czas i pogodę — nie musisz nic wpisywać.',
+  'tutorial.step1_b1':       'Hash EXIF + lokalizacja zapisane od razu',
+  'tutorial.step1_b2':       'AI sprawdza zdjęcie w kilka sekund',
+  'tutorial.step1_b3':       'Działa offline — synchronizacja sama',
+
+  'tutorial.step2_title':    'Inny punkt kontroli? Łatwo',
+  'tutorial.step2_body':     'Dotknij "↩ Inny punkt" i wracasz. Aplikacja pamięta klienta i projekt — wybierasz tylko nowy punkt.',
+  'tutorial.step2_b1':       'Klient + projekt są zapamiętane',
+  'tutorial.step2_b2':       'Bez krążenia po menu',
+  'tutorial.step2_b3':       'Kolejne zdjęcie w 3 dotknięciach',
+
+  'tutorial.step3_title':    'Zaznacz miejsce na rzucie',
+  'tutorial.step3_body':     'Po zdjęciu pojawia się rzut budynku. Dotknij miejsca gdzie stoisz — od razu widoczne w dokumentacji dla kierownika i organu.',
+  'tutorial.step3_b1':       'Pinezka = dokładna lokalizacja dowodu',
+  'tutorial.step3_b2':       'Kierownik widzi wszystkie pinezki w kolorach',
+  'tutorial.step3_b3':       'Pinezka jest osadzona w dokumentacji PDF',
+
   // ── Ogólne ─────────────────────────────────────────────────────────────────
   'general.loading':      'Ładowanie…',
   'general.error':        'Coś poszło nie tak',

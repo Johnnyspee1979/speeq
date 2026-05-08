@@ -200,6 +200,31 @@ export const de: Record<string, string> = {
   'export.cancel':           'Abbrechen',
   'export.generating':       'Bericht wird erstellt…',
 
+  // ── Sprint 6 — Vakman Onboarding Tutorial ──────────────────────────────────
+  'tutorial.skip':           'Überspringen',
+  'tutorial.back':           '← Zurück',
+  'tutorial.next':           'Weiter →',
+  'tutorial.start':          'Los geht\'s 🚀',
+  'tutorial.step_of':        'Schritt {current} von {total}',
+
+  'tutorial.step1_title':    'Schnell Fotos machen',
+  'tutorial.step1_body':     'Tippe auf das Kamerasymbol, wähle den Prüfpunkt und mach das Foto. Die App fügt GPS, Zeitstempel und Wetter automatisch hinzu — kein Tippen nötig.',
+  'tutorial.step1_b1':       'EXIF-Hash + Standort sofort erfasst',
+  'tutorial.step1_b2':       'KI prüft dein Foto in Sekunden',
+  'tutorial.step1_b3':       'Funktioniert offline — Sync läuft automatisch',
+
+  'tutorial.step2_title':    'Anderer Prüfpunkt? Kein Problem',
+  'tutorial.step2_body':     'Drücke "↩ Anderer Punkt" und du springst zurück. Die App merkt sich Kunde und Projekt — du wählst nur den neuen Punkt.',
+  'tutorial.step2_b1':       'Kunde + Projekt bleiben gemerkt',
+  'tutorial.step2_b2':       'Keine Menüklickerei',
+  'tutorial.step2_b3':       'Nächstes Foto in 3 Taps',
+
+  'tutorial.step3_title':    'Markiere deinen Standort auf dem Plan',
+  'tutorial.step3_body':     'Nach dem Foto erscheint der Grundriss. Tippe wo du stehst — sofort im Dossier für Bauleiter und Behörde sichtbar.',
+  'tutorial.step3_b1':       'Pin = exakter Nachweis-Standort',
+  'tutorial.step3_b2':       'Bauleiter sieht alle Pins farbcodiert',
+  'tutorial.step3_b3':       'Pin ist im PDF-Dossier eingebrannt',
+
   // ── Allgemein ──────────────────────────────────────────────────────────────
   'general.loading':      'Laden…',
   'general.error':        'Etwas ist schiefgelaufen',

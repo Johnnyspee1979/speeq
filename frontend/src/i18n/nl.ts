@@ -200,6 +200,31 @@ export const nl: Record<string, string> = {
   'export.cancel':           'Annuleren',
   'export.generating':       'Rapport genereren…',
 
+  // ── Sprint 6 — Vakman onboarding tutorial ──────────────────────────────────
+  'tutorial.skip':           'Overslaan',
+  'tutorial.back':           '← Terug',
+  'tutorial.next':           'Volgende →',
+  'tutorial.start':          'Aan de slag 🚀',
+  'tutorial.step_of':        'Stap {current} van {total}',
+
+  'tutorial.step1_title':    'Snel foto\'s maken',
+  'tutorial.step1_body':     'Tik op het camera-icoon, kies je borgingspunt en maak de foto. De app voegt automatisch GPS, tijdstempel en weersinfo toe — jij hoeft niets te typen.',
+  'tutorial.step1_b1':       'EXIF-hash + locatie worden direct vastgelegd',
+  'tutorial.step1_b2':       'AI controleert je foto in seconden',
+  'tutorial.step1_b3':       'Werkt offline — sync gebeurt vanzelf',
+
+  'tutorial.step2_title':    'Ander borgingspunt? Geen probleem',
+  'tutorial.step2_body':     'Druk op "↩ Ander borgingspunt" en je springt direct terug. De app onthoudt je klant en project — je hoeft alleen het nieuwe punt te kiezen.',
+  'tutorial.step2_b1':       'Klant + project blijven onthouden',
+  'tutorial.step2_b2':       'Geen rondklikken in menu\'s',
+  'tutorial.step2_b3':       'Volgende foto in 3 tikken',
+
+  'tutorial.step3_title':    'Prik je locatie op de tekening',
+  'tutorial.step3_body':     'Na de foto verschijnt de bouwtekening. Tik op de plek waar je staat — dat is meteen zichtbaar in het dossier voor de werkvoorbereider en de gemeente.',
+  'tutorial.step3_b1':       'Pin = exacte locatie van het bewijs',
+  'tutorial.step3_b2':       'Werkvoorbereider ziet alle pins per kleur',
+  'tutorial.step3_b3':       'Pin staat ingebakken in het PDF-dossier',
+
   // ── Algemeen ───────────────────────────────────────────────────────────────
   'general.loading':      'Laden…',
   'general.error':        'Er ging iets mis',

@@ -200,6 +200,31 @@ export const en: Record<string, string> = {
   'export.cancel':           'Cancel',
   'export.generating':       'Generating report…',
 
+  // ── Sprint 6 — Vakman onboarding tutorial ──────────────────────────────────
+  'tutorial.skip':           'Skip',
+  'tutorial.back':           '← Back',
+  'tutorial.next':           'Next →',
+  'tutorial.start':          'Get started 🚀',
+  'tutorial.step_of':        'Step {current} of {total}',
+
+  'tutorial.step1_title':    'Take photos fast',
+  'tutorial.step1_body':     'Tap the camera icon, pick your inspection point and shoot. The app adds GPS, timestamp and weather automatically — no typing needed.',
+  'tutorial.step1_b1':       'EXIF hash + location captured instantly',
+  'tutorial.step1_b2':       'AI checks your photo in seconds',
+  'tutorial.step1_b3':       'Works offline — syncs by itself',
+
+  'tutorial.step2_title':    'Another inspection point? Easy',
+  'tutorial.step2_body':     'Tap "↩ Other point" and you jump back. The app remembers your client and project — you only pick the new point.',
+  'tutorial.step2_b1':       'Client + project stay remembered',
+  'tutorial.step2_b2':       'No menu hopping',
+  'tutorial.step2_b3':       'Next photo in 3 taps',
+
+  'tutorial.step3_title':    'Pin your spot on the drawing',
+  'tutorial.step3_body':     'After the photo the floor plan appears. Tap where you stand — instantly visible in the dossier for site supervisor and authority.',
+  'tutorial.step3_b1':       'Pin = exact location of the evidence',
+  'tutorial.step3_b2':       'Supervisor sees all pins by colour',
+  'tutorial.step3_b3':       'Pin is baked into the PDF dossier',
+
   // ── General ────────────────────────────────────────────────────────────────
   'general.loading':      'Loading…',
   'general.error':        'Something went wrong',

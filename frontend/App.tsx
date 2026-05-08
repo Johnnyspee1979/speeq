@@ -17,6 +17,7 @@ import {
 import CameraView from './src/components/CameraView';
 import EvidenceList from './src/components/EvidenceList';
 import RejectionBanner from './src/components/RejectionBanner';
+import VakmanTutorialModal from './src/components/VakmanTutorialModal';
 import PresetsManager from './src/components/PresetsManager';
 import DsoLog from './src/components/DsoLog';
 import About from './src/components/About';
@@ -720,6 +721,8 @@ function AppShell() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <StatusBar style={theme.name === 'dark' ? 'light' : 'dark'} />
       {(user.role === 'VAKMAN' || user.role === 'VOORMAN') && <RejectionBanner />}
+      {/* Sprint 6 — eerste-keer onboarding voor vakmannen */}
+      {(user.role === 'VAKMAN' || user.role === 'VOORMAN') && <VakmanTutorialModal />}
       <ResponsiveLayout
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab as Tab)}
