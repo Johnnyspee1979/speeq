@@ -193,7 +193,7 @@ describe('NenSearchService', () => {
   });
 
   it('maps the gas dichtheidsbeproeving template to a timer-aware capture task', () => {
-    const context = findNenTaskContextByInspectionPointId('gas-persproef-eind-001');
+    const context = findNenTaskContextByInspectionPointId('gas-persproef-eind');
 
     expect(context).not.toBeNull();
 
@@ -355,13 +355,13 @@ describe('NenSearchService', () => {
       (task) => task.inspectionPointId === 'nen1006-mantelbuis-001'
     );
     const gasMantelbuisTemplate = wkbTaskTemplates.find(
-      (task) => task.inspectionPointId === 'gas-mantelbuis-001'
+      (task) => task.inspectionPointId === 'gas-mantelbuis-doorvoer'
     );
     const gasPersproefTemplate = wkbTaskTemplates.find(
-      (task) => task.inspectionPointId === 'gas-persproef-eind-001'
+      (task) => task.inspectionPointId === 'gas-persproef-eind'
     );
     const gasPersproefStartTemplate = wkbTaskTemplates.find(
-      (task) => task.inspectionPointId === 'gas-persproef-start-001'
+      (task) => task.inspectionPointId === 'gas-persproef-start'
     );
     const gasPersproefTimerConfig =
       gasPersproefTemplate?.timerConfig?.variant === 'NEN1078_DICHTHEIDSPROEF'
