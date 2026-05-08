@@ -31,6 +31,7 @@ import TaskAssignmentPanel from '../components/TaskAssignmentPanel';
 import RapportagePanel from '../components/RapportagePanel';
 import MotionTabIndicator from '../components/motion/MotionTabIndicator';
 import MotionPanel from '../components/motion/MotionPanel';
+import EvidenceCard, { EvidenceCardItem } from '../components/EvidenceCard';
 import type { StoredWkbEvidence } from '../types/Evidence';
 import {
   uploadDossierHtml,
@@ -1569,7 +1570,7 @@ interface BewijsTabProps {
   setFilter: (f: FilterStatus) => void;
   metrics: { total: number; akkoord: number; review: number; afgekeurd: number; vandaag: number };
   loading: boolean;
-  theme: { colors: Record<string, string> };
+  theme: import('../theme/theme').Theme;
   isDark: boolean;
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
@@ -1866,196 +1867,67 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
         <View style={{ gap: 8 }}>
           {displayed.map(item => {
             const bucket   = toBucket(item.ai_status);
-            const cfg      = bucketConfig(bucket);
-            const uri      = item.media_uri ?? item.photo_uri ?? null;
             const isOpen   = expandedId === item.id;
             const stale    = isStale(item.timestamp, item.ai_status);
-
             const isSelected = selectedIds.has(item.id);
 
+            const cardItem: EvidenceCardItem = {
+              id: item.id,
+              mediaUri: item.media_uri ?? item.photo_uri ?? null,
+              inspectionPointId: item.inspection_point_id ?? null,
+              timestamp: item.timestamp ?? null,
+              gpsLat: item.gps_lat ?? null,
+              gpsLng: item.gps_lng ?? null,
+              fieldNote: item.field_note ?? null,
+              aiStatus: item.ai_status ?? null,
+              aiNotes: item.ai_notes ?? null,
+              userId: item.user_id ?? null,
+              syncStatus: (item.sync_status ?? 'PENDING') as 'PENDING' | 'SYNCED' | 'FAILED',
+              bucket,
+              stale,
+            };
+
             return (
-              <View
-                key={item.id}
-                style={[tabSt.evidenceCard, {
-                  backgroundColor: isSelected ? theme.colors.accent + '08' : theme.colors.surface,
-                  borderColor: isSelected ? theme.colors.accent : isOpen ? theme.colors.accent : stale ? '#ef4444' : bucket === 'review' ? '#d97706' : theme.colors.border,
-                }]}
-              >
-                {/* Collapsed rij */}
-                <TouchableOpacity
-                  style={tabSt.evidenceRow}
-                  onPress={() => setExpandedId(isOpen ? null : item.id)}
-                  activeOpacity={0.75}
-                >
-                  {/* Selectie checkbox */}
-                  <TouchableOpacity
-                    style={[tabSt.checkBox, {
-                      borderColor: isSelected ? theme.colors.accent : theme.colors.border,
-                      backgroundColor: isSelected ? theme.colors.accent : 'transparent',
-                      width: 20, height: 20, borderRadius: 5, flexShrink: 0,
-                    }]}
-                    onPress={() => toggleSelect(item.id)}
-                    activeOpacity={0.7}
-                  >
-                    {isSelected && <Text style={{ color: '#fff', fontSize: 10, fontWeight: '900' }}>✓</Text>}
-                  </TouchableOpacity>
-                  {/* Thumbnail */}
-                  <View style={{ position: 'relative', flexShrink: 0 }}>
-                    {uri
-                      ? <Image source={{ uri }} style={tabSt.thumb} resizeMode="cover" />
-                      : <View style={[tabSt.thumbEmpty, { backgroundColor: theme.colors.border }]}><Text style={{ fontSize: 20 }}>📷</Text></View>
+              <View key={item.id} style={{ gap: 0 }}>
+                <EvidenceCard
+                  item={cardItem}
+                  theme={theme}
+                  selected={isSelected}
+                  expanded={isOpen}
+                  commentCount={commentCountMap.get(item.id) ?? 0}
+                  onToggleExpand={(id) => setExpandedId(prev => prev === id ? null : id)}
+                  onToggleSelect={toggleSelect}
+                  onApprove={onApprove}
+                  onReject={onReject}
+                  onShareWhatsApp={(id) => shareViaWhatsApp({
+                    projectId,
+                    taskTitle: item.inspection_point_id ?? 'Borgingspunt',
+                    inspectionPointId: item.inspection_point_id ?? id,
+                    timestamp: item.timestamp ?? new Date().toISOString(),
+                    latitude: item.gps_lat ?? 0,
+                    longitude: item.gps_lng ?? 0,
+                    evidenceId: id,
+                  })}
+                  onToggleComments={(id) => {
+                    setCommentsOpenId(prev => prev === id ? null : id);
+                    if (expandedId !== id) setExpandedId(id);
+                  }}
+                  onEdit={(id) => {
+                    if (editingId === id) {
+                      setEditingId(null);
+                    } else {
+                      setEditingId(id);
+                      setEditFieldNote(item.field_note ?? '');
+                      setEditPointId(item.inspection_point_id ?? '');
+                      setEditStatus(item.ai_status ?? 'PENDING');
+                      if (expandedId !== id) setExpandedId(id);
                     }
-                    {/* Sync dot */}
-                    <View style={[tabSt.syncDot, {
-                      backgroundColor: item.sync_status === 'SYNCED' ? '#059669' : item.sync_status === 'FAILED' ? '#ef4444' : '#d97706',
-                      borderColor: isDark ? '#111' : '#fff',
-                    }]} />
-                  </View>
+                  }}
+                />
 
-                  {/* Info */}
-                  <View style={{ flex: 1, gap: 3 }}>
-                    <Text style={[tabSt.evidencePid, { color: theme.colors.textPrimary }]} numberOfLines={1}>
-                      {item.inspection_point_id ?? '—'}
-                    </Text>
-                    <Text style={[tabSt.evidenceMeta, { color: theme.colors.textSecondary }]}>
-                      🕐 {fmtDate(item.timestamp)}
-                    </Text>
-                    {item.gps_lat != null && (
-                      <Text style={[tabSt.evidenceMeta, { color: theme.colors.textSecondary }]}>
-                        📍 {item.gps_lat.toFixed(4)}, {item.gps_lng?.toFixed(4)}
-                      </Text>
-                    )}
-                    {item.field_note ? (
-                      <Text style={[tabSt.evidenceMeta, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                        📝 {item.field_note}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  {/* Status badge */}
-                  <View style={{ alignItems: 'flex-end', gap: 6 }}>
-                    <View style={[tabSt.statusBadge, { backgroundColor: cfg.bg }]}>
-                      <Text style={[tabSt.statusBadgeText, { color: cfg.text }]}>
-                        {cfg.icon} {bucket.charAt(0).toUpperCase() + bucket.slice(1)}
-                      </Text>
-                    </View>
-                    {stale && (
-                      <View style={[tabSt.statusBadge, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
-                        <Text style={[tabSt.statusBadgeText, { color: '#ef4444' }]}>⏰ 24u+</Text>
-                      </View>
-                    )}
-                    <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>{isOpen ? '▲' : '▼'}</Text>
-                  </View>
-                </TouchableOpacity>
-
-                {/* Approve / Reject knoppen (altijd zichtbaar) */}
-                <View style={[tabSt.actionRow, { borderTopColor: theme.colors.border }]}>
-                  <TouchableOpacity
-                    style={[tabSt.approveBtn, { opacity: bucket === 'akkoord' ? 0.45 : 1 }]}
-                    onPress={() => onApprove(item.id)}
-                    disabled={bucket === 'akkoord'}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={tabSt.approveBtnText}>✓ Goed</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[tabSt.rejectBtn, { opacity: bucket === 'afgekeurd' ? 0.45 : 1, borderColor: theme.colors.border }]}
-                    onPress={() => onReject(item.id)}
-                    disabled={bucket === 'afgekeurd'}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>✗ Afkeur</Text>
-                  </TouchableOpacity>
-                  {/* WhatsApp delen */}
-                  <TouchableOpacity
-                    style={[tabSt.rejectBtn, { borderColor: 'rgba(37,211,102,0.4)', backgroundColor: 'rgba(37,211,102,0.08)' }]}
-                    onPress={() => shareViaWhatsApp({
-                      projectId,
-                      taskTitle: item.inspection_point_id ?? 'Borgingspunt',
-                      inspectionPointId: item.inspection_point_id ?? item.id,
-                      timestamp: item.timestamp ?? new Date().toISOString(),
-                      latitude: item.gps_lat ?? 0,
-                      longitude: item.gps_lng ?? 0,
-                      evidenceId: item.id,
-                    })}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ color: '#25D366', fontSize: 12, fontWeight: '800' }}>📱</Text>
-                  </TouchableOpacity>
-                  {/* Opmerkingen toggle */}
-                  <TouchableOpacity
-                    style={[tabSt.rejectBtn, {
-                      borderColor: commentsOpenId === item.id ? theme.colors.accent + '60' : theme.colors.border,
-                      backgroundColor: commentsOpenId === item.id ? theme.colors.accent + '10' : 'transparent',
-                    }]}
-                    onPress={() => {
-                      setCommentsOpenId(prev => prev === item.id ? null : item.id);
-                      if (expandedId !== item.id) setExpandedId(item.id);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ fontSize: 12, color: commentsOpenId === item.id ? theme.colors.accent : theme.colors.textSecondary, fontWeight: '800' }}>
-                      💬{(commentCountMap.get(item.id) ?? 0) > 0 ? ` ${commentCountMap.get(item.id)}` : ''}
-                    </Text>
-                  </TouchableOpacity>
-                  {/* Bewerken — keyuser / projectleider / WV */}
-                  <TouchableOpacity
-                    style={[tabSt.rejectBtn, {
-                      borderColor: editingId === item.id ? theme.colors.accent + '60' : theme.colors.border,
-                      backgroundColor: editingId === item.id ? theme.colors.accent + '10' : 'transparent',
-                    }]}
-                    onPress={() => {
-                      if (editingId === item.id) {
-                        setEditingId(null);
-                      } else {
-                        setEditingId(item.id);
-                        setEditFieldNote(item.field_note ?? '');
-                        setEditPointId(item.inspection_point_id ?? '');
-                        setEditStatus(item.ai_status ?? 'PENDING');
-                        if (expandedId !== item.id) setExpandedId(item.id);
-                      }
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ fontSize: 12, color: editingId === item.id ? theme.colors.accent : theme.colors.textSecondary }}>✏️</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={{ marginLeft: 'auto' as unknown as number, padding: 8 }}
-                    onPress={() => setExpandedId(isOpen ? null : item.id)}
-                  >
-                    <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
-                      {isOpen ? '▲' : '▼'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Uitgebreid */}
+                {/* Edit-form en comments-thread blijven los onder de card */}
                 {isOpen && (
-                  <View style={[tabSt.expanded, { borderTopColor: theme.colors.border }]}>
-                    {uri && <Image source={{ uri }} style={tabSt.thumbLarge} resizeMode="contain" />}
-                    <View style={{ gap: 6, marginTop: 10 }}>
-                      {item.ai_notes ? (
-                        <View style={[tabSt.infoRow, { backgroundColor: cfg.bg }]}>
-                          <Text style={[tabSt.infoLabel, { color: cfg.text }]}>AI notitie</Text>
-                          <Text style={[tabSt.infoValue, { color: cfg.text }]}>{item.ai_notes}</Text>
-                        </View>
-                      ) : null}
-                      {item.user_id ? (
-                        <View style={tabSt.infoRow}>
-                          <Text style={[tabSt.infoLabel, { color: theme.colors.textSecondary }]}>Geüpload door</Text>
-                          <Text style={[tabSt.infoValue, { color: theme.colors.textPrimary }]}>{item.user_id}</Text>
-                        </View>
-                      ) : null}
-                      {item.gps_lat != null && item.gps_lng != null && (
-                        <View style={tabSt.infoRow}>
-                          <Text style={[tabSt.infoLabel, { color: theme.colors.textSecondary }]}>GPS</Text>
-                          <Text style={[tabSt.infoValue, { color: theme.colors.textPrimary }]}>
-                            {item.gps_lat.toFixed(5)}, {item.gps_lng.toFixed(5)}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    {/* Inline bewerken */}
+                  <View style={{ gap: 6, marginTop: 6 }}>
                     {editingId === item.id && (
                       <View style={[tabSt.editBox, { backgroundColor: theme.colors.background, borderColor: theme.colors.accent + '40' }]}>
                         <Text style={[tabSt.editTitle, { color: theme.colors.accent }]}>✏️ BEWERKEN</Text>
