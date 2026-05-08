@@ -1,5 +1,4 @@
-const fs = require('fs');
-const path = require('path');
+const { getSupabaseAdminClient } = require('./supabaseAdmin');
 
 export interface TenantConfig {
   companyId: string;
@@ -29,7 +28,7 @@ export interface CreateTenantInput {
   supabaseAnonKey?: string;
 }
 
-const DATA_FILE = path.join(__dirname, '../../data/tenants.json');
+const TABLE = 'tenants';
 
 // ── slug-helpers ──────────────────────────────────────────────────────────
 function slugifyCompanyName(name: string): string {
@@ -50,51 +49,104 @@ function uniqueCompanyId(base: string, taken: Set<string>): string {
 
 const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-class TenantService {
-  static _readTenants(): TenantConfig[] {
-    try {
-      if (fs.existsSync(DATA_FILE)) {
-        const data = fs.readFileSync(DATA_FILE, 'utf8');
-        return JSON.parse(data);
-      }
-    } catch (err) {
-      console.error('Error reading tenants file', err);
-    }
-    return [];
-  }
+// ── row ↔ config mapping (snake_case in DB, camelCase in app) ─────────────
+function rowToConfig(row: any): TenantConfig {
+  return {
+    companyId: row.company_id,
+    name: row.name,
+    status: row.status,
+    users: row.users ?? 0,
+    createdAt:
+      typeof row.created_at === 'string'
+        ? row.created_at.split('T')[0] ?? row.created_at
+        : new Date(row.created_at).toISOString().split('T')[0] ?? '',
+    supabaseUrl: row.supabase_url ?? '',
+    supabaseAnonKey: row.supabase_anon_key ?? '',
+    adminEmail: row.admin_email ?? undefined,
+    provisioningStatus: row.provisioning_status ?? 'pending',
+  };
+}
 
-  static _writeTenants(tenants: TenantConfig[]) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(tenants, null, 2), 'utf8');
+function configToRow(cfg: TenantConfig): Record<string, any> {
+  return {
+    company_id: cfg.companyId,
+    name: cfg.name,
+    status: cfg.status,
+    users: cfg.users,
+    created_at: cfg.createdAt,
+    supabase_url: cfg.supabaseUrl,
+    supabase_anon_key: cfg.supabaseAnonKey,
+    admin_email: cfg.adminEmail ?? null,
+    provisioning_status: cfg.provisioningStatus ?? 'pending',
+  };
+}
+
+// Demo-fallback voor lokale dev / tests: als Supabase niet bereikbaar is
+// of de tabel leeg is, retourneer de hard-coded demo zodat login blijft werken.
+const DEMO_FALLBACK: TenantConfig = {
+  companyId: 'demo',
+  name: 'Demo Bouwgroep BV',
+  status: 'active',
+  users: 3,
+  createdAt: '2026-01-15',
+  supabaseUrl: process.env.SUPABASE_URL || 'https://kgiuavfvhtdgwuygbyzo.supabase.co',
+  supabaseAnonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaXVhdmZ2aHRkZ3d1eWdieXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MzgzOTMsImV4cCI6MjA5MzAxNDM5M30.ezL6iv8bSXM4ZNZwtiesYdgiirUPKzh3fhu18HvLMpc',
+  adminEmail: 'demo@speesolutions.nl',
+  provisioningStatus: 'provisioned',
+};
+
+class TenantService {
+  static async _readAll(): Promise<TenantConfig[]> {
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase.from(TABLE).select('*');
+      if (error) {
+        console.error('[TenantService] read error', error);
+        return [];
+      }
+      return (data ?? []).map(rowToConfig);
+    } catch (err) {
+      console.error('[TenantService] supabase unavailable', err);
+      return [];
+    }
   }
 
   static async resolveTenant(companyId: string): Promise<TenantConfig> {
-    const tenants = this._readTenants();
-    const tenant = tenants.find(t => t.companyId.toLowerCase() === companyId.toLowerCase());
+    const id = companyId.toLowerCase();
 
-    if (tenant) {
-      if (tenant.status !== 'active') {
-        throw new Error('Dit account is niet actief. Neem contact op met Spee Solutions.');
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('*')
+        .eq('company_id', id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[TenantService] resolveTenant error', error);
       }
-      return tenant;
+
+      if (data) {
+        const cfg = rowToConfig(data);
+        if (cfg.status !== 'active') {
+          throw new Error('Dit account is niet actief. Neem contact op met Spee Solutions.');
+        }
+        return cfg;
+      }
+    } catch (err: any) {
+      // Alleen swallowen als het een infra-fout is; status-fout doorgooien.
+      if (err?.message?.includes('niet actief')) throw err;
+      console.error('[TenantService] supabase unavailable, fallback', err);
     }
 
-    // Fallback for demo if missing in JSON
-    if (companyId.toLowerCase() === 'demo') {
-      return {
-        companyId: 'demo',
-        name: 'Demo Bouwgroep BV',
-        status: 'active',
-        users: 3,
-        createdAt: '2026-01-15',
-        supabaseUrl: process.env.SUPABASE_URL || 'https://kgiuavfvhtdgwuygbyzo.supabase.co',
-        supabaseAnonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaXVhdmZ2aHRkZ3d1eWdieXpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0MzgzOTMsImV4cCI6MjA5MzAxNDM5M30.ezL6iv8bSXM4ZNZwtiesYdgiirUPKzh3fhu18HvLMpc'
-      };
-    }
+    // Fallback demo zodat lokaal/CI altijd werkt
+    if (id === 'demo') return DEMO_FALLBACK;
+
     throw new Error('Bedrijfs-ID niet gevonden. Controleer je licentie.');
   }
 
   static async getAllTenants(): Promise<TenantConfig[]> {
-    return this._readTenants();
+    return this._readAll();
   }
 
   /**
@@ -111,8 +163,8 @@ class TenantService {
   static async createTenant(
     input: CreateTenantInput | Partial<TenantConfig>
   ): Promise<TenantConfig> {
-    const tenants = this._readTenants();
-    const taken = new Set(tenants.map(t => t.companyId.toLowerCase()));
+    const existing = await this._readAll();
+    const taken = new Set(existing.map(t => t.companyId.toLowerCase()));
 
     // Normaliseer beide input-shapes naar één object
     const companyName =
@@ -164,9 +216,18 @@ class TenantService {
       provisioningStatus,
     };
 
-    tenants.push(newTenant);
-    this._writeTenants(tenants);
-    return newTenant;
+    const supabase = getSupabaseAdminClient();
+    const { data, error } = await supabase
+      .from(TABLE)
+      .insert(configToRow(newTenant))
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[TenantService] createTenant error', error);
+      throw new Error(`Kon tenant niet aanmaken: ${error.message}`);
+    }
+    return rowToConfig(data);
   }
 
   /**
@@ -177,16 +238,23 @@ class TenantService {
     companyId: string,
     patch: Partial<TenantConfig>
   ): Promise<TenantConfig> {
-    const tenants = this._readTenants();
-    const idx = tenants.findIndex(
-      t => t.companyId.toLowerCase() === companyId.toLowerCase()
-    );
-    if (idx === -1) throw new Error(`Tenant "${companyId}" niet gevonden.`);
+    const id = companyId.toLowerCase();
+    const supabase = getSupabaseAdminClient();
 
-    const current = tenants[idx]!;
     // companyId mag niet gewijzigd worden — anders breken bestaande logins
     const { companyId: _ignored, ...allowed } = patch;
-    const merged: TenantConfig = { ...current, ...allowed };
+
+    // Haal current op om provisioning-status te kunnen herberekenen
+    const { data: current, error: fetchErr } = await supabase
+      .from(TABLE)
+      .select('*')
+      .eq('company_id', id)
+      .maybeSingle();
+
+    if (fetchErr) throw new Error(`Kon tenant niet laden: ${fetchErr.message}`);
+    if (!current) throw new Error(`Tenant "${companyId}" niet gevonden.`);
+
+    const merged: TenantConfig = { ...rowToConfig(current), ...allowed };
 
     if (merged.supabaseUrl && merged.supabaseAnonKey) {
       merged.provisioningStatus = 'provisioned';
@@ -194,9 +262,18 @@ class TenantService {
       merged.provisioningStatus = 'pending';
     }
 
-    tenants[idx] = merged;
-    this._writeTenants(tenants);
-    return merged;
+    const { data, error } = await supabase
+      .from(TABLE)
+      .update(configToRow(merged))
+      .eq('company_id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[TenantService] updateTenant error', error);
+      throw new Error(`Kon tenant niet bijwerken: ${error.message}`);
+    }
+    return rowToConfig(data);
   }
 }
 
