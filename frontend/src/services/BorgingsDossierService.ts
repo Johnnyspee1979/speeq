@@ -520,6 +520,447 @@ export async function exportDossierAsPdf(
 }
 
 // ────────────────────────────────────────────────
+// Sprint 4 — Officieel WKB-rapport (Gemeente / Kwaliteitsborger)
+//
+// Drie formats:
+//  - INTERNAL     : alles, inclusief afgekeurd / pending (interne controle)
+//  - MUNICIPALITY : alles + volledige metadata-tabel (bevoegd gezag)
+//  - AUDITOR      : alléén PASSED bewijs (kwaliteitsborger oplevering)
+// ────────────────────────────────────────────────
+
+export type WkbExportFormat = 'INTERNAL' | 'MUNICIPALITY' | 'AUDITOR';
+
+const FORMAT_LABEL: Record<WkbExportFormat, string> = {
+  INTERNAL: 'Intern dossier',
+  MUNICIPALITY: 'Gemeente / bevoegd gezag',
+  AUDITOR: 'Kwaliteitsborger oplevering',
+};
+
+const FORMAT_TAG: Record<WkbExportFormat, string> = {
+  INTERNAL: 'Intern — alle bewijzen',
+  MUNICIPALITY: 'Officieel — bevoegd gezag',
+  AUDITOR: 'Oplevering — alleen akkoord',
+};
+
+/**
+ * Filtert evidence op basis van het gekozen exportformat.
+ *  - AUDITOR: alleen items met aiStatus PASSED / APPROVED / OK
+ *  - INTERNAL & MUNICIPALITY: ongefilterd
+ */
+export function filterEvidenceForExport(
+  evidence: StoredWkbEvidence[],
+  format: WkbExportFormat
+): StoredWkbEvidence[] {
+  if (format !== 'AUDITOR') return evidence;
+  return evidence.filter((e) =>
+    ['PASSED', 'APPROVED', 'OK'].includes((e.aiStatus ?? '').toUpperCase())
+  );
+}
+
+/**
+ * generateOfficialWkbReport — produceert een gemeente-grade HTML rapport.
+ * Per EvidenceRow worden de WKB-kritieke metadata expliciet als tabelkolom
+ * geprint:  timestamp · gps_accuracy · exif_hash · exif_verified ·
+ *           ai_status · floor_plan_id · pin_x · pin_y
+ */
+export function generateOfficialWkbReport(
+  evidence: StoredWkbEvidence[],
+  projectId: string,
+  projectName: string,
+  imageMap: Record<string, string> = {},
+  meta: DossierMeta = {},
+  signatures: DossierSignatures = {},
+  floorPlanAnnotations: FloorPlanAnnotation[] = [],
+  format: WkbExportFormat = 'MUNICIPALITY'
+): string {
+  const now = new Date().toLocaleString('nl-NL', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+  });
+
+  const formatTimestamp = (iso?: string | null) => {
+    if (!iso) return '—';
+    try {
+      return new Date(iso).toLocaleString('nl-NL', {
+        dateStyle: 'short',
+        timeStyle: 'medium',
+      });
+    } catch {
+      return iso;
+    }
+  };
+
+  const truncateHash = (h?: string | null) => {
+    if (!h) return '—';
+    if (h.length <= 16) return h;
+    return `${h.slice(0, 8)}…${h.slice(-6)}`;
+  };
+
+  const safeId = (id: string) => id.replace(/[^a-zA-Z0-9-_]/g, '-');
+
+  const totalCount = evidence.length;
+  const syncedCount = evidence.filter((e) => e.syncStatus === 'SYNCED').length;
+  const exifVerifiedCount = evidence.filter((e) => e.exifVerified === true).length;
+  const passedCount = evidence.filter((e) =>
+    ['PASSED', 'APPROVED', 'OK'].includes((e.aiStatus ?? '').toUpperCase())
+  ).length;
+
+  // ── WKB compliance tabel rows ─────────────────
+  const tableRows = evidence
+    .map((item, idx) => {
+      const ts = formatTimestamp(item.timestamp);
+      const gps = item.gpsAccuracy != null ? `±${item.gpsAccuracy.toFixed(1)} m` : '—';
+      const hash = truncateHash(item.exifHash);
+      const exifOk = item.exifVerified === true ? '✓' : item.exifVerified === false ? '✗' : '—';
+      const exifColor = item.exifVerified === true ? '#059669' : item.exifVerified === false ? '#ef4444' : '#9ca3af';
+      const ai = (item.aiStatus ?? 'PENDING').toUpperCase();
+      const aiColor =
+        ai === 'PASSED' || ai === 'APPROVED' || ai === 'OK'
+          ? '#059669'
+          : ai === 'NEEDS_REVIEW' || ai === 'WARNING'
+          ? '#d97706'
+          : ai === 'FAILED' || ai === 'REJECTED'
+          ? '#ef4444'
+          : '#6b7280';
+      const floorRef = item.floorPlanId ? safeId(item.floorPlanId).slice(0, 8) : '—';
+      const pinX = item.pinX != null ? item.pinX.toFixed(3) : '—';
+      const pinY = item.pinY != null ? item.pinY.toFixed(3) : '—';
+      const lat = item.latitude?.toFixed(5) ?? '—';
+      const lon = item.longitude?.toFixed(5) ?? '—';
+
+      return `
+        <tr>
+          <td class="row-num">${idx + 1}</td>
+          <td class="mono small">${item.inspectionPointId ?? '—'}</td>
+          <td class="mono">${ts}</td>
+          <td>${lat}, ${lon}</td>
+          <td>${gps}</td>
+          <td class="mono small" title="${item.exifHash ?? ''}">${hash}</td>
+          <td style="color:${exifColor};font-weight:800;text-align:center">${exifOk}</td>
+          <td><span class="ai-pill" style="background:${aiColor}1a;color:${aiColor};border-color:${aiColor}33">${ai}</span></td>
+          <td class="mono small">${floorRef}</td>
+          <td class="mono small">${pinX}</td>
+          <td class="mono small">${pinY}</td>
+        </tr>`;
+    })
+    .join('');
+
+  // ── Foto bijlage (alleen bij MUNICIPALITY/INTERNAL — AUDITOR is al gefilterd) ──
+  const photoBlocks = evidence
+    .map((item, idx) => {
+      const imgSrc = item.id ? imageMap[item.id] : null;
+      return `
+        <div class="photo-card">
+          <div class="photo-header">
+            <span class="photo-num">#${idx + 1}</span>
+            <span class="photo-pid">${item.inspectionPointId ?? '—'}</span>
+            <span class="photo-time">${formatTimestamp(item.timestamp)}</span>
+          </div>
+          ${imgSrc
+            ? `<img src="${imgSrc}" alt="${item.inspectionPointId ?? ''}" />`
+            : `<div class="photo-empty">📷 Geen foto beschikbaar</div>`}
+          <div class="photo-meta">
+            <div><b>Hash:</b> <span class="mono">${item.exifHash ?? '—'}</span></div>
+            <div><b>Locatie:</b> ${item.latitude?.toFixed(5) ?? '—'}, ${item.longitude?.toFixed(5) ?? '—'}</div>
+            ${item.fieldNote ? `<div><b>Notitie:</b> ${item.fieldNote}</div>` : ''}
+          </div>
+        </div>`;
+    })
+    .join('');
+
+  // ── Projectgegevens regels ────────────────────
+  const metaLines = [
+    meta.aannemer ? `<div class="meta-info-row"><b>Aannemer:</b> ${meta.aannemer}</div>` : '',
+    meta.adres ? `<div class="meta-info-row"><b>Adres:</b> ${meta.adres}</div>` : '',
+    meta.vergunning ? `<div class="meta-info-row"><b>Vergunning:</b> ${meta.vergunning}</div>` : '',
+    meta.kwaliteitsborger ? `<div class="meta-info-row"><b>Kwaliteitsborger:</b> ${meta.kwaliteitsborger}</div>` : '',
+  ].filter(Boolean).join('');
+
+  return `<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WKB Officieel rapport — ${projectId}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11px; color: #1a1a1a; background: #f5f5f5;
+    }
+    .page { background: #fff; max-width: 1100px; margin: 0 auto; padding: 36px 32px; }
+    .mono { font-family: 'SF Mono', Menlo, Consolas, monospace; }
+    .small { font-size: 10px; }
+
+    .print-bar {
+      position: sticky; top: 0; background: #fff;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 10px 0; margin-bottom: 22px;
+      display: flex; align-items: center; gap: 12px; z-index: 10;
+    }
+    .btn-print {
+      background: #111827; color: #fff; border: none;
+      padding: 9px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 800; cursor: pointer;
+    }
+    .btn-print:hover { background: #000; }
+
+    .cover { border-bottom: 3px solid #111827; padding-bottom: 18px; margin-bottom: 24px; }
+    .cover-tag {
+      font-size: 10px; font-weight: 800; letter-spacing: 3px;
+      color: #111827; text-transform: uppercase; margin-bottom: 6px;
+    }
+    .cover-title { font-size: 26px; font-weight: 900; color: #111; letter-spacing: -0.4px; margin-bottom: 4px; }
+    .cover-sub { font-size: 13px; color: #555; margin-bottom: 14px; }
+    .format-pill {
+      display: inline-block; background: #111827; color: #fff;
+      padding: 4px 12px; border-radius: 100px; font-size: 10px;
+      font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .meta-info-row { font-size: 11px; color: #555; margin-top: 3px; }
+
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px; margin: 14px 0 6px;
+    }
+    .stat-box {
+      background: #f8f8f8; border: 1px solid #e5e5e5; border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .stat-value { font-size: 20px; font-weight: 900; color: #111; }
+    .stat-label { font-size: 9px; color: #888; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; margin-top: 2px; }
+
+    h2.section-title {
+      font-size: 13px; font-weight: 800; letter-spacing: 1.5px;
+      text-transform: uppercase; color: #111;
+      margin: 28px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #111;
+    }
+
+    table.wkb-table {
+      width: 100%; border-collapse: collapse; font-size: 10px;
+      margin-bottom: 18px;
+    }
+    table.wkb-table th {
+      background: #111827; color: #fff; padding: 8px 6px;
+      font-weight: 800; text-align: left; font-size: 9px;
+      letter-spacing: 0.8px; text-transform: uppercase;
+      border: 1px solid #111827;
+    }
+    table.wkb-table td {
+      padding: 6px 6px; border: 1px solid #e5e5e5;
+      vertical-align: top; line-height: 1.35;
+    }
+    table.wkb-table tr:nth-child(even) td { background: #fafafa; }
+    .row-num { text-align: center; color: #888; font-weight: 700; width: 28px; }
+    .ai-pill {
+      display: inline-block; padding: 2px 8px; border-radius: 100px;
+      font-size: 9px; font-weight: 800; letter-spacing: 0.5px;
+      border: 1px solid;
+    }
+
+    .photos-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 14px; margin-bottom: 18px;
+    }
+    .photo-card { border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; background: #fff; page-break-inside: avoid; }
+    .photo-header {
+      background: #f8f8f8; padding: 6px 10px; border-bottom: 1px solid #e5e5e5;
+      display: flex; gap: 10px; align-items: center; font-size: 10px;
+    }
+    .photo-num { font-weight: 900; color: #111827; }
+    .photo-pid { font-family: monospace; color: #555; flex: 1; }
+    .photo-time { color: #888; font-size: 9px; }
+    .photo-card img { width: 100%; height: 220px; object-fit: cover; display: block; }
+    .photo-empty { height: 120px; display: flex; align-items: center; justify-content: center; color: #aaa; }
+    .photo-meta { padding: 8px 10px; font-size: 10px; color: #444; line-height: 1.5; }
+    .photo-meta b { color: #111; font-weight: 700; }
+
+    .floor-plan-block { margin-top: 18px; page-break-inside: avoid; }
+    .floor-plan-block h3 { font-size: 12px; margin-bottom: 6px; }
+
+    .sig-section {
+      margin-top: 28px; padding: 18px; border: 1px solid #e5e5e5;
+      border-radius: 10px; background: #fafafa;
+    }
+    .sig-title { font-size: 10px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-bottom: 14px; }
+    .sig-grid { display: flex; gap: 24px; flex-wrap: wrap; }
+    .sig-box { flex: 1; min-width: 200px; }
+    .sig-label { font-size: 10px; color: #888; font-weight: 700; margin-bottom: 6px; }
+    .sig-img { width: 100%; height: 80px; border: 1px solid #ddd; border-radius: 6px; object-fit: contain; background: #fff; }
+    .sig-empty { width: 100%; height: 80px; border: 1px dashed #ddd; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 11px; }
+    .sig-name { font-size: 11px; color: #555; margin-top: 5px; font-weight: 600; }
+
+    .footer {
+      margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e5e5;
+      font-size: 9px; color: #aaa;
+      display: flex; justify-content: space-between;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page { padding: 16px 14px; max-width: 100%; }
+      .print-bar { display: none !important; }
+      table.wkb-table { font-size: 8.5px; }
+      .photos-grid { grid-template-columns: repeat(2, 1fr); }
+      .photo-card { page-break-inside: avoid; }
+      @page { margin: 12mm; size: A4 landscape; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="print-bar">
+      <button class="btn-print" onclick="window.print()">📄 PDF opslaan / Afdrukken</button>
+      <span style="font-size:11px;color:#888">${FORMAT_LABEL[format]} · ${totalCount} bewijzen · gegenereerd ${now}</span>
+    </div>
+
+    <div class="cover">
+      <div class="format-pill">${FORMAT_TAG[format]}</div>
+      <div class="cover-tag">WKB Officieel rapport</div>
+      <div class="cover-title">${projectName}</div>
+      <div class="cover-sub">Project ${projectId} &nbsp;·&nbsp; ${now}</div>
+      ${metaLines ? `<div style="margin-top:8px">${metaLines}</div>` : ''}
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value">${totalCount}</div>
+          <div class="stat-label">Bewijzen totaal</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" style="color:#059669">${passedCount}</div>
+          <div class="stat-label">AI akkoord</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" style="color:#2563eb">${syncedCount}</div>
+          <div class="stat-label">Cloud gesynced</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" style="color:#7c3aed">${exifVerifiedCount}</div>
+          <div class="stat-label">EXIF geverifieerd</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title">WKB Compliance Tabel</h2>
+    ${totalCount > 0 ? `
+    <table class="wkb-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Borgingspunt</th>
+          <th>Timestamp</th>
+          <th>GPS coord.</th>
+          <th>GPS nauwkeurig.</th>
+          <th>EXIF hash</th>
+          <th>EXIF ✓</th>
+          <th>AI status</th>
+          <th>Tekening</th>
+          <th>Pin X</th>
+          <th>Pin Y</th>
+        </tr>
+      </thead>
+      <tbody>${tableRows}</tbody>
+    </table>` : '<p style="color:#888;padding:18px;text-align:center;">Geen bewijzen geselecteerd voor dit format.</p>'}
+
+    ${totalCount > 0 ? `
+    <h2 class="section-title">Foto bijlage</h2>
+    <div class="photos-grid">${photoBlocks}</div>` : ''}
+
+    ${floorPlanAnnotations.length > 0 ? `
+    <h2 class="section-title">📐 Locaties op tekening</h2>
+    ${floorPlanAnnotations.map(fp => `
+      <div class="floor-plan-block">
+        <h3>${fp.name}</h3>
+        <div style="position:relative;display:inline-block;width:100%">
+          <img src="${fp.imageBase64}" style="width:100%;display:block;border-radius:8px" />
+          <svg style="position:absolute;top:0;left:0;width:100%;height:100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            ${fp.pins.map(p => `
+              <circle cx="${(p.x * 100).toFixed(2)}" cy="${(p.y * 100).toFixed(2)}" r="1.8"
+                fill="${pinColorHex(p.aiStatus)}" stroke="white" stroke-width="0.4" opacity="0.9" />
+            `).join('')}
+          </svg>
+        </div>
+        <div style="font-size:11px;color:#888;margin-top:6px">${fp.pins.length} pin${fp.pins.length !== 1 ? 's' : ''} op deze tekening</div>
+      </div>
+    `).join('')}` : ''}
+
+    ${(signatures.projectleider || signatures.opdrachtgever) ? `
+    <div class="sig-section">
+      <div class="sig-title">Ondertekening oplevering</div>
+      <div class="sig-grid">
+        <div class="sig-box">
+          <div class="sig-label">PROJECTLEIDER / AANNEMER</div>
+          ${signatures.projectleider
+            ? `<img src="${signatures.projectleider}" class="sig-img" alt="Handtekening projectleider" />`
+            : `<div class="sig-empty">Nog niet ondertekend</div>`}
+          ${signatures.projectleiderNaam ? `<div class="sig-name">${signatures.projectleiderNaam}</div>` : ''}
+        </div>
+        <div class="sig-box">
+          <div class="sig-label">OPDRACHTGEVER</div>
+          ${signatures.opdrachtgever
+            ? `<img src="${signatures.opdrachtgever}" class="sig-img" alt="Handtekening opdrachtgever" />`
+            : `<div class="sig-empty">Nog niet ondertekend</div>`}
+          ${signatures.opdrachtgeverNaam ? `<div class="sig-name">${signatures.opdrachtgeverNaam}</div>` : ''}
+        </div>
+      </div>
+    </div>` : ''}
+
+    <div class="footer">
+      <span>SpeeQ — Spee Solutions · ${FORMAT_LABEL[format]}</span>
+      <span>Officieel rapport ${projectId} · ${now}</span>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * exportWkbReportAsPdf — opent het officiële rapport in een nieuw venster
+ * en triggert print(). Filtert evidence automatisch op basis van het format.
+ */
+export async function exportWkbReportAsPdf(
+  evidence: StoredWkbEvidence[],
+  projectId: string,
+  projectName: string,
+  format: WkbExportFormat,
+  meta: DossierMeta = {},
+  signatures: DossierSignatures = {},
+  floorPlanAnnotations: FloorPlanAnnotation[] = []
+): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const filtered = filterEvidenceForExport(evidence, format);
+  const imageMap = await loadEvidenceImages(filtered);
+
+  const html = generateOfficialWkbReport(
+    filtered,
+    projectId,
+    projectName,
+    imageMap,
+    meta,
+    signatures,
+    floorPlanAnnotations,
+    format
+  );
+
+  const w = window.open('', '_blank', 'width=1100,height=780');
+
+  if (!w) {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+    return;
+  }
+
+  w.document.write(html);
+  w.document.close();
+  w.addEventListener('load', () => {
+    setTimeout(() => w.print(), 600);
+  });
+}
+
+// ────────────────────────────────────────────────
 // Upload HTML dossier naar Supabase Storage
 // en geeft de publieke URL terug (voor e-mail link)
 // ────────────────────────────────────────────────

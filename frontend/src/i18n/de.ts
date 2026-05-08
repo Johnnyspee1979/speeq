@@ -184,6 +184,22 @@ export const de: Record<string, string> = {
   'vak.live':             'LIVE',
   'vak.connecting':       'Verbinden…',
 
+  // ── Sprint 4 — Export / Berichte ───────────────────────────────────────────
+  'export.title':            'Dossier exportieren',
+  'export.subtitle':         'Wählen Sie das Format passend zum Empfänger',
+  'export.type_internal':    'Internes Dossier',
+  'export.type_municipality':'Gemeinde / Behörde',
+  'export.type_auditor':     'Qualitätsprüfer Übergabe',
+  'export.desc_internal':    'Alle Nachweise inklusive abgelehnter und ausstehender — für interne Kontrolle.',
+  'export.desc_municipality':'Vollständiges Dossier mit EXIF-Hashes und GPS-Metadaten — behördentauglich.',
+  'export.desc_auditor':     'Nur freigegebene Nachweise (PASSED) — für die Übergabe an den Prüfer.',
+  'export.include_metadata': 'Vollständige WKB-Metadaten einbeziehen (EXIF, GPS, KI-Status, Planpin)',
+  'export.only_passed':      'Nur freigegebene Nachweise',
+  'export.count_label':      'Nachweise in diesem Export',
+  'export.button':           'Als PDF exportieren',
+  'export.cancel':           'Abbrechen',
+  'export.generating':       'Bericht wird erstellt…',
+
   // ── Allgemein ──────────────────────────────────────────────────────────────
   'general.loading':      'Laden…',
   'general.error':        'Etwas ist schiefgelaufen',

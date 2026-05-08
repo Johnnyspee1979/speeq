@@ -184,6 +184,22 @@ export const nl: Record<string, string> = {
   'vak.live':             'LIVE',
   'vak.connecting':       'Verbinden…',
 
+  // ── Sprint 4 — Export / Rapportages ────────────────────────────────────────
+  'export.title':            'Dossier exporteren',
+  'export.subtitle':         'Kies het format dat past bij de ontvanger',
+  'export.type_internal':    'Intern dossier',
+  'export.type_municipality':'Gemeente / bevoegd gezag',
+  'export.type_auditor':     'Kwaliteitsborger oplevering',
+  'export.desc_internal':    'Alles inclusief afgekeurde en pending bewijzen — voor interne controle.',
+  'export.desc_municipality':'Volledige dossier mét EXIF-hashes en GPS-metadata — bevoegd gezag grade.',
+  'export.desc_auditor':     'Alléén goedgekeurde bewijzen (PASSED) — voor de oplevering naar de kwaliteitsborger.',
+  'export.include_metadata': 'Inclusief volledige WKB-metadata (EXIF, GPS, AI-status, tekening-pin)',
+  'export.only_passed':      'Alleen goedgekeurde bewijzen',
+  'export.count_label':      'Bewijzen in deze export',
+  'export.button':           'Exporteren als PDF',
+  'export.cancel':           'Annuleren',
+  'export.generating':       'Rapport genereren…',
+
   // ── Algemeen ───────────────────────────────────────────────────────────────
   'general.loading':      'Laden…',
   'general.error':        'Er ging iets mis',

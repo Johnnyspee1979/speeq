@@ -184,6 +184,22 @@ export const pl: Record<string, string> = {
   'vak.live':             'NA ŻYWO',
   'vak.connecting':       'Łączenie…',
 
+  // ── Sprint 4 — Eksport / Raporty ───────────────────────────────────────────
+  'export.title':            'Eksportuj dokumentację',
+  'export.subtitle':         'Wybierz format pasujący do odbiorcy',
+  'export.type_internal':    'Dokumentacja wewnętrzna',
+  'export.type_municipality':'Gmina / organ nadzoru',
+  'export.type_auditor':     'Przekazanie audytorowi jakości',
+  'export.desc_internal':    'Wszystkie dowody, w tym odrzucone i oczekujące — do kontroli wewnętrznej.',
+  'export.desc_municipality':'Pełna dokumentacja z hashami EXIF i metadanymi GPS — jakość urzędowa.',
+  'export.desc_auditor':     'Tylko zatwierdzone dowody (PASSED) — do przekazania audytorowi.',
+  'export.include_metadata': 'Uwzględnij pełne metadane WKB (EXIF, GPS, status AI, pinezka rzutu)',
+  'export.only_passed':      'Tylko zatwierdzone dowody',
+  'export.count_label':      'Dowody w tym eksporcie',
+  'export.button':           'Eksportuj jako PDF',
+  'export.cancel':           'Anuluj',
+  'export.generating':       'Generowanie raportu…',
+
   // ── Ogólne ─────────────────────────────────────────────────────────────────
   'general.loading':      'Ładowanie…',
   'general.error':        'Coś poszło nie tak',

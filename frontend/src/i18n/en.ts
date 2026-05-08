@@ -184,6 +184,22 @@ export const en: Record<string, string> = {
   'vak.live':             'LIVE',
   'vak.connecting':       'Connecting…',
 
+  // ── Sprint 4 — Export / Reports ────────────────────────────────────────────
+  'export.title':            'Export dossier',
+  'export.subtitle':         'Pick the format that matches the recipient',
+  'export.type_internal':    'Internal dossier',
+  'export.type_municipality':'Municipality / authority',
+  'export.type_auditor':     'Quality auditor handover',
+  'export.desc_internal':    'All evidence including rejected and pending — for internal review.',
+  'export.desc_municipality':'Complete dossier with EXIF hashes and GPS metadata — authority grade.',
+  'export.desc_auditor':     'Only approved evidence (PASSED) — for the auditor handover.',
+  'export.include_metadata': 'Include full WKB metadata (EXIF, GPS, AI status, plan pin)',
+  'export.only_passed':      'Only approved evidence',
+  'export.count_label':      'Evidence items in this export',
+  'export.button':           'Export as PDF',
+  'export.cancel':           'Cancel',
+  'export.generating':       'Generating report…',
+
   // ── General ────────────────────────────────────────────────────────────────
   'general.loading':      'Loading…',
   'general.error':        'Something went wrong',

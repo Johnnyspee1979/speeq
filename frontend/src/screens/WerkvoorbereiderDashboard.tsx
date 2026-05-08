@@ -24,6 +24,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import SignaturePad from '../components/SignaturePad';
+import DossierExportModal from '../components/DossierExportModal';
 import FloorPlanViewer from '../components/FloorPlanViewer';
 import QRStickerSheet from '../components/QRStickerSheet';
 import TaskAssignmentPanel from '../components/TaskAssignmentPanel';
@@ -213,6 +214,9 @@ export default function WerkvoorbereiderDashboard({
   const [sigOG, setSigOG]                   = useState<string | null>(null);   // opdrachtgever handtekening
   const [sigOGNaam, setSigOGNaam]           = useState('');
   const [pdfLoading, setPdfLoading]         = useState(false);
+
+  // ── Sprint 4 — Officieel WKB-rapport export modal ──────────────────────────
+  const [exportModalVisible, setExportModalVisible] = useState(false);
 
   // ── Dossier lock (Sprint 3 — WKB juridische bewaarplicht) ──────────────────
   const [dossier, setDossier]               = useState<DossierRow | null>(null);
@@ -1236,6 +1240,17 @@ export default function WerkvoorbereiderDashboard({
                 }
               </TouchableOpacity>
 
+              {/* Sprint 4 — Officieel WKB-rapport (3 formats) */}
+              <TouchableOpacity
+                style={[emailSt.actionBtn, { backgroundColor: '#11182710', borderColor: '#11182740' }]}
+                onPress={() => setExportModalVisible(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[emailSt.actionBtnText, { color: '#111827' }]}>
+                  📑 Officieel WKB-rapport (Gemeente / Borger)
+                </Text>
+              </TouchableOpacity>
+
               {/* E-mail verzenden */}
               <Text style={[emailSt.fieldLabel, { color: theme.colors.textSecondary }]}>E-MAILADRES ONTVANGER</Text>
               <TextInput
@@ -1354,6 +1369,42 @@ export default function WerkvoorbereiderDashboard({
           </View>
         </View>
       </Modal>
+
+      {/* Sprint 4 — Officieel WKB-rapport export */}
+      <DossierExportModal
+        visible={exportModalVisible}
+        onClose={() => setExportModalVisible(false)}
+        evidence={evidence.map((e: any) => ({
+          id: e.id,
+          projectId,
+          inspectionPointId: e.inspection_point_id ?? 'onbekend',
+          mediaUri: e.media_uri ?? e.photo_uri ?? '',
+          timestamp: e.timestamp ?? '',
+          latitude: e.gps_lat ?? null,
+          longitude: e.gps_lng ?? null,
+          gpsAccuracy: e.gps_accuracy ?? null,
+          exifHash: e.exif_hash ?? null,
+          exifVerified: e.exif_verified ?? null,
+          aiStatus: e.ai_status ?? null,
+          aiNotes: e.ai_notes ?? null,
+          aiConfidence: e.ai_confidence ?? null,
+          fieldNote: e.field_note ?? null,
+          floorPlanId: e.floor_plan_id ?? null,
+          pinX: e.pin_x ?? null,
+          pinY: e.pin_y ?? null,
+          syncStatus: (e.sync_status ?? 'SYNCED') as any,
+          weatherLabel: e.weather_label ?? null,
+        }))}
+        projectId={projectId}
+        projectName={projectName}
+        signatures={{
+          projectleider: sigPL ?? undefined,
+          projectleiderNaam: sigPLNaam || undefined,
+          opdrachtgever: sigOG ?? undefined,
+          opdrachtgeverNaam: sigOGNaam || undefined,
+          signedAt: (sigPL || sigOG) ? new Date().toISOString() : undefined,
+        }}
+      />
 
     </View>
   );
