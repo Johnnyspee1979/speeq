@@ -556,3 +556,164 @@ export async function uploadDossierHtml(
     return null;
   }
 }
+
+// ────────────────────────────────────────────────
+// Sprint 3 — Dossier Lock (WKB bewaarplicht)
+// Een afgesloten dossier is onveranderbaar.
+// ────────────────────────────────────────────────
+
+export type DossierStatus = 'OPEN' | 'LOCKED';
+
+export interface DossierRow {
+  id: string;
+  projectId: string;
+  status: DossierStatus;
+  pdfUrl: string | null;
+  signedByPl: string | null;
+  signedByOg: string | null;
+  signedAt: string | null;
+  lockedAt: string | null;
+  lockedBy: string | null;
+  createdAt: string;
+}
+
+/**
+ * Maak (of vind) een open dossier voor dit project.
+ * Wordt aangeroepen vóór generateDossierHtml zodat we evidence kunnen koppelen.
+ */
+export async function getOrCreateOpenDossier(projectId: string): Promise<DossierRow | null> {
+  try {
+    // Bestaand OPEN dossier?
+    const { data: existing } = await supabase
+      .from('dossiers')
+      .select('*')
+      .eq('project_id', projectId)
+      .eq('status', 'OPEN')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) return mapDossierRow(existing);
+
+    // Nieuw aanmaken
+    const { data: created, error } = await supabase
+      .from('dossiers')
+      .insert({ project_id: projectId, status: 'OPEN' })
+      .select()
+      .single();
+
+    if (error || !created) {
+      console.error('getOrCreateOpenDossier insert error:', error);
+      return null;
+    }
+    return mapDossierRow(created);
+  } catch (err) {
+    console.error('getOrCreateOpenDossier mislukt:', err);
+    return null;
+  }
+}
+
+/**
+ * Koppel alle evidence van dit project aan het dossier zodat ze straks
+ * mee gelocked worden. Wordt aangeroepen bij het ondertekenen.
+ */
+export async function attachEvidenceToDossier(
+  dossierId: string,
+  projectId: string
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('evidence')
+    .update({ dossier_id: dossierId })
+    .eq('project_id', projectId)
+    .is('dossier_id', null)
+    .select('id');
+
+  if (error) {
+    console.error('attachEvidenceToDossier error:', error);
+    return 0;
+  }
+  return data?.length ?? 0;
+}
+
+/**
+ * lockDossier — sluit het dossier af en maakt alle gekoppelde evidence
+ * onveranderbaar. Roept de SQL-functie public.lock_dossier(uuid) aan
+ * die in dezelfde transactie evidence.is_locked = true zet.
+ *
+ * Deze actie is ONOMKEERBAAR — een gelocked dossier kan niet meer geopend worden.
+ *
+ * @param dossierId  UUID van het dossier
+ * @param pdfUrl     publieke URL van het ondertekende PDF (optioneel)
+ * @param signedByPl naam van de projectleider die ondertekende
+ * @param signedByOg naam van de opdrachtgever die ondertekende
+ */
+export async function lockDossier(
+  dossierId: string,
+  options: {
+    pdfUrl?: string | null;
+    signedByPl?: string | null;
+    signedByOg?: string | null;
+  } = {}
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // 1. Schrijf eerst de hand­tekening-info weg (mag nog want status = OPEN)
+    if (options.pdfUrl || options.signedByPl || options.signedByOg) {
+      const { error: updErr } = await supabase
+        .from('dossiers')
+        .update({
+          pdf_url: options.pdfUrl ?? null,
+          signed_by_pl: options.signedByPl ?? null,
+          signed_by_og: options.signedByOg ?? null,
+          signed_at: new Date().toISOString(),
+        })
+        .eq('id', dossierId)
+        .eq('status', 'OPEN');
+
+      if (updErr) {
+        return { success: false, error: `Handtekening opslaan mislukt: ${updErr.message}` };
+      }
+    }
+
+    // 2. Roep de SQL-lock functie aan (lockt evidence + dossier in één transactie)
+    const { error: rpcErr } = await supabase.rpc('lock_dossier', {
+      p_dossier_id: dossierId,
+    });
+
+    if (rpcErr) {
+      return { success: false, error: `Dossier afsluiten mislukt: ${rpcErr.message}` };
+    }
+
+    console.log(`🔒 Dossier ${dossierId} succesvol afgesloten en read-only gemaakt.`);
+    return { success: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { success: false, error: msg };
+  }
+}
+
+/**
+ * Check of het dossier al gelocked is (handig voor UI-state).
+ */
+export async function isDossierLocked(dossierId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('dossiers')
+    .select('status')
+    .eq('id', dossierId)
+    .single();
+  return data?.status === 'LOCKED';
+}
+
+function mapDossierRow(row: any): DossierRow {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    status: row.status,
+    pdfUrl: row.pdf_url ?? null,
+    signedByPl: row.signed_by_pl ?? null,
+    signedByOg: row.signed_by_og ?? null,
+    signedAt: row.signed_at ?? null,
+    lockedAt: row.locked_at ?? null,
+    lockedBy: row.locked_by ?? null,
+    createdAt: row.created_at,
+  };
+}
