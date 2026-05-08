@@ -49,6 +49,7 @@ import { supabase } from '../lib/supabase';
 import { fetchWeather, type WeatherSnapshot } from '../services/WeatherService';
 import VoiceNoteButton from './VoiceNoteButton';
 import ContextForm, { defaultContextData, type ContextData } from './ContextForm';
+import MotionPressable from './motion/MotionPressable';
 import { checkImageSharpnessLocal } from '../services/EdgeAIValidation';
 import { createEvidenceHash, createEvidenceId } from '../services/evidenceIntegrity';
 import { validateCaptureOnDevice } from '../services/aiEdge';
@@ -1490,11 +1491,13 @@ export default function CameraView({
             </View>
           ) : null}
 
-          {/* Big photo area */}
-          <TouchableOpacity
+          {/* Big photo area — Sprint 9: spring scale + hover op web */}
+          <MotionPressable
             style={styles.mobileBigPhotoArea}
             onPress={handlePickDesktopPhoto}
-            activeOpacity={0.8}
+            accessibilityLabel="Camera openen"
+            pressScale={0.97}
+            hoverScale={1.015}
           >
             {photoUri ? (
               <Image source={{ uri: photoUri }} style={styles.mobileBigPhotoPreview} />
@@ -1509,7 +1512,7 @@ export default function CameraView({
                 </Text>
               </View>
             )}
-          </TouchableOpacity>
+          </MotionPressable>
 
           {/* Retake button */}
           {photoUri ? (

@@ -29,6 +29,8 @@ import FloorPlanViewer from '../components/FloorPlanViewer';
 import QRStickerSheet from '../components/QRStickerSheet';
 import TaskAssignmentPanel from '../components/TaskAssignmentPanel';
 import RapportagePanel from '../components/RapportagePanel';
+import MotionTabIndicator from '../components/motion/MotionTabIndicator';
+import MotionPanel from '../components/motion/MotionPanel';
 import type { StoredWkbEvidence } from '../types/Evidence';
 import {
   uploadDossierHtml,
@@ -1028,10 +1030,16 @@ export default function WerkvoorbereiderDashboard({
                   </View>
                 )}
               </View>
-              {activeTab === tab.id && <View style={[st.tabUnderline, { backgroundColor: theme.colors.accent }]} />}
+              <MotionTabIndicator
+                active={activeTab === tab.id}
+                color={theme.colors.accent}
+                layoutId="wvDashboardTabPill"
+              />
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        <MotionPanel motionKey={activeTab}>
 
         {/* ── Tab: Dashboard ── */}
         {activeTab === 'dashboard' && (
@@ -1146,6 +1154,8 @@ export default function WerkvoorbereiderDashboard({
             theme={theme}
           />
         )}
+
+        </MotionPanel>
 
       </ScrollView>
 
