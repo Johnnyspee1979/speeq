@@ -32,7 +32,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const { startKiKRetryJob } = require('./jobs/kikRetryCron');
 const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
-const { tenantRoutes } = require('./routes/tenant.routes');
+const tenantRoutes = require('./routes/tenant.routes');
 
 dotenv.config();
 
