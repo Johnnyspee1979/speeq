@@ -1,12 +1,15 @@
 # GitHub Actions — Vercel Deploy
 
-Deze workflow (`vercel-deploy.yml`) deployt automatisch naar Vercel:
+Twee workflows die automatisch deployen naar Vercel:
 
-- **`www/`** → marketing-site
-- **`frontend/`** → Expo web app
+- **`vercel-www.yml`** — draait alleen wanneer er iets in `www/` verandert
+- **`vercel-frontend.yml`** — draait alleen wanneer er iets in `frontend/` verandert
 
 **Push naar `main`** = production deploy
 **Pull request** = preview deploy met unieke URL als check op de PR
+**Manueel triggeren** kan via Actions → workflow → "Run workflow" (`workflow_dispatch`)
+
+PRs die alleen andere mappen raken (bijv. `docs/`, `.github/`, `backend/`) triggeren geen Vercel-jobs. Dat voorkomt onnodige failures.
 
 ## Eenmalige setup (door beheerder)
 
