@@ -30,6 +30,7 @@ import { useTheme } from '../theme/ThemeProvider';
 // SpeeQ branding (light Govtech)
 const speeqLogoFull = require('../assets/speeq-logo-full.png');
 const speeqQLogo    = require('../assets/speeq-q-logo.png');
+const speeqQ3D      = require('../assets/speeq-q-3d.png');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -398,7 +399,7 @@ function WelcomePanel({ theme, projectCount, totals }: { theme: { colors: Record
           resizeMode="contain"
         />
         <View style={welcomeSt.heroRow}>
-          <Image source={speeqLogoFull} style={welcomeSt.heroLogo} resizeMode="contain" />
+          <Image source={speeqQ3D} style={welcomeSt.heroLogo} resizeMode="contain" />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[welcomeSt.eyebrow, { color: theme.colors.textSecondary }]}>PORTEFEUILLE</Text>
             <Text style={[welcomeSt.heroTitle, { color: theme.colors.textPrimary }]}>Projectoverzicht</Text>
@@ -1089,7 +1090,7 @@ function HeroCard({ totals, theme }: { totals: Totals; theme: { colors: Record<s
     <View style={[heroSt.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
       <Image source={speeqQLogo} style={heroSt.watermark} resizeMode="contain" />
       <View style={heroSt.row}>
-        <Image source={speeqLogoFull} style={heroSt.logo} resizeMode="contain" />
+        <Image source={speeqQ3D} style={heroSt.logo} resizeMode="contain" />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[heroSt.eyebrow, { color: theme.colors.textSecondary }]}>PORTEFEUILLE</Text>
           <Text style={[heroSt.title, { color: theme.colors.textPrimary }]}>Projectoverzicht</Text>
