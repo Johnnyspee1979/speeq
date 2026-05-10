@@ -9,7 +9,9 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>(darkTheme);
+  // Default theme = light Govtech (Lovable design + SpeeQ groen accent).
+  // Dark theme blijft beschikbaar via toggleTheme.
+  const [theme, setTheme] = useState<Theme>(lightTheme);
 
   const toggleTheme = () => {
     setTheme((current) => (current.name === 'dark' ? lightTheme : darkTheme));

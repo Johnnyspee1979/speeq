@@ -27,6 +27,9 @@ import {
 import { supabase } from '../lib/supabase';
 import { useProject, type Project } from '../context/ProjectContext';
 import { useTheme } from '../theme/ThemeProvider';
+// SpeeQ branding (light Govtech)
+const speeqLogoFull = require('../assets/speeq-logo-full.png');
+const speeqQLogo    = require('../assets/speeq-q-logo.png');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -159,6 +162,18 @@ export default function ProjectleiderOverzicht() {
       : [],
   [allEvidence, selectedProject]);
 
+  // Totalen voor hero KPI strip (mobile + desktop welcome panel)
+  const totals = useMemo(() => {
+    let total = 0, review = 0, vandaag = 0, goedgekeurd = 0;
+    for (const s of statsMap.values()) {
+      total       += s.total;
+      review      += s.review;
+      vandaag     += s.vandaag;
+      goedgekeurd += s.goedgekeurd;
+    }
+    return { total, review, vandaag, goedgekeurd, projectCount: projects.length };
+  }, [statsMap, projects.length]);
+
   const handleSelect = useCallback((p: Project) => {
     setSelectedProject(p);
     setActiveProject(p);
@@ -177,6 +192,7 @@ export default function ProjectleiderOverzicht() {
         onProjectUpdated={(updated) => setSelectedProject(updated)}
         theme={theme}
         isDark={isDark}
+        totals={totals}
       />
     );
   }
@@ -203,10 +219,8 @@ export default function ProjectleiderOverzicht() {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.pageTitle}>📋 Projecten</Text>
-        <Text style={[styles.pageSubtitle, { color: theme.colors.textSecondary }]}>
-          {projects.length} project{projects.length !== 1 ? 'en' : ''} · tik om te openen
-        </Text>
+        <HeroCard totals={totals} theme={theme} />
+        <KpiStrip totals={totals} theme={theme} />
         {loading ? (
           <View style={styles.centeredBox}>
             <ActivityIndicator size="large" color={theme.colors.accent} />
@@ -233,6 +247,14 @@ export default function ProjectleiderOverzicht() {
 
 // ─── Desktop layout ───────────────────────────────────────────────────────────
 
+interface Totals {
+  total: number;
+  review: number;
+  vandaag: number;
+  goedgekeurd: number;
+  projectCount: number;
+}
+
 interface DesktopLayoutProps {
   projects: Project[];
   statsMap: Map<string, ProjectStats>;
@@ -243,9 +265,10 @@ interface DesktopLayoutProps {
   onProjectUpdated: (p: Project) => void;
   theme: { name?: string; colors: Record<string, string> };
   isDark: boolean;
+  totals: Totals;
 }
 
-function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvidence, onSelect, onProjectUpdated, theme, isDark }: DesktopLayoutProps) {
+function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvidence, onSelect, onProjectUpdated, theme, isDark, totals }: DesktopLayoutProps) {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -354,7 +377,7 @@ function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvi
             isDesktop
           />
         ) : (
-          <WelcomePanel theme={theme} projectCount={projects.length} />
+          <WelcomePanel theme={theme} projectCount={projects.length} totals={totals} />
         )}
       </View>
 
@@ -364,31 +387,53 @@ function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvi
 
 // ─── Welcome panel (lege staat desktop) ──────────────────────────────────────
 
-function WelcomePanel({ theme, projectCount }: { theme: { colors: Record<string, string> }; projectCount: number }) {
+function WelcomePanel({ theme, projectCount, totals }: { theme: { colors: Record<string, string> }; projectCount: number; totals: Totals }) {
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 48 }}>
-      <Text style={{ fontSize: 56, marginBottom: 20 }}>👈</Text>
-      <Text style={{ fontSize: 22, fontWeight: '800', color: theme.colors.textPrimary, marginBottom: 8, textAlign: 'center' }}>
-        Kies een project
-      </Text>
-      <Text style={{ fontSize: 14, color: theme.colors.textSecondary, textAlign: 'center', maxWidth: 320, lineHeight: 22 }}>
-        Selecteer een van de {projectCount} projecten in de lijst links om de werkruimte te openen.
-        Hier beheer je bewijsstukken, bonnen en projectnotities.
-      </Text>
-      <View style={{ marginTop: 32, gap: 12, alignSelf: 'stretch', maxWidth: 320 }}>
-        {[
-          { icon: '📸', label: 'Bewijsstukken bekijken & annoteren' },
-          { icon: '📄', label: 'Bonnen registreren per categorie' },
-          { icon: '📝', label: 'Projectnotities bijhouden' },
-          { icon: '✏️', label: 'Projectgegevens bewerken' },
-        ].map(item => (
-          <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontSize: 20 }}>{item.icon}</Text>
-            <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>{item.label}</Text>
+    <ScrollView contentContainerStyle={{ padding: 32, paddingBottom: 60, maxWidth: 980, alignSelf: 'center', width: '100%' }}>
+      {/* Hero card — Lovable Govtech stijl met SpeeQ logo */}
+      <View style={[welcomeSt.heroCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <Image
+          source={speeqQLogo}
+          style={welcomeSt.watermark}
+          resizeMode="contain"
+        />
+        <View style={welcomeSt.heroRow}>
+          <Image source={speeqLogoFull} style={welcomeSt.heroLogo} resizeMode="contain" />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={[welcomeSt.eyebrow, { color: theme.colors.textSecondary }]}>PORTEFEUILLE</Text>
+            <Text style={[welcomeSt.heroTitle, { color: theme.colors.textPrimary }]}>Projectoverzicht</Text>
+            <Text style={[welcomeSt.heroSub, { color: theme.colors.textSecondary }]}>
+              {projectCount} project{projectCount !== 1 ? 'en' : ''} · alle lopende dossiers en kwaliteitsborgingen — beheerd met SpeeQ WKB Tool.
+            </Text>
           </View>
-        ))}
+        </View>
       </View>
-    </View>
+
+      {/* KPI strip */}
+      <View style={{ marginTop: 16 }}>
+        <KpiStrip totals={totals} theme={theme} />
+      </View>
+
+      {/* Onboarding hint */}
+      <View style={{ marginTop: 28, padding: 24, borderRadius: 14, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface }}>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: theme.colors.textPrimary, marginBottom: 12 }}>
+          👈 Kies een project in de lijst links
+        </Text>
+        <View style={{ gap: 10 }}>
+          {[
+            { icon: '📸', label: 'Bewijsstukken bekijken & annoteren' },
+            { icon: '📄', label: 'Bonnen registreren per categorie' },
+            { icon: '📝', label: 'Projectnotities bijhouden' },
+            { icon: '✏️', label: 'Projectgegevens bewerken' },
+          ].map(item => (
+            <View key={item.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Text style={{ fontSize: 18 }}>{item.icon}</Text>
+              <Text style={{ fontSize: 13, color: theme.colors.textSecondary }}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -1027,7 +1072,102 @@ function NotitiesTab({ projectId, theme }: { projectId: string; theme: { colors:
   );
 }
 
+// ─── HeroCard (mobile) ────────────────────────────────────────────────────────
+//   Hero blok bovenaan de mobiele projectenlijst — Lovable Govtech stijl.
+//   Toont SpeeQ logo + titel + korte status-zin. Q-logo wordt subtiel als
+//   watermerk rechtsboven gerendered (opacity ~7%).
+
+function HeroCard({ totals, theme }: { totals: Totals; theme: { colors: Record<string, string> } }) {
+  const statusLine =
+    totals.review > 0
+      ? `${totals.review} bewijsstuk${totals.review !== 1 ? 'ken' : ''} vraagt review`
+      : totals.total > 0
+        ? `${totals.total} foto${totals.total !== 1 ? "'s" : ''} verwerkt`
+        : 'Nog geen bewijsstukken — vaklieden uploaden via mobiel';
+
+  return (
+    <View style={[heroSt.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+      <Image source={speeqQLogo} style={heroSt.watermark} resizeMode="contain" />
+      <View style={heroSt.row}>
+        <Image source={speeqLogoFull} style={heroSt.logo} resizeMode="contain" />
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={[heroSt.eyebrow, { color: theme.colors.textSecondary }]}>PORTEFEUILLE</Text>
+          <Text style={[heroSt.title, { color: theme.colors.textPrimary }]}>Projectoverzicht</Text>
+          <Text style={[heroSt.subtitle, { color: theme.colors.textSecondary }]} numberOfLines={2}>
+            {totals.projectCount} project{totals.projectCount !== 1 ? 'en' : ''} · {statusLine}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── KpiStrip ─────────────────────────────────────────────────────────────────
+//   4 KPI cellen op een rij — projecten, vandaag, akkoord, review.
+//   Lovable's "border-grid" stijl: alle cellen op witte achtergrond met
+//   1px scheiding via een gemeenschappelijke border container.
+
+function KpiStrip({ totals, theme }: { totals: Totals; theme: { colors: Record<string, string> } }) {
+  const items: { label: string; value: number; dot: string; tone?: 'warning' | 'success' }[] = [
+    { label: 'PROJECTEN', value: totals.projectCount, dot: theme.colors.accent, tone: 'success' },
+    { label: 'VANDAAG',   value: totals.vandaag,      dot: theme.colors.accent },
+    { label: 'AKKOORD',   value: totals.goedgekeurd,  dot: '#7CB94B', tone: 'success' },
+    { label: 'REVIEW',    value: totals.review,       dot: totals.review > 0 ? '#D97706' : theme.colors.textSecondary, tone: totals.review > 0 ? 'warning' : undefined },
+  ];
+
+  return (
+    <View style={[kpiSt.wrap, { backgroundColor: theme.colors.border, borderColor: theme.colors.border }]}>
+      {items.map(it => (
+        <View key={it.label} style={[kpiSt.cell, { backgroundColor: theme.colors.surface }]}>
+          <View style={kpiSt.dotRow}>
+            <View style={[kpiSt.dot, { backgroundColor: it.dot }]} />
+            <Text style={[kpiSt.label, { color: theme.colors.textSecondary }]}>{it.label}</Text>
+          </View>
+          <Text style={[
+            kpiSt.value,
+            { color: it.tone === 'warning' ? '#D97706' : theme.colors.textPrimary },
+          ]}>
+            {it.value}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
+
+// Hero card (mobile + desktop welcome)
+const heroSt = StyleSheet.create({
+  card:       { borderRadius: 16, borderWidth: 1, padding: 18, position: 'relative', overflow: 'hidden' },
+  watermark:  { position: 'absolute', right: -24, top: -24, width: 140, height: 140, opacity: 0.07 },
+  row:        { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  logo:       { width: 76, height: 76 },
+  eyebrow:    { fontSize: 10, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase' },
+  title:      { fontSize: 22, fontWeight: '900', letterSpacing: -0.5, marginTop: 2, marginBottom: 4 },
+  subtitle:   { fontSize: 13, lineHeight: 19 },
+});
+
+// KPI strip (4 cells)
+const kpiSt = StyleSheet.create({
+  wrap:       { flexDirection: 'row', borderRadius: 12, borderWidth: 1, gap: 1, overflow: 'hidden' },
+  cell:       { flex: 1, paddingVertical: 14, paddingHorizontal: 12, gap: 6 },
+  dotRow:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dot:        { width: 6, height: 6, borderRadius: 3 },
+  label:      { fontSize: 9, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase' },
+  value:      { fontSize: 26, fontWeight: '800', letterSpacing: -0.8, fontVariant: ['tabular-nums'] },
+});
+
+// Welcome panel (desktop, geen project gekozen)
+const welcomeSt = StyleSheet.create({
+  heroCard:    { borderRadius: 16, borderWidth: 1, padding: 28, position: 'relative', overflow: 'hidden' },
+  watermark:   { position: 'absolute', right: -40, top: -40, width: 220, height: 220, opacity: 0.07 },
+  heroRow:     { flexDirection: 'row', alignItems: 'center', gap: 24 },
+  heroLogo:    { width: 110, height: 110 },
+  eyebrow:     { fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textTransform: 'uppercase' },
+  heroTitle:   { fontSize: 30, fontWeight: '900', letterSpacing: -0.6, marginTop: 4, marginBottom: 6 },
+  heroSub:     { fontSize: 14, lineHeight: 22, maxWidth: 560 },
+});
 
 // Desktop root
 const desktopSt = StyleSheet.create({

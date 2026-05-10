@@ -34,20 +34,26 @@ export const darkTheme: Theme = {
   },
 };
 
+// Light Govtech theme — SpeeQ brand
+//   - Achtergrond: bijna-wit met subtiele blauw-grijze zweem (overheidssfeer)
+//   - Primary text: SpeeQ donkerblauw uit het logo (#1B3A5C)
+//   - Accent: SpeeQ groen uit het logo (#7CB94B) — koppelt merk aan "akkoord"
+//     status, want dezelfde groene tint wordt gebruikt voor PASSED-bewijs.
+//   - Borders: ultra-subtiel grijs voor de "Dutch Govtech" rust
 export const lightTheme: Theme = {
   name: 'light',
   colors: {
-    background:    '#F0F2F8',
-    surface:       '#FFFFFF',
-    surfaceAlt:    '#E8ECF5',
-    textPrimary:   '#0A0D18',
-    textSecondary: '#6B7280',
-    border:        'rgba(0,0,0,0.08)',
-    accent:        '#A40D2F',
-    accentMuted:   '#FDE8ED',
-    success:       '#059669',
-    warning:       '#D97706',
-    danger:        '#DC2626',
-    chip:          '#0A0D18',
+    background:    '#F8FAFC',              // Bijna-wit met blauwzweem
+    surface:       '#FFFFFF',              // Cards / panels
+    surfaceAlt:    '#F1F5F9',              // Muted achtergrond (sidebar header etc.)
+    textPrimary:   '#1B3A5C',              // SpeeQ donkerblauw (logo)
+    textSecondary: '#64748B',              // Slate muted
+    border:        'rgba(15,23,42,0.08)',  // Ultra-subtiel border
+    accent:        '#7CB94B',              // SpeeQ groen (logo) — = success
+    accentMuted:   '#EAF5DC',              // Lichte groene tint voor backgrounds/badges
+    success:       '#7CB94B',              // Zelfde groen — accent IS success
+    warning:       '#D97706',              // Amber
+    danger:        '#DC2626',              // Red
+    chip:          '#1B3A5C',              // Logo navy voor chips
   },
 };
