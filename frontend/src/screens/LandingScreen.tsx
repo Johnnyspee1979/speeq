@@ -112,7 +112,7 @@ function DesktopLanding({
             bottom: 0,
             width: '45%',
             background:
-              'linear-gradient(to right, rgba(11,22,40,0.38) 0%, rgba(11,22,40,0.22) 35%, rgba(11,22,40,0.06) 75%, rgba(11,22,40,0) 100%)',
+              'linear-gradient(to right, rgba(11,22,40,0.27) 0%, rgba(11,22,40,0.15) 35%, rgba(11,22,40,0.04) 75%, rgba(11,22,40,0) 100%)',
             zIndex: 1,
             pointerEvents: 'none',
           },
