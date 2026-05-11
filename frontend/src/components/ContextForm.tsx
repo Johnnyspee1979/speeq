@@ -31,6 +31,7 @@ import { useTheme } from '../theme/ThemeProvider';
 export interface ContextData {
   binnenbuiten: 'BINNEN' | 'BUITEN';
   etage: string;          // 'B2' | 'B1' | 'BG' | '1' | '2' | ... | 'DAK'
+  huisnummer: string;
   ruimtenummer: string;   // vrij tekstveld, bijv. "2.14" of "Badkamer links"
   locatieDetail: string;  // bijv. "Gevel West", "Achtergevel", "Badkamer"
   extra: Record<string, unknown>; // discipline-specifiek
@@ -39,6 +40,7 @@ export interface ContextData {
 export const defaultContextData = (): ContextData => ({
   binnenbuiten: 'BINNEN',
   etage: 'BG',
+  huisnummer: '',
   ruimtenummer: '',
   locatieDetail: '',
   extra: {},
