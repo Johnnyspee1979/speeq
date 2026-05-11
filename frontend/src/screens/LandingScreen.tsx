@@ -102,22 +102,22 @@ function DesktopLanding({
           },
         })}
 
-        {/* Laag 1: leesbaarheidsgradient onderkant (niet over logo bovenin) */}
+        {/* Laag 1: leesbaarheidsgradient LINKERZIJDE — laat het logo (midden/rechts) helemaal vrij */}
         {React.createElement('div', {
           style: {
             position: 'absolute',
+            top: 0,
             left: 0,
-            right: 0,
             bottom: 0,
-            height: '55%',
+            width: '52%',
             background:
-              'linear-gradient(to top, rgba(11,22,40,0.55) 0%, rgba(11,22,40,0.25) 45%, rgba(11,22,40,0) 100%)',
+              'linear-gradient(to right, rgba(11,22,40,0.65) 0%, rgba(11,22,40,0.45) 35%, rgba(11,22,40,0.15) 70%, rgba(11,22,40,0) 100%)',
             zIndex: 1,
             pointerEvents: 'none',
           },
         })}
 
-        {/* Laag 2: tekst + CTA, geprojecteerd in de onderste zone */}
+        {/* Laag 2: tekst + CTA — links uitgelijnd, verticaal gecentreerd, smalle kolom (blijft weg van logo) */}
         <View style={s.heroContent} pointerEvents="box-none">
           <View style={s.heroTextBlock}>
             <Text style={s.eyebrow}>SPEEQ WKB TOOL</Text>
@@ -339,15 +339,18 @@ const createDesktopStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
     },
     heroContent: {
       position: 'absolute',
+      top: 0,
       left: 0,
-      right: 0,
       bottom: 0,
-      paddingHorizontal: 64,
-      paddingBottom: 80,
+      width: '52%',
+      justifyContent: 'center',
+      paddingLeft: 72,
+      paddingRight: 32,
+      paddingVertical: 80,
       zIndex: 3,
     },
     heroTextBlock: {
-      maxWidth: 680,
+      maxWidth: 440,
       alignItems: 'flex-start',
     },
     eyebrow: {
@@ -356,29 +359,28 @@ const createDesktopStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       letterSpacing: 2.6,
       color: '#FFFFFF',
       textTransform: 'uppercase',
-      marginBottom: 16,
-      opacity: 0.9,
+      marginBottom: 18,
+      opacity: 0.92,
       textShadowColor: 'rgba(0,0,0,0.35)',
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 8,
     },
     headline: {
-      fontSize: 72,
-      lineHeight: 78,
+      fontSize: 54,
+      lineHeight: 60,
       fontWeight: '800',
-      letterSpacing: -1.4,
+      letterSpacing: -1.2,
       color: '#FFFFFF',
       marginBottom: 20,
-      textShadowColor: 'rgba(0,0,0,0.35)',
+      textShadowColor: 'rgba(0,0,0,0.4)',
       textShadowOffset: { width: 0, height: 2 },
       textShadowRadius: 24,
     },
     sub: {
-      fontSize: 19,
-      lineHeight: 28,
+      fontSize: 17,
+      lineHeight: 26,
       color: 'rgba(255,255,255,0.92)',
-      maxWidth: 560,
-      marginBottom: 32,
+      marginBottom: 28,
       textShadowColor: 'rgba(0,0,0,0.3)',
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 12,
