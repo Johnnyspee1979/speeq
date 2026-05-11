@@ -1,6 +1,7 @@
 # SpeeQ WKB Tool
 
-> **Live website:** <https://wkb-snap-sync.vercel.app>
+> **Live website:** <https://speeq-wkb-tool.vercel.app>
+> **Aliassen:** <https://speeq-wkb.vercel.app> · <https://wkb-snap-sync.vercel.app>
 > **Eigenaar:** Spee Solutions
 > **Status:** in actieve ontwikkeling — Gevolgklasse 1 MVP
 
@@ -12,9 +13,15 @@ Kwaliteitsborging voor de bouw. De vakman maakt een foto, SpeeQ doet de rest —
 
 Dit is de repository van **SpeeQ WKB Tool**, een offline-first Wkb-bewijsregistratie tool voor de Nederlandse bouw (Wet kwaliteitsborging voor de bouw, gevolgklasse 1).
 
-De live website draait op **Vercel** vanuit de `frontend/` map: <https://wkb-snap-sync.vercel.app>
+De live website draait op **Vercel** vanuit de `frontend/` map. Drie URLs leiden naar dezelfde site:
 
-De originele Vercel project-naam (`wkb-snap-sync`) blijft staan om de URL stabiel te houden. De **product-naam is SpeeQ WKB Tool** en die naam wordt overal in de UI en marketing gebruikt.
+| URL | Doel |
+|---|---|
+| 🎯 <https://speeq-wkb-tool.vercel.app> | **Primair** — gebruik deze in marketing en communicatie |
+| 🔁 <https://speeq-wkb.vercel.app> | Korte alias |
+| 📦 <https://wkb-snap-sync.vercel.app> | Legacy alias — werkt nog zodat oude links niet breken |
+
+Het Vercel-project heet intern nog `wkb-snap-sync` (de oude codename). Niet hernoemen — dat zou alle drie de aliassen breken. De **product-naam is SpeeQ WKB Tool** en die naam wordt overal in de UI, marketing en communicatie gebruikt.
 
 ---
 
@@ -84,7 +91,8 @@ cd frontend
 npx vercel --prod --yes
 ```
 
-Production URL: <https://wkb-snap-sync.vercel.app>
+Production URL (primair): <https://speeq-wkb-tool.vercel.app>
+Aliassen die ook werken: `speeq-wkb.vercel.app` · `wkb-snap-sync.vercel.app`
 
 ---
 
@@ -122,7 +130,7 @@ Production URL: <https://wkb-snap-sync.vercel.app>
 
 ## Belangrijke conventies
 
-- **Niet hernoemen:** het Vercel project heet `wkb-snap-sync` (oude codename). De URL `wkb-snap-sync.vercel.app` blijft de canonieke live-URL. De product-naam in alle UI en marketing is **SpeeQ WKB Tool**.
+- **Niet hernoemen:** het Vercel-project heet intern `wkb-snap-sync` (oude codename). Daar hangen drie aliassen aan: `speeq-wkb-tool.vercel.app` (primair), `speeq-wkb.vercel.app` (kort) en `wkb-snap-sync.vercel.app` (legacy). Renamen breekt alle drie. De **product-naam is SpeeQ WKB Tool** — die naam wordt in alle UI, marketing en communicatie gebruikt.
 - **Branding kleuren:** SpeeQ navy `#1B3A5C` + SpeeQ groen `#7CB94B`
 - **Achtergrond website:** `#F8FAFC` (Govtech light)
 - **Code-gate code:** `code` (case-insensitive). Zit in `frontend/src/screens/CodeGateScreen.tsx` als `TOOL_ACCESS_CODE`.
