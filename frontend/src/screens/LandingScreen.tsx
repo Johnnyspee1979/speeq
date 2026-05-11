@@ -11,8 +11,46 @@ import {
 import { useTheme } from '../theme/ThemeProvider';
 import { Camera, ShieldCheck, FileCheck2, ArrowRight } from 'lucide-react-native';
 
-const speeqLogo3D = require('../assets/speeq-logo-3d.png');
-const speeqQLogo  = require('../assets/speeq-q-logo.png');
+const speeqLogo3D  = require('../assets/speeq-logo-3d.png');
+const speeqQLogo   = require('../assets/speeq-q-logo.png');
+const landingVideo = require('../assets/landing-hero.mp4');
+
+/**
+ * HeroMedia — toont op web de NanoBanana landing-video,
+ * op native (iOS/Android) valt-ie terug op het statische 3D logo.
+ *
+ * React Native heeft geen ingebouwd <video>-element; we gebruiken
+ * React.createElement('video', ...) zodat dit op web werkt zonder
+ * extra deps. Op native rendert dit een gewone <Image>.
+ */
+function HeroMedia({ size }: { size: number }) {
+  if (Platform.OS === 'web') {
+    // require() voor mp4 levert op web een URL-string (Webpack/Metro web).
+    const src = typeof landingVideo === 'string' ? landingVideo : (landingVideo as { uri?: string })?.uri ?? landingVideo;
+    return React.createElement('video', {
+      src,
+      autoPlay: true,
+      muted: true,
+      loop: true,
+      playsInline: true,
+      'webkit-playsinline': 'true',
+      style: {
+        width: size,
+        height: size,
+        objectFit: 'contain',
+        background: 'transparent',
+        marginBottom: 24,
+      },
+    });
+  }
+  return (
+    <Image
+      source={speeqLogo3D}
+      style={{ width: size, height: size, marginBottom: 24 }}
+      resizeMode="contain"
+    />
+  );
+}
 
 interface LandingScreenProps {
   /** Klik op "Open de tool" → toont CodeGate */
@@ -47,7 +85,7 @@ export default function LandingScreen({ onEnterTool }: LandingScreenProps) {
 
       {/* ─── Hero ─────────────────────────────────────────────── */}
       <View style={s.hero}>
-        <Image source={speeqLogo3D} style={s.heroLogo} resizeMode="contain" />
+        <HeroMedia size={Platform.OS === 'web' ? 280 : 180} />
         <Text style={s.eyebrow}>SPEEQ WKB TOOL</Text>
         <Text style={s.headline}>
           Wkb-dossier in {'\n'}één foto.
