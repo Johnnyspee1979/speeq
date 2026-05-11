@@ -30,6 +30,8 @@ import { useTheme } from '../theme/ThemeProvider';
 // SpeeQ branding (light Govtech)
 const speeqLogoFull = require('../assets/speeq-logo-full.png');
 const speeqQLogo    = require('../assets/speeq-q-logo.png');
+const speeqQ3D      = require('../assets/speeq-q-3d.png');
+const speeqLogo3D   = require('../assets/speeq-logo-3d.png');
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -398,7 +400,7 @@ function WelcomePanel({ theme, projectCount, totals }: { theme: { colors: Record
           resizeMode="contain"
         />
         <View style={welcomeSt.heroRow}>
-          <Image source={speeqLogoFull} style={welcomeSt.heroLogo} resizeMode="contain" />
+          <Image source={speeqLogo3D} style={welcomeSt.heroLogo} resizeMode="contain" />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[welcomeSt.eyebrow, { color: theme.colors.textSecondary }]}>PORTEFEUILLE</Text>
             <Text style={[welcomeSt.heroTitle, { color: theme.colors.textPrimary }]}>Projectoverzicht</Text>
@@ -1089,7 +1091,7 @@ function HeroCard({ totals, theme }: { totals: Totals; theme: { colors: Record<s
     <View style={[heroSt.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
       <Image source={speeqQLogo} style={heroSt.watermark} resizeMode="contain" />
       <View style={heroSt.row}>
-        <Image source={speeqLogoFull} style={heroSt.logo} resizeMode="contain" />
+        <Image source={speeqLogo3D} style={heroSt.logo} resizeMode="contain" />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[heroSt.eyebrow, { color: theme.colors.textSecondary }]}>PORTEFEUILLE</Text>
           <Text style={[heroSt.title, { color: theme.colors.textPrimary }]}>Projectoverzicht</Text>
@@ -1142,7 +1144,7 @@ const heroSt = StyleSheet.create({
   card:       { borderRadius: 16, borderWidth: 1, padding: 18, position: 'relative', overflow: 'hidden' },
   watermark:  { position: 'absolute', right: -24, top: -24, width: 140, height: 140, opacity: 0.07 },
   row:        { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  logo:       { width: 76, height: 76 },
+  logo:       { width: 96, height: 96 },
   eyebrow:    { fontSize: 10, fontWeight: '700', letterSpacing: 2, textTransform: 'uppercase' },
   title:      { fontSize: 22, fontWeight: '900', letterSpacing: -0.5, marginTop: 2, marginBottom: 4 },
   subtitle:   { fontSize: 13, lineHeight: 19 },
@@ -1163,7 +1165,7 @@ const welcomeSt = StyleSheet.create({
   heroCard:    { borderRadius: 16, borderWidth: 1, padding: 28, position: 'relative', overflow: 'hidden' },
   watermark:   { position: 'absolute', right: -40, top: -40, width: 220, height: 220, opacity: 0.07 },
   heroRow:     { flexDirection: 'row', alignItems: 'center', gap: 24 },
-  heroLogo:    { width: 110, height: 110 },
+  heroLogo:    { width: 140, height: 140 },
   eyebrow:     { fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textTransform: 'uppercase' },
   heroTitle:   { fontSize: 30, fontWeight: '900', letterSpacing: -0.6, marginTop: 4, marginBottom: 6 },
   heroSub:     { fontSize: 14, lineHeight: 22, maxWidth: 560 },
