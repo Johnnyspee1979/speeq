@@ -87,7 +87,7 @@ function DesktopLanding({
           src: videoSrc(landingVideoDesk),
           autoPlay: true,
           muted: true,
-          loop: true,
+          loop: false,
           playsInline: true,
           'webkit-playsinline': 'true',
           style: {
