@@ -21,6 +21,7 @@ export interface WkbEvidence {
   locationSecurityMessage?: string | null; // Menselijke uitleg van de locatiecontrole
   // Locatie-context (ContextForm)
   etage?: string | null;
+  huisnummer?: string | null;
   ruimtenummer?: string | null;
   binnenbuiten?: 'BINNEN' | 'BUITEN' | null;
   locatieDetail?: string | null; // bijv. "Gevel West", "Achtergevel", "Badkamer"
