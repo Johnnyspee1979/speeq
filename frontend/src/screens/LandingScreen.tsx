@@ -274,7 +274,7 @@ function HeroMediaCompact({ size }: { size: number }) {
       src: videoSrc(landingVideoSmall),
       autoPlay: true,
       muted: true,
-      loop: true,
+      loop: false,
       playsInline: true,
       'webkit-playsinline': 'true',
       style: {
