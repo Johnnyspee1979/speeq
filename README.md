@@ -1,60 +1,143 @@
-# Wkb Snap & Sync
+# SpeeQ WKB Tool
 
-## Product‑visie
-Wkb Snap & Sync is een offline‑first tool voor Gevolgklasse 1 bouwprojecten. Het doel is om bewijslast (foto’s, metadata, inspectiepunten) juridisch houdbaar vast te leggen op de bouwplaats — zelfs zonder bereik — en dit veilig te synchroniseren naar de cloud.
+> **Live website:** <https://wkb-snap-sync.vercel.app>
+> **Eigenaar:** Spee Solutions
+> **Status:** in actieve ontwikkeling — Gevolgklasse 1 MVP
 
-## Kernprincipes
-- **Offline‑first**: bewijs wordt direct lokaal opgeslagen; sync volgt bij verbinding.
-- **Onweerlegbaarheid**: EXIF, GPS en timestamps zijn verplicht.
-- **Bouwplaats‑UX**: grote knoppen, minimale frictie, directe feedback.
-- **Open integraties**: API‑first richting kwaliteitsborgers, DSO en ERP.
+Kwaliteitsborging voor de bouw. De vakman maakt een foto, SpeeQ doet de rest — AI-validatie, GPS-koppeling, dossier-opbouw. Geen Excel-lijstjes meer.
 
-## MVP‑scope (Gevolgklasse 1)
-1. **Veld‑camera** met GPS/EXIF en inspectiepuntkoppeling.
-2. **Lokale opslag** (SQLite) met bewijsstatus.
-3. **Dossieroverzicht** met filter en statuslabels.
-4. **Cloud sync** (Supabase) inclusief Storage‑uploads.
-5. **Dossier‑API** in backend voor aggregatie.
+---
 
-## Architectuur (hoog niveau)
-- **Frontend**: Expo (React Native) + SQLite + offline sync.
-- **Backend**: Node/Express + Supabase service key.
-- **Storage**: Supabase Storage voor foto’s.
+## Wat is dit precies?
+
+Dit is de repository van **SpeeQ WKB Tool**, een offline-first Wkb-bewijsregistratie tool voor de Nederlandse bouw (Wet kwaliteitsborging voor de bouw, gevolgklasse 1).
+
+De live website draait op **Vercel** vanuit de `frontend/` map: <https://wkb-snap-sync.vercel.app>
+
+De originele Vercel project-naam (`wkb-snap-sync`) blijft staan om de URL stabiel te houden. De **product-naam is SpeeQ WKB Tool** en die naam wordt overal in de UI en marketing gebruikt.
+
+---
+
+## Publieke flow op de website
+
+```
+Landing page  →  Code-gate  →  Login  →  Tool
+   (video)       (woord)      (Supabase)
+```
+
+1. **Landing page** (`LandingScreen.tsx`) — cinematic video hero, marketing, CTA "Open de tool"
+2. **Code-gate** (`CodeGateScreen.tsx`) — soft gatekeeper met toegangscode (`code`). Niet bedoeld als echte security; alleen om de tool niet open op het publieke internet te zetten.
+3. **Login** (`LoginScreen.tsx`) — Supabase auth (echte security)
+4. **Tool** — de werkelijke WKB-app (dashboards per rol: vakman / werkvoorbereider / projectleider / opdrachtgever)
+
+Deep-link bypasses (`?join=` voor vakman-uitnodigingen, `?approve=` voor opdrachtgever-handtekeningen) slaan landing + code-gate over.
+
+---
+
+## Product-visie
+
+- **Offline-first:** bewijs wordt direct lokaal opgeslagen; sync volgt bij verbinding
+- **Onweerlegbaarheid:** EXIF, GPS en timestamps zijn verplicht
+- **Bouwplaats-UX:** grote knoppen, minimale frictie, directe feedback
+- **Open integraties:** API-first richting kwaliteitsborgers, DSO en ERP
+
+---
+
+## Tech stack
+
+| Laag | Tech |
+|---|---|
+| Frontend | Expo (React Native) + React Native Web |
+| Lokale opslag | SQLite (op native) / IndexedDB-fallback (op web) |
+| Backend | Node/Express + Supabase service key |
+| Auth + database | Supabase |
+| File storage | Supabase Storage |
+| Web hosting | Vercel (deploys vanuit `frontend/`) |
+
+---
 
 ## Projectstructuur
-- [frontend](frontend) — mobiele app
-- [backend](backend) — dossier‑API
-- [docs](docs) — visie & rapporten
+
+```
+speeq/
+├── frontend/        ← Expo app (web + mobile) — wordt naar Vercel gedeployd
+│   ├── src/
+│   │   ├── screens/      Landing / CodeGate / Login / Dashboards / Camera
+│   │   ├── components/   Herbruikbare UI
+│   │   ├── services/     Supabase, sync, dossier-export
+│   │   ├── theme/        Govtech light + SpeeQ groen
+│   │   └── assets/       3D logo's + landing video's
+│   └── App.tsx
+├── backend/         ← Node/Express dossier-API
+├── supabase/        ← migrations + edge functions
+└── docs/            ← visie, architectuur, rapporten
+```
+
+---
+
+## Deploy (web)
+
+De live website draait via Vercel vanuit de `frontend/` map:
+
+```bash
+cd frontend
+npx vercel --prod --yes
+```
+
+Production URL: <https://wkb-snap-sync.vercel.app>
+
+---
+
+## Lokaal draaien (dev)
+
+1. **Install dependencies**
+   - Frontend: `cd frontend && npm install`
+   - Backend: `cd backend && npm install`
+
+2. **Environment**
+   - Maak van [backend/.env.example](backend/.env.example) een `.env` en vul `SUPABASE_URL` en `SUPABASE_SERVICE_KEY` in
+   - Maak van [frontend/.env.example](frontend/.env.example) een `.env` en vul `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` en `EXPO_PUBLIC_BACKEND_URL` in
+
+3. **Run**
+   - Frontend (web): `cd frontend && npm run web`
+   - Frontend (mobile): `cd frontend && npm start`
+   - Backend: `cd backend && npm start`
+
+4. **Checks**
+   - Frontend: `cd frontend && npx tsc --noEmit`
+   - Backend: `cd backend && npm run typecheck`
+
+---
 
 ## Documentatie
+
 - [Project Initiation & Architecture Report](docs/Project-Initiation-Architecture-Report.md)
 - [Strategisch Implementatierapport](docs/Strategisch-Implementatierapport.md)
-- [A Student’s Guide to the Wkb](docs/Students-Guide-Wkb.md)
+- [A Student's Guide to the Wkb](docs/Students-Guide-Wkb.md)
 - [Project Initiation & Architectuur Rapport](docs/Project-Initiation-Architectuur-Rapport.md)
-- [DSO‑LV Integratie (Digikoppeling)](docs/DSO-Integratie.md)
-- [Elevator Pitch — Wkb Snap & Sync](docs/Elevator-Pitch-Wkb.md)
+- [DSO-LV Integratie (Digikoppeling)](docs/DSO-Integratie.md)
+- [Elevator Pitch](docs/Elevator-Pitch-Wkb.md)
 
-## Start (dev)
-1. **Install dependencies**
-	- Frontend: `cd frontend && npm install`
-	- Backend: `cd backend && npm install`
-2. **Environment**
-	- Maak van [backend/.env.example](backend/.env.example) een `.env` en vul `SUPABASE_URL` en `SUPABASE_SERVICE_KEY` in.
-	- Maak van [frontend/.env.example](frontend/.env.example) een `.env` en vul `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` en `EXPO_PUBLIC_BACKEND_URL` in.
-	- Optioneel kun je in de frontend ook `EXPO_PUBLIC_DEFAULT_PROJECT_ID`, `EXPO_PUBLIC_PROJECT_NAME`, `EXPO_PUBLIC_GEVOLGKLASSE` en `EXPO_PUBLIC_KWALITEITSBORGER` instellen.
-3. **Supabase**
-	- Maak tabel `evidence` aan met minimaal: `photo_uri`, `latitude`, `longitude`, `timestamp`, `project_id`, `inspection_point_id`, `ai_status`, `ai_confidence`, `ai_notes`
-	- Maak tabel `presets` aan met minimaal: `type`, `value`
-	- Maak Storage bucket `wkb-evidence` aan
-4. **Run**
-	- Frontend: `cd frontend && npm start`
-	- Backend: `cd backend && npm start`
-5. **Checks**
-	- Frontend: `cd frontend && npm run typecheck`
-	- Backend: `cd backend && npm run typecheck`
+---
+
+## Belangrijke conventies
+
+- **Niet hernoemen:** het Vercel project heet `wkb-snap-sync` (oude codename). De URL `wkb-snap-sync.vercel.app` blijft de canonieke live-URL. De product-naam in alle UI en marketing is **SpeeQ WKB Tool**.
+- **Branding kleuren:** SpeeQ navy `#1B3A5C` + SpeeQ groen `#7CB94B`
+- **Achtergrond website:** `#F8FAFC` (Govtech light)
+- **Code-gate code:** `code` (case-insensitive). Zit in `frontend/src/screens/CodeGateScreen.tsx` als `TOOL_ACCESS_CODE`.
+
+---
 
 ## Roadmap (kort)
-- Echte DSO-koppeling in plaats van demo-adapter
-- Echte cloud-AI modelintegratie
-- Authenticatie en projectrollen
+
+- Echte DSO-koppeling i.p.v. demo-adapter
+- Echte cloud-AI modelintegratie (i.p.v. heuristiek)
+- Rollen-management uitbreiden
 - Dossierexport verrijken met handtekeningen en audittrail
+- Bouwtekening-annotatie (Sprint 1 plan)
+- i18n: NL / EN / DE
+
+---
+
+© 2026 Spee Solutions
