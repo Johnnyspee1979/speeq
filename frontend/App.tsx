@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Platform, SafeAreaView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import {
   Camera,
   FolderOpen,
@@ -67,6 +67,8 @@ import { ActivityIndicator } from 'react-native';
 import { getTenantConfig } from './src/config/tenant';
 import { initSupabase } from './src/lib/supabase';
 import TenantLoginScreen from './src/screens/TenantLoginScreen';
+import LandingScreen from './src/screens/LandingScreen';
+import CodeGateScreen, { hasPassedGate } from './src/screens/CodeGateScreen';
 
 type Tab =
   | 'camera'
@@ -127,6 +129,53 @@ class AppErrorBoundary extends React.Component<
     }
     return this.props.children;
   }
+}
+
+/**
+ * PublicGate — toont eerst Landing + CodeGate vóór de echte app.
+ *
+ * Doel: SpeeQ WKB Tool niet open op het publieke web — bezoeker landt
+ * op een marketing landing, klikt "Open de tool", typt de toegangscode.
+ *
+ * Bypass-regels:
+ *   - Native (iOS/Android): altijd doorgang — gate is web-only
+ *   - URL bevat ?join= of ?approve=: legitieme deep-links, gate skippen
+ *   - localStorage `speeq_gate_passed_v1`: bezoeker heeft eerder code ingevoerd
+ */
+function PublicGate({ children }: { children: React.ReactNode }) {
+  // Native apps slaan de gate over — die zijn bewust geïnstalleerd.
+  const isWeb = Platform.OS === 'web';
+
+  // Deep-link bypass: vakman join + tekening approve flows.
+  const hasDeepLinkBypass = React.useMemo(() => {
+    if (!isWeb || typeof window === 'undefined') return false;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.has('join') || params.has('approve');
+    } catch {
+      return false;
+    }
+  }, [isWeb]);
+
+  type View = 'landing' | 'codegate' | 'passthrough';
+  const initial: View =
+    !isWeb || hasDeepLinkBypass || hasPassedGate() ? 'passthrough' : 'landing';
+
+  const [view, setView] = useState<View>(initial);
+
+  if (view === 'landing') {
+    return <LandingScreen onEnterTool={() => setView('codegate')} />;
+  }
+  if (view === 'codegate') {
+    return (
+      <CodeGateScreen
+        onCodeAccepted={() => setView('passthrough')}
+        onBack={() => setView('landing')}
+      />
+    );
+  }
+
+  return <>{children}</>;
 }
 
 function TenantGate({ children }: { children: React.ReactNode }) {
@@ -791,9 +840,11 @@ export default function App() {
       <ThemeProvider>
         <ProjectProvider>
           <AppErrorBoundary>
-            <TenantGate>
-              <AppShell />
-            </TenantGate>
+            <PublicGate>
+              <TenantGate>
+                <AppShell />
+              </TenantGate>
+            </PublicGate>
           </AppErrorBoundary>
         </ProjectProvider>
       </ThemeProvider>
