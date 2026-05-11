@@ -96,6 +96,7 @@ type EvidenceRow = {
   ai_notes?: string | null;
   cloud_record_id?: number | null;
   etage?: string | null;
+  huisnummer?: string | null;
   ruimtenummer?: string | null;
   binnenbuiten?: string | null;
   locatie_detail?: string | null;
@@ -308,6 +309,7 @@ const normalizeEvidence = (evidence: StoredWkbEvidence): StoredWkbEvidence => ({
   floorPlanId: evidence.floorPlanId ?? null,
   pinX: evidence.pinX ?? null,
   pinY: evidence.pinY ?? null,
+  huisnummer: evidence.huisnummer ?? null,
 });
 
 const normalizePunchlistItem = (
@@ -592,6 +594,7 @@ const mapRowToEvidence = (row: EvidenceRow): StoredWkbEvidence =>
     aiNotes: row.ai_notes ?? null,
     cloudRecordId: row.cloud_record_id ?? null,
     etage: row.etage ?? null,
+    huisnummer: row.huisnummer ?? null,
     ruimtenummer: row.ruimtenummer ?? null,
     binnenbuiten: (row.binnenbuiten as 'BINNEN' | 'BUITEN' | null) ?? null,
     locatieDetail: row.locatie_detail ?? null,
@@ -1243,6 +1246,7 @@ const nativeAdapter: DatabaseAdapter = {
         'ALTER TABLE evidence ADD COLUMN floor_plan_id TEXT;',
         'ALTER TABLE evidence ADD COLUMN pin_x REAL;',
         'ALTER TABLE evidence ADD COLUMN pin_y REAL;',
+        'ALTER TABLE evidence ADD COLUMN huisnummer TEXT;',
       ];
 
       for (const statement of migrations) {
@@ -1335,6 +1339,7 @@ const nativeAdapter: DatabaseAdapter = {
             sync_status,
             synced,
             etage,
+            huisnummer,
             ruimtenummer,
             binnenbuiten,
             locatie_detail,
@@ -1342,7 +1347,7 @@ const nativeAdapter: DatabaseAdapter = {
             floor_plan_id,
             pin_x,
             pin_y
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           evidence.id,
@@ -1380,6 +1385,7 @@ const nativeAdapter: DatabaseAdapter = {
           evidence.syncStatus,
           evidence.syncStatus === 'SYNCED' ? 1 : 0,
           evidence.etage ?? null,
+          evidence.huisnummer ?? null,
           evidence.ruimtenummer ?? null,
           evidence.binnenbuiten ?? null,
           evidence.locatieDetail ?? null,
