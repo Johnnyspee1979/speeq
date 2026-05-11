@@ -307,6 +307,7 @@ export default function CameraView({
     ...defaultContextData(),
     binnenbuiten: selectedTask?.defaultBinnenBuiten ?? 'BINNEN',
     etage: selectedTask?.defaultEtage ?? '',
+    huisnummer: '',
   }));
   const [desktopPhoto, setDesktopPhoto] = useState<File | null>(null);
   const [mobileWebPhotoUri, setMobileWebPhotoUri] = useState<string | null>(null);
@@ -971,6 +972,7 @@ export default function CameraView({
         locationSpoofRisk: locationSecurity.spoofRisk,
         locationSecurityMessage: locationSecurity.message,
         etage: contextData.etage || null,
+        huisnummer: contextData.huisnummer || null,
         ruimtenummer: contextData.ruimtenummer.trim() || null,
         binnenbuiten: contextData.binnenbuiten,
         locatieDetail: contextData.locatieDetail.trim() || null,
@@ -1142,6 +1144,7 @@ export default function CameraView({
         locationSpoofRisk: freshLocationSecurity.spoofRisk,
         locationSecurityMessage: freshLocationSecurity.message,
         etage: contextData.etage || null,
+        huisnummer: contextData.huisnummer || null,
         ruimtenummer: contextData.ruimtenummer.trim() || null,
         binnenbuiten: contextData.binnenbuiten,
         locatieDetail: contextData.locatieDetail.trim() || null,
@@ -1589,56 +1592,50 @@ export default function CameraView({
               📍 Exacte locatie
             </Text>
 
-            {/* BINNEN / BUITEN schakelaar */}
-            <View style={styles.mobileLocatieBBRow}>
-              <TouchableOpacity
-                style={[
-                  styles.mobileLocatieBBBtn,
-                  contextData.binnenbuiten === 'BINNEN' && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
-                  contextData.binnenbuiten !== 'BINNEN' && { backgroundColor: 'transparent', borderColor: theme.colors.border },
-                ]}
-                onPress={() => setContextData((prev) => ({ ...prev, binnenbuiten: 'BINNEN', locatieDetail: '' }))}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.mobileLocatieBBText, { color: contextData.binnenbuiten === 'BINNEN' ? '#fff' : theme.colors.textSecondary }]}>
-                  🏠 Binnen
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.mobileLocatieBBBtn,
-                  contextData.binnenbuiten === 'BUITEN' && { backgroundColor: theme.colors.accent, borderColor: theme.colors.accent },
-                  contextData.binnenbuiten !== 'BUITEN' && { backgroundColor: 'transparent', borderColor: theme.colors.border },
-                ]}
-                onPress={() => setContextData((prev) => ({ ...prev, binnenbuiten: 'BUITEN', locatieDetail: '' }))}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.mobileLocatieBBText, { color: contextData.binnenbuiten === 'BUITEN' ? '#fff' : theme.colors.textSecondary }]}>
-                  🌤️ Buiten
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Verdieping invoer */}
-            <View style={styles.mobileLocatieEtageRow}>
-              <Text style={[styles.mobileLocatieEtageLabel, { color: theme.colors.textSecondary }]}>
-                🏗️ Verdieping
-              </Text>
+            {/* Verdieping — pre-fill uit task, altijd editable */}
+            <View style={styles.mobileField}>
+              <Text style={styles.mobileLabel}>Verdieping</Text>
               <TextInput
                 style={[
-                  styles.mobileLocatieEtageInput,
+                  styles.mobileNoteInput,
                   {
-                    backgroundColor: theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                    borderColor: contextData.etage ? theme.colors.accent : theme.colors.border,
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
                     color: theme.colors.textPrimary,
                   },
                 ]}
-                value={contextData.etage}
-                onChangeText={(v) => setContextData((prev) => ({ ...prev, etage: v }))}
-                placeholder="BG, -1, 3, 17…"
+                placeholder="0 = begane grond, 1 = eerste etage…"
                 placeholderTextColor={theme.colors.textSecondary + '88'}
-                autoCapitalize="characters"
+                value={contextData.etage}
+                onChangeText={(v) => setContextData({ ...contextData, etage: v })}
+                keyboardType="default"
+                autoCapitalize="none"
+                maxLength={20}
               />
+            </View>
+            {/* Huisnummer — GPS vult straat, vakman vult nummer */}
+            <View style={styles.mobileField}>
+              <Text style={styles.mobileLabel}>Huisnummer</Text>
+              <TextInput
+                style={[
+                  styles.mobileNoteInput,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor: theme.colors.border,
+                    color: theme.colors.textPrimary,
+                  },
+                ]}
+                placeholder="bv. 12A"
+                placeholderTextColor={theme.colors.textSecondary + '88'}
+                value={contextData.huisnummer}
+                onChangeText={(v) => setContextData({ ...contextData, huisnummer: v })}
+                keyboardType="default"
+                autoCapitalize="characters"
+                maxLength={10}
+              />
+              {mobileAddress ? (
+                <Text style={styles.mobileHelperText}>GPS: {mobileAddress}</Text>
+              ) : null}
             </View>
 
             <View style={styles.mobileLocatieChips}>
@@ -3814,6 +3811,21 @@ const createStyles = (theme: { name?: string; colors: Record<string, string> }) 
       color: '#fff',
       fontSize: 19,
       fontWeight: '900',
+    },
+    mobileField: {
+      marginBottom: 12,
+    },
+    mobileLabel: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: theme.colors.textPrimary,
+      marginBottom: 6,
+    },
+    mobileHelperText: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      fontStyle: 'italic',
     },
   });
 };
