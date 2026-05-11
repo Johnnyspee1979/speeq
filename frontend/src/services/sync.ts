@@ -121,6 +121,7 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
           user_id: item.userId ?? authUser?.id ?? null,
           field_note: item.fieldNote ?? null,
           etage: item.etage ?? null,
+          huisnummer: item.huisnummer ?? null,
           ruimtenummer: item.ruimtenummer ?? null,
           binnenbuiten: item.binnenbuiten ?? null,
           locatie_detail: item.locatieDetail ?? null,
