@@ -102,16 +102,17 @@ function DesktopLanding({
           },
         })}
 
-        {/* Laag 1: leesbaarheidsgradient LINKERZIJDE — laat het logo (midden/rechts) helemaal vrij */}
+        {/* Laag 1: subtiele leesbaarheidsgradient LINKERZIJDE — net genoeg contrast voor de tekst,
+            niet zo donker dat 't een blok wordt. Logo midden/rechts blijft vrij. */}
         {React.createElement('div', {
           style: {
             position: 'absolute',
             top: 0,
             left: 0,
             bottom: 0,
-            width: '52%',
+            width: '45%',
             background:
-              'linear-gradient(to right, rgba(11,22,40,0.65) 0%, rgba(11,22,40,0.45) 35%, rgba(11,22,40,0.15) 70%, rgba(11,22,40,0) 100%)',
+              'linear-gradient(to right, rgba(11,22,40,0.38) 0%, rgba(11,22,40,0.22) 35%, rgba(11,22,40,0.06) 75%, rgba(11,22,40,0) 100%)',
             zIndex: 1,
             pointerEvents: 'none',
           },
@@ -372,18 +373,19 @@ const createDesktopStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       letterSpacing: -1.2,
       color: '#FFFFFF',
       marginBottom: 20,
-      textShadowColor: 'rgba(0,0,0,0.4)',
+      // Iets sterkere textshadow nu de gradient subtieler is — leesbaarheid blijft top.
+      textShadowColor: 'rgba(0,0,0,0.55)',
       textShadowOffset: { width: 0, height: 2 },
-      textShadowRadius: 24,
+      textShadowRadius: 28,
     },
     sub: {
       fontSize: 17,
       lineHeight: 26,
-      color: 'rgba(255,255,255,0.92)',
+      color: 'rgba(255,255,255,0.95)',
       marginBottom: 28,
-      textShadowColor: 'rgba(0,0,0,0.3)',
+      textShadowColor: 'rgba(0,0,0,0.45)',
       textShadowOffset: { width: 0, height: 1 },
-      textShadowRadius: 12,
+      textShadowRadius: 14,
     },
     cta: {
       flexDirection: 'row',
