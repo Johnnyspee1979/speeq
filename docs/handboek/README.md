@@ -24,6 +24,7 @@ Zodat je morgen, over 3 maanden, of als je iemand anders inhuurt om mee te bouwe
 | 04 | [Klant onboarding](04-klant-onboarding.md) | Wat de klant ervaart |
 | 05 | [Deploy naar Vercel](05-deploy-vercel.md) | Wijzigingen live krijgen |
 | 06 | [Test checklist](06-test-checklist.md) | Wat testen voor release |
+| 07 | [Prijsmodel & strategie](07-prijsmodel.md) | Tier-structuur, marges, realisability |
 
 ## Snelle links
 
