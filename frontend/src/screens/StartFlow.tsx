@@ -25,13 +25,15 @@ import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProject } from '../context/ProjectContext';
 import { useWkbAuth } from '../hooks/useWkbAuth';
+import { useTenantBranding } from '../hooks/useTenantBranding';
 import { wkbTaskTemplates } from '../data/WkbTemplates';
 import type { CaptureTask } from '../types/CaptureTask';
 import type { Project } from '../context/ProjectContext';
+import BonScannerModal from '../components/BonScannerModal';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type FlowStep = 'welkom' | 'klant' | 'project' | 'discipline' | 'locatie' | 'verdieping' | 'borgingspunt';
+type FlowStep = 'welkom' | 'klant' | 'project' | 'discipline' | 'locatie' | 'verdieping' | 'huisnummer' | 'borgingspunt';
 type BinnenBuiten = 'BINNEN' | 'BUITEN';
 
 interface Klant {
@@ -117,6 +119,7 @@ export interface StartFlowResumeContext {
   disciplineId: string;
   locatie: BinnenBuiten;
   verdieping: string;
+  huisnummer?: string;
 }
 
 interface StartFlowProps {
@@ -134,10 +137,12 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
   const styles = useMemo(() => createStyles(theme, isDark, isDesktop), [theme, isDark, isDesktop]);
 
   const { user } = useWkbAuth();
+  const tenantBranding = useTenantBranding();
   const { setActiveProject } = useProject();
 
   // ── Flow state (initialiseer vanuit resumeContext als beschikbaar) ───────────
   const [step, setStep] = useState<FlowStep>(() => resumeContext ? 'borgingspunt' : 'welkom');
+  const [showBonScanner, setShowBonScanner] = useState(false);
   const [selectedKlant, setSelectedKlant] = useState<Klant | null>(() =>
     resumeContext ? { name: resumeContext.project.initiatorName ?? resumeContext.project.name, projectCount: 1 } : null
   );
@@ -148,7 +153,8 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
     resumeContext ? (DISCIPLINES.find(d => d.id === resumeContext.disciplineId) ?? null) : null
   );
   const [selectedLocatie, setSelectedLocatie] = useState<BinnenBuiten>(() => resumeContext?.locatie ?? 'BINNEN');
-  const [selectedVerdieping, setSelectedVerdieping] = useState<string>(() => resumeContext?.verdieping ?? 'BG');
+  const [selectedVerdieping, setSelectedVerdieping] = useState<string>(() => resumeContext?.verdieping ?? '');
+  const [selectedHuisnummer, setSelectedHuisnummer] = useState<string>(() => resumeContext?.huisnummer ?? '');
 
   // Herstel actief project als we vanuit context terugkomen
   useEffect(() => {
@@ -172,12 +178,46 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
 
   const borgingspunten = useMemo(() => {
     if (!selectedDiscipline) return [];
-    return wkbTaskTemplates.filter(
+
+    const base = wkbTaskTemplates.filter(
       (t) =>
         t.categoryId === selectedDiscipline.id ||
         (selectedDiscipline.id === 'BOUW' && t.categoryId === 'STRUCTURAL')
     );
-  }, [selectedDiscipline]);
+
+    // Heuristisch binnen/buiten filter: voorkomt dat douche/toilet onder
+    // "buiten" verschijnt en gevel/dak onder "binnen". Conservatief: alleen
+    // verbergen bij duidelijke trefwoord-match.
+    if (!selectedLocatie) return base;
+
+    const BUITEN_ONLY = [
+      'gevel', 'dak', 'fundering', 'hei', 'kelder',
+      'kruipruimte', 'terras', 'balkon', 'regenpijp', 'hwa', 'goot',
+      'buitenmuur', 'buitenwand', 'voordeur', 'achterdeur', 'tuin',
+    ];
+    const BINNEN_ONLY = [
+      'douche', 'toilet', 'wc ', 'badkamer', 'sanitair',
+      'drempel', 'leuning', 'binnendeur', 'plafond', 'binnenwand',
+      'keuken', 'vloerafwerking', 'cv-ketel', 'mv-unit', 'wtw',
+    ];
+
+    return base.filter((t) => {
+      // Expliciete tag wint
+      const explicit = (t as { defaultBinnenBuiten?: string }).defaultBinnenBuiten;
+      if (explicit === 'BINNEN' || explicit === 'BUITEN') {
+        return explicit === selectedLocatie;
+      }
+
+      const hay = `${t.title ?? ''} ${t.description ?? ''}`.toLowerCase();
+
+      if (selectedLocatie === 'BUITEN') {
+        // verberg taken met sterke binnen-trefwoorden
+        return !BINNEN_ONLY.some((kw) => hay.includes(kw));
+      }
+      // BINNEN: verberg taken met sterke buiten-trefwoorden
+      return !BUITEN_ONLY.some((kw) => hay.includes(kw));
+    });
+  }, [selectedDiscipline, selectedLocatie]);
 
   // Laad klanten bij eerste render
   useEffect(() => {
@@ -252,6 +292,7 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
       selectionSource: 'WKB',
       defaultBinnenBuiten: selectedLocatie,
       defaultEtage: selectedVerdieping,
+      defaultHuisnummer: selectedHuisnummer,
     };
     const context: StartFlowResumeContext = {
       project: {
@@ -263,9 +304,10 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
       disciplineId: selectedDiscipline?.id ?? '',
       locatie: selectedLocatie,
       verdieping: selectedVerdieping,
+      huisnummer: selectedHuisnummer,
     };
     onSelectTask(task, context);
-  }, [onSelectTask, selectedProject, selectedDiscipline, selectedLocatie, selectedVerdieping]);
+  }, [onSelectTask, selectedProject, selectedDiscipline, selectedLocatie, selectedVerdieping, selectedHuisnummer]);
 
   // Voornaam: display_name → eerste deel van email
   const firstName = useMemo(() => {
@@ -287,9 +329,11 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
             </View>
           </View>
 
-          <Text style={[styles.welcomeMadeBy, { color: theme.colors.textSecondary }]}>
-            Made by Spee Solutions
-          </Text>
+          {tenantBranding.companyName ? (
+            <Text style={[styles.welcomeMadeBy, { color: theme.colors.textSecondary }]}>
+              {tenantBranding.companyName}
+            </Text>
+          ) : null}
 
           {firstName ? (
             <Text style={[styles.welcomeGreeting, { color: theme.colors.textPrimary }]}>
@@ -319,7 +363,31 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
               ⚡ Direct een borgingspunt kiezen
             </Text>
           </TouchableOpacity>
+
+          {/* Bon → PDF snel-actie */}
+          <TouchableOpacity
+            style={[
+              styles.welcomeBonBtn,
+              { backgroundColor: '#f97316', borderColor: '#ea580c' },
+            ]}
+            onPress={() => {
+              console.log('[BonScanner] homescreen tap');
+              setShowBonScanner(true);
+            }}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.welcomeBonBtnText}>📄 Bon naar PDF (direct)</Text>
+            <Text style={styles.welcomeBonBtnSub}>Foto → tekst lezen → in dossier op desktop</Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Bon-scanner modal (project-picker komt eerst) */}
+        <BonScannerModal
+          visible={showBonScanner}
+          projectId={null}
+          theme={theme as any}
+          onClose={() => setShowBonScanner(false)}
+        />
       </View>
     );
   }
@@ -546,11 +614,11 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
 
           <TouchableOpacity
             style={[styles.locatieNextBtn, { backgroundColor: theme.colors.accent }]}
-            onPress={() => goTo(selectedLocatie === 'BINNEN' ? 'verdieping' : 'borgingspunt')}
+            onPress={() => goTo(selectedLocatie === 'BINNEN' ? 'verdieping' : 'huisnummer')}
             activeOpacity={0.85}
           >
             <Text style={styles.locatieNextBtnText}>
-              {selectedLocatie === 'BINNEN' ? '🏠 Binnen — volgende →' : '🌤️ Buiten — direct naar borgingspunt →'}
+              {selectedLocatie === 'BINNEN' ? '🏠 Binnen — volgende →' : '🌤️ Buiten — volgende →'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -590,7 +658,7 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
             autoCapitalize="characters"
             autoFocus
             returnKeyType="done"
-            onSubmitEditing={() => { if (selectedVerdieping.trim()) goTo('borgingspunt'); }}
+            onSubmitEditing={() => { if (selectedVerdieping.trim()) goTo('huisnummer'); }}
           />
         </View>
         <View style={styles.verdiepingFooter}>
@@ -599,11 +667,63 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
               styles.locatieNextBtn,
               { backgroundColor: selectedVerdieping.trim() ? theme.colors.accent : theme.colors.border },
             ]}
-            onPress={() => { if (selectedVerdieping.trim()) goTo('borgingspunt'); }}
+            onPress={() => { if (selectedVerdieping.trim()) goTo('huisnummer'); }}
             activeOpacity={0.85}
           >
             <Text style={styles.locatieNextBtnText}>
               {selectedVerdieping.trim() ? `Verdieping ${selectedVerdieping} — volgende →` : 'Voer verdieping in'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // ─── Render stap: Huisnummer ────────────────────────────────────────────────
+
+  if (step === 'huisnummer') {
+    return (
+      <View style={styles.screen}>
+        <StepBar
+          title="Welk huisnummer?"
+          subtitle={`${selectedLocatie === 'BINNEN' ? `🏠 Binnen · ${selectedVerdieping}` : '🌤️ Buiten'} · optioneel`}
+          onBack={() => goTo(selectedLocatie === 'BINNEN' ? 'verdieping' : 'locatie')}
+          theme={theme}
+        />
+        <View style={styles.verdiepingContent}>
+          <Text style={[styles.verdiepingHint, { color: theme.colors.textSecondary }]}>
+            Vul het huisnummer in als er meerdere woningen zijn — bijv. 12A, 47, 103.
+            Niet nodig? Tik op "Overslaan".
+          </Text>
+          <TextInput
+            style={[
+              styles.verdiepingInput,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: selectedHuisnummer.trim() ? theme.colors.accent : theme.colors.border,
+                color: theme.colors.textPrimary,
+              },
+            ]}
+            value={selectedHuisnummer}
+            onChangeText={setSelectedHuisnummer}
+            placeholder="bijv. 12A"
+            placeholderTextColor={theme.colors.textSecondary}
+            keyboardType="default"
+            autoCapitalize="characters"
+            autoFocus
+            returnKeyType="done"
+            maxLength={10}
+            onSubmitEditing={() => goTo('borgingspunt')}
+          />
+        </View>
+        <View style={styles.verdiepingFooter}>
+          <TouchableOpacity
+            style={[styles.locatieNextBtn, { backgroundColor: theme.colors.accent }]}
+            onPress={() => goTo('borgingspunt')}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.locatieNextBtnText}>
+              {selectedHuisnummer.trim() ? `Nr. ${selectedHuisnummer} — volgende →` : 'Overslaan →'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -617,8 +737,8 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
     <View style={styles.screen}>
       <StepBar
         title={selectedDiscipline?.label ?? 'Borgingspunten'}
-        subtitle={`${selectedLocatie === 'BINNEN' ? `🏠 Binnen · ${selectedVerdieping}` : '🌤️ Buiten'} · ${selectedDiscipline?.label ?? ''}`}
-        onBack={() => goTo(selectedLocatie === 'BINNEN' ? 'verdieping' : 'locatie')}
+        subtitle={`${selectedLocatie === 'BINNEN' ? `🏠 Binnen · ${selectedVerdieping}` : '🌤️ Buiten'}${selectedHuisnummer ? ` · nr. ${selectedHuisnummer}` : ''} · ${selectedDiscipline?.label ?? ''}`}
+        onBack={() => goTo('huisnummer')}
         theme={theme}
       />
       <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -787,6 +907,33 @@ const createStyles = (
     welcomeShortcutText: {
       fontSize: 15,
       fontWeight: '700',
+    },
+    welcomeBonBtn: {
+      width: '100%',
+      borderRadius: 14,
+      borderWidth: 2,
+      paddingVertical: 18,
+      paddingHorizontal: 16,
+      alignItems: 'center',
+      marginTop: 14,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.18,
+      shadowRadius: 5,
+      elevation: 4,
+    },
+    welcomeBonBtnText: {
+      color: '#fff',
+      fontSize: 17,
+      fontWeight: '800',
+      letterSpacing: 0.3,
+    },
+    welcomeBonBtnSub: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: '600',
+      opacity: 0.92,
+      marginTop: 4,
     },
 
     // ── Sectielabel ──

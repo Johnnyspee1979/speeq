@@ -5,6 +5,10 @@
   "rewrites": [
     { "source": "/privacy",       "destination": "/privacy/index.html" },
     { "source": "/privacy/(.*)", "destination": "/privacy/$1" },
+    { "source": "/reset",         "destination": "/reset.html" },
+    { "source": "/reset.html",    "destination": "/reset.html" },
+    { "source": "/sw.js",         "destination": "/sw.js" },
+    { "source": "/manifest.json", "destination": "/manifest.json" },
     { "source": "/(.*)",          "destination": "/index.html" }
   ],
   "headers": [

@@ -9,6 +9,12 @@
  * Bij afdrukken worden de afbeeldingen inline geladen vanuit de browser cache.
  */
 
+import { getBrandingSync } from './TenantBrandingService';
+
+function pdfBrandLabel(): string {
+  return getBrandingSync().companyName ?? '';
+}
+
 export interface StickerTask {
   inspectionPointId: string;
   label: string;
@@ -157,7 +163,7 @@ export function generateQRStickerHtml(options: QRStickerSheetOptions, base: stri
 </div>
 
 <div class="footer">
-  <span>SpeeQ — Spee Solutions</span>
+  <span>${pdfBrandLabel()}</span>
   <span>Project: ${projectId} · ${tasks.length} borgingspunten</span>
 </div>
 

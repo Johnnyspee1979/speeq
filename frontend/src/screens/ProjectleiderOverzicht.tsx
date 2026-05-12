@@ -27,7 +27,8 @@ import {
 import { supabase } from '../lib/supabase';
 import { useProject, type Project } from '../context/ProjectContext';
 import { useTheme } from '../theme/ThemeProvider';
-// SpeeQ branding (light Govtech)
+import TenantBrandMark from '../components/TenantBrandMark';
+// SpeeQ-assets (alleen nog gebruikt op entry-screens; in-app draait op klant-branding).
 const speeqLogoFull = require('../assets/speeq-logo-full.png');
 const speeqQLogo    = require('../assets/speeq-q-logo.png');
 const speeqQ3D      = require('../assets/speeq-q-3d.png');
@@ -392,20 +393,16 @@ function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvi
 function WelcomePanel({ theme, projectCount, totals }: { theme: { colors: Record<string, string> }; projectCount: number; totals: Totals }) {
   return (
     <ScrollView contentContainerStyle={{ padding: 32, paddingBottom: 60, maxWidth: 980, alignSelf: 'center', width: '100%' }}>
-      {/* Hero card — Lovable Govtech stijl met SpeeQ logo */}
+      {/* Hero card — tonen de klant-branding (logo + bedrijfsnaam) i.p.v. SpeeQ.
+          Geen klant-branding ingesteld? Dan tonen we alleen de tekst, zonder logo. */}
       <View style={[welcomeSt.heroCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-        <Image
-          source={speeqQLogo}
-          style={welcomeSt.watermark}
-          resizeMode="contain"
-        />
         <View style={welcomeSt.heroRow}>
-          <Image source={speeqLogo3D} style={welcomeSt.heroLogo} resizeMode="contain" />
+          <TenantBrandMark size="lg" showName={false} theme={theme as any} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[welcomeSt.eyebrow, { color: theme.colors.textSecondary }]}>PORTEFEUILLE</Text>
             <Text style={[welcomeSt.heroTitle, { color: theme.colors.textPrimary }]}>Projectoverzicht</Text>
             <Text style={[welcomeSt.heroSub, { color: theme.colors.textSecondary }]}>
-              {projectCount} project{projectCount !== 1 ? 'en' : ''} · alle lopende dossiers en kwaliteitsborgingen — beheerd met SpeeQ WKB Tool.
+              {projectCount} project{projectCount !== 1 ? 'en' : ''} · alle lopende dossiers en kwaliteitsborgingen.
             </Text>
           </View>
         </View>
@@ -1089,9 +1086,8 @@ function HeroCard({ totals, theme }: { totals: Totals; theme: { colors: Record<s
 
   return (
     <View style={[heroSt.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-      <Image source={speeqQLogo} style={heroSt.watermark} resizeMode="contain" />
       <View style={heroSt.row}>
-        <Image source={speeqLogo3D} style={heroSt.logo} resizeMode="contain" />
+        <TenantBrandMark size="lg" showName={false} theme={theme as any} />
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[heroSt.eyebrow, { color: theme.colors.textSecondary }]}>PORTEFEUILLE</Text>
           <Text style={[heroSt.title, { color: theme.colors.textPrimary }]}>Projectoverzicht</Text>

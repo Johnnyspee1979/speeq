@@ -8,7 +8,9 @@ const SUPABASE_ANON_FALLBACK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ
 let supabaseInstance: SupabaseClient | null = null;
 
 export const initSupabase = (url: string, key: string) => {
-  supabaseInstance = createClient(url, key);
+  supabaseInstance = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: true },
+  });
   return supabaseInstance;
 };
 
@@ -18,7 +20,9 @@ export const supabase = new Proxy({} as SupabaseClient, {
       console.warn("⚠️ Supabase client niet dynamisch ingesteld! Terugval op .env");
       const url = process.env.EXPO_PUBLIC_SUPABASE_URL || SUPABASE_URL_FALLBACK;
       const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_FALLBACK;
-      supabaseInstance = createClient(url, key);
+      supabaseInstance = createClient(url, key, {
+        auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: true },
+      });
     }
     return (supabaseInstance as any)[prop];
   }

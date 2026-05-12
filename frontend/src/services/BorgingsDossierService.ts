@@ -10,6 +10,17 @@
  */
 
 import type { StoredWkbEvidence } from '../types/Evidence';
+import { getBrandingSync, getBranding } from './TenantBrandingService';
+
+/**
+ * Tenant-aware brand label voor PDF-footer.
+ * - Klant-naam aanwezig → toon klant-naam (eventueel + "Powered by SpeeQ" weglaten)
+ * - Geen klant-naam → leeg, zodat SpeeQ niet in de klant-context blijft hangen
+ */
+function pdfBrandLabel(): string {
+  const b = getBrandingSync();
+  return b.companyName ?? '';
+}
 
 // ────────────────────────────────────────────────
 // Base64 converter
@@ -474,7 +485,7 @@ export function generateDossierHtml(
 
     <!-- Footer -->
     <div class="footer">
-      <span>SpeeQ — Spee Solutions</span>
+      <span>${pdfBrandLabel()}</span>
       <span>Dossier ${projectId} · ${now}</span>
     </div>
 
@@ -495,6 +506,9 @@ export async function exportDossierAsPdf(
   signatures: DossierSignatures = {}
 ): Promise<void> {
   if (typeof window === 'undefined') return;
+
+  // Vers ophalen, zodat de tenant-branding in de footer up-to-date is.
+  await getBranding({ force: false }).catch(() => {});
 
   // Laad alle afbeeldingen als base64
   const imageMap = await loadEvidenceImages(evidence);
@@ -907,7 +921,7 @@ export function generateOfficialWkbReport(
     </div>` : ''}
 
     <div class="footer">
-      <span>SpeeQ — Spee Solutions · ${FORMAT_LABEL[format]}</span>
+      <span>${[pdfBrandLabel(), FORMAT_LABEL[format]].filter(Boolean).join(' · ')}</span>
       <span>Officieel rapport ${projectId} · ${now}</span>
     </div>
   </div>

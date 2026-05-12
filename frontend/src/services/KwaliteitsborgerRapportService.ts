@@ -13,6 +13,12 @@
  *  7. Handtekening kwaliteitsborger
  */
 
+import { getBrandingSync } from './TenantBrandingService';
+
+function pdfBrandLabel(): string {
+  return getBrandingSync().companyName ?? '';
+}
+
 export interface KwbEvidenceItem {
   id: string;
   inspectionPointId: string | null;
@@ -359,7 +365,7 @@ export function generateKwaliteitsborgerRapportHtml(opts: KwaliteitsborgerRappor
 
   <!-- COVER ──────────────────────────────────────────────────────────────── -->
   <div class="cover">
-    <div class="cover-brand">SpeeQ · Technisch Kwaliteitsrapport</div>
+    <div class="cover-brand">${[pdfBrandLabel(), 'Technisch Kwaliteitsrapport'].filter(Boolean).join(' · ')}</div>
     <div class="cover-title">${opts.projectName}</div>
     <div class="cover-doc">Kwaliteitsborger Eindrapport — ${gevolgklasse}</div>
     <table class="cover-table">
@@ -452,8 +458,7 @@ export function generateKwaliteitsborgerRapportHtml(opts: KwaliteitsborgerRappor
   </div>
 
   <div class="footer">
-    Vertrouwelijk — Uitsluitend bestemd voor kwaliteitsborger en betrokken partijen ·
-    SpeeQ · Spee Solutions · ${today} · Ref: ${opts.projectId}
+    Vertrouwelijk — Uitsluitend bestemd voor kwaliteitsborger en betrokken partijen${pdfBrandLabel() ? ` · ${pdfBrandLabel()}` : ''} · ${today} · Ref: ${opts.projectId}
   </div>
 
 </body>

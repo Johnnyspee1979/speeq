@@ -37,6 +37,8 @@ import LanguageSwitcher from '../components/LanguageSwitcher';
 import { subscribeToWebPush, isPushSupported, getPushPermission } from '../services/WebPushService';
 import { Platform } from 'react-native';
 import { useTranslation } from '../i18n';
+import { reviewBadgeFor } from '../services/ReviewService';
+import type { ReviewStatus } from '../types/Evidence';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,6 +58,9 @@ interface EvidenceRow {
   field_note: string | null;
   gps_lat: number | null;
   gps_lng: number | null;
+  review_status: ReviewStatus | null;
+  reviewed_at: string | null;
+  review_note: string | null;
 }
 
 interface VakmanWorkspaceProps {
@@ -119,7 +124,7 @@ export default function VakmanWorkspace({
     try {
       let query = supabase
         .from('evidence')
-        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, field_note, gps_lat, gps_lng')
+        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, field_note, gps_lat, gps_lng, review_status, reviewed_at, review_note')
         .eq('project_id', projectId)
         .order('timestamp', { ascending: false })
         .limit(200);
@@ -180,6 +185,16 @@ export default function VakmanWorkspace({
   const akkoordCount  = useMemo(() => evidence.filter(e => e.ai_status === 'PASSED').length, [evidence]);
   const reviewCount   = useMemo(() => evidence.filter(e => e.ai_status === 'NEEDS_REVIEW').length, [evidence]);
   const afgekeurdCount = useMemo(() => evidence.filter(e => e.ai_status === 'FAILED').length, [evidence]);
+
+  // Keurmeester-review metrics (los van AI-status)
+  const reviewRejectedCount = useMemo(
+    () => evidence.filter(e => e.review_status === 'REJECTED').length,
+    [evidence]
+  );
+  const reviewApprovedCount = useMemo(
+    () => evidence.filter(e => e.review_status === 'APPROVED' || e.review_status === 'FINALIZED').length,
+    [evidence]
+  );
 
   // ── Taken per borgingspunt ─────────────────────────────────────────────────
   // Groepeer alle uploads per inspection_point_id
@@ -264,6 +279,39 @@ export default function VakmanWorkspace({
               </View>
             ))}
           </View>
+
+          {/* Banner: door projectleider afgekeurde foto's (review workflow) */}
+          {reviewRejectedCount > 0 && (
+            <View style={[st.feedbackBanner, { backgroundColor: 'rgba(239,68,68,0.12)', borderTopColor: 'rgba(239,68,68,0.3)' }]}>
+              <Text style={{ fontSize: 20 }}>❌</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#991b1b', fontWeight: '800', fontSize: 14 }}>
+                  {reviewRejectedCount} foto{reviewRejectedCount !== 1 ? "'s" : ''} teruggestuurd door projectleider
+                </Text>
+                <Text style={{ color: '#b91c1c', fontSize: 12, marginTop: 2 }}>
+                  Bekijk de reden en maak een nieuwe foto.
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setActiveTab('alles')}>
+                <Text style={{ color: '#ef4444', fontWeight: '700', fontSize: 13 }}>Bekijk →</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Banner: zojuist goedgekeurde foto's — positieve bevestiging */}
+          {reviewApprovedCount > 0 && reviewRejectedCount === 0 && (
+            <View style={[st.feedbackBanner, { backgroundColor: 'rgba(5,150,105,0.08)', borderTopColor: 'rgba(5,150,105,0.2)' }]}>
+              <Text style={{ fontSize: 18 }}>✅</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#047857', fontWeight: '800', fontSize: 14 }}>
+                  {reviewApprovedCount} foto{reviewApprovedCount !== 1 ? "'s" : ''} goedgekeurd door projectleider
+                </Text>
+                <Text style={{ color: '#059669', fontSize: 12, marginTop: 2 }}>
+                  Sterk werk — deze tellen mee voor het dossier.
+                </Text>
+              </View>
+            </View>
+          )}
 
           {/* Feedback banner: afgekeurde items */}
           {afgekeurdCount > 0 && (
@@ -635,7 +683,10 @@ function EvidenceCard({
   const cfg = statusConfig(item.ai_status);
   const uri = item.media_uri ?? item.photo_uri ?? null;
   const commentCount = commentCountMap?.get(item.id) ?? 0;
-  const needsRetake = item.ai_status === 'FAILED' || item.ai_status === 'NEEDS_REVIEW';
+  const isReviewRejected = item.review_status === 'REJECTED';
+  const isReviewApproved = item.review_status === 'APPROVED' || item.review_status === 'FINALIZED';
+  const needsRetake = item.ai_status === 'FAILED' || item.ai_status === 'NEEDS_REVIEW' || isReviewRejected;
+  const reviewBadge = reviewBadgeFor(item.review_status);
 
   return (
     <TouchableOpacity
@@ -675,6 +726,12 @@ function EvidenceCard({
               {cfg.icon} {cfg.label}
             </Text>
           </View>
+          {/* Review badge — projectleider sign-off, los van AI */}
+          <View style={[tabSt.statusPill, { backgroundColor: reviewBadge.bg, borderColor: reviewBadge.fg + '40' }]}>
+            <Text style={[tabSt.statusPillText, { color: reviewBadge.fg }]}>
+              {reviewBadge.emoji} {reviewBadge.label}
+            </Text>
+          </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             {commentCount > 0 && (
               <View style={[tabSt.commentBadge, { backgroundColor: 'rgba(37,99,235,0.1)', borderColor: 'rgba(37,99,235,0.25)' }]}>
@@ -691,6 +748,43 @@ function EvidenceCard({
         <View style={[tabSt.expanded, { borderTopColor: theme.colors.border }]}>
           {uri && (
             <Image source={{ uri }} style={tabSt.thumbLarge} resizeMode="contain" />
+          )}
+
+          {/* Projectleider afkeuring — hoogste prioriteit, toon reden + retake-call-to-action */}
+          {isReviewRejected && (
+            <View style={[tabSt.retakeHint, { backgroundColor: 'rgba(239,68,68,0.1)', borderColor: 'rgba(239,68,68,0.35)' }]}>
+              <Text style={{ fontSize: 22 }}>❌</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#991b1b', fontWeight: '800', fontSize: 13, marginBottom: 3 }}>
+                  Projectleider heeft deze foto teruggestuurd
+                </Text>
+                {item.review_note ? (
+                  <Text style={{ color: '#7f1d1d', fontSize: 13, lineHeight: 19, fontStyle: 'italic', marginBottom: 4 }}>
+                    "{item.review_note}"
+                  </Text>
+                ) : null}
+                <Text style={{ color: '#b91c1c', fontSize: 12, lineHeight: 18 }}>
+                  Open de Camera tab, kies hetzelfde borgingspunt en maak een nieuwe foto die aan de feedback voldoet.
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Projectleider goedkeuring — positieve bevestiging */}
+          {isReviewApproved && !isReviewRejected && (
+            <View style={[tabSt.retakeHint, { backgroundColor: 'rgba(5,150,105,0.08)', borderColor: 'rgba(5,150,105,0.25)' }]}>
+              <Text style={{ fontSize: 18 }}>{item.review_status === 'FINALIZED' ? '🔒' : '✅'}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#047857', fontWeight: '800', fontSize: 13 }}>
+                  {item.review_status === 'FINALIZED' ? 'Definitief vastgelegd' : 'Goedgekeurd door projectleider'}
+                </Text>
+                <Text style={{ color: '#059669', fontSize: 12, marginTop: 2 }}>
+                  {item.review_status === 'FINALIZED'
+                    ? 'Deze foto zit in het officiële dossier en is niet meer wijzigbaar.'
+                    : 'Deze foto telt mee voor het dossier.'}
+                </Text>
+              </View>
+            </View>
           )}
 
           {/* Retake hint boven aan als afgekeurd */}

@@ -133,7 +133,7 @@ Aliassen die ook werken: `speeq-wkb.vercel.app` · `wkb-snap-sync.vercel.app`
 - **Niet hernoemen:** het Vercel-project heet intern `wkb-snap-sync` (oude codename). Daar hangen drie aliassen aan: `speeq-wkb-tool.vercel.app` (primair), `speeq-wkb.vercel.app` (kort) en `wkb-snap-sync.vercel.app` (legacy). Renamen breekt alle drie. De **product-naam is SpeeQ WKB Tool** — die naam wordt in alle UI, marketing en communicatie gebruikt.
 - **Branding kleuren:** SpeeQ navy `#1B3A5C` + SpeeQ groen `#7CB94B`
 - **Achtergrond website:** `#F8FAFC` (Govtech light)
-- **Code-gate code:** `code` (case-insensitive). Zit in `frontend/src/screens/CodeGateScreen.tsx` als `TOOL_ACCESS_CODE`.
+- **Code-gate code:** `0987`. Zit in `frontend/src/screens/CodeGateScreen.tsx` als `TOOL_ACCESS_CODE`.
 
 ---
 

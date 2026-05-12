@@ -39,7 +39,7 @@ export interface ContextData {
 
 export const defaultContextData = (): ContextData => ({
   binnenbuiten: 'BINNEN',
-  etage: 'BG',
+  etage: '',
   huisnummer: '',
   ruimtenummer: '',
   locatieDetail: '',

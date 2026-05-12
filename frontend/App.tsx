@@ -54,6 +54,8 @@ import ConsumentenDossierScherm from './src/screens/ConsumentenDossierScherm';
 import WerkvoorbereiderDashboard from './src/screens/WerkvoorbereiderDashboard';
 import LoginScreen from './src/screens/LoginScreen';
 import TeamBeheerScreen from './src/screens/TeamBeheerScreen';
+import TenantBrandingScreen from './src/screens/TenantBrandingScreen';
+import MakerDashboard from './src/screens/MakerDashboard';
 import EvidenceMapView from './src/components/EvidenceMapView';
 import JoinScreen from './src/screens/JoinScreen';
 import TekenGoedkeuringScreen from './src/screens/TekenGoedkeuringScreen';
@@ -64,7 +66,8 @@ import VakmanWorkspace from './src/screens/VakmanWorkspace';
 import { ProjectProvider, useProject } from './src/context/ProjectContext';
 import { LanguageProvider } from './src/i18n';
 import { ActivityIndicator } from 'react-native';
-import { getTenantConfig } from './src/config/tenant';
+import { getTenantConfig, setTenantConfig } from './src/config/tenant';
+import { getTenantBySlug } from './src/services/MakerService';
 import { initSupabase } from './src/lib/supabase';
 import TenantLoginScreen from './src/screens/TenantLoginScreen';
 import LandingScreen from './src/screens/LandingScreen';
@@ -80,6 +83,7 @@ type Tab =
   | 'presets'
   | 'dso'
   | 'team'
+  | 'branding'
   | 'about'
   | 'overzicht'
   | 'vakman';
@@ -99,6 +103,7 @@ const NAV_ITEMS: ResponsiveLayoutItem[] = [
   { key: 'review', label: 'Review', desktopLabel: 'Kwaliteitsborger', icon: ShieldCheck },
   { key: 'portal', label: 'Portaal', desktopLabel: 'Opdrachtgever', icon: Building2 },
   { key: 'team', label: 'Team', desktopLabel: 'Team Beheer', icon: Users },
+  { key: 'branding', label: 'Branding', desktopLabel: 'Bedrijfsbranding', icon: SlidersHorizontal },
   { key: 'presets', label: 'Presets', desktopLabel: 'Presets', icon: SlidersHorizontal },
   { key: 'dso', label: 'DSO', desktopLabel: 'DSO', icon: Building2 },
   { key: 'about', label: 'Info', desktopLabel: 'Info', icon: Info },
@@ -146,12 +151,15 @@ function PublicGate({ children }: { children: React.ReactNode }) {
   // Native apps slaan de gate over — die zijn bewust geïnstalleerd.
   const isWeb = Platform.OS === 'web';
 
-  // Deep-link bypass: vakman join + tekening approve flows.
+  // Deep-link bypass: vakman join + tekening approve flows + klant tenant-link.
+  // `?t=jansen` is een tenant-deep-link die we van een klant verwachten — die
+  // hebben hun eigen login, dus geen reden om ze de algemene gate-code (0987)
+  // te laten typen.
   const hasDeepLinkBypass = React.useMemo(() => {
     if (!isWeb || typeof window === 'undefined') return false;
     try {
       const params = new URLSearchParams(window.location.search);
-      return params.has('join') || params.has('approve');
+      return params.has('join') || params.has('approve') || params.has('t');
     } catch {
       return false;
     }
@@ -183,13 +191,45 @@ function TenantGate({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    getTenantConfig().then(config => {
+    (async () => {
+      // 1. Slug-routing: ?t=bouwbedrijf-janssen → master-DB raadplegen,
+      //    tenant-config zetten en deze tenant gebruiken. Hierdoor kan Johnny
+      //    klanten 1 deel-link sturen die hen direct in hun eigen workspace zet.
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const slug = params.get('t');
+          if (slug) {
+            const tenant = await getTenantBySlug(slug);
+            if (tenant && tenant.supabaseUrl && tenant.supabaseAnonKey) {
+              await setTenantConfig({
+                companyId: tenant.companyId,
+                supabaseUrl: tenant.supabaseUrl,
+                supabaseAnonKey: tenant.supabaseAnonKey,
+              });
+              initSupabase(tenant.supabaseUrl, tenant.supabaseAnonKey);
+              // ?t= weghalen uit de URL zodat refresh netjes werkt
+              const url = new URL(window.location.href);
+              url.searchParams.delete('t');
+              window.history.replaceState({}, '', url.toString());
+              setTenantReady(true);
+              setChecking(false);
+              return;
+            }
+          }
+        } catch {
+          // valt door naar normale flow
+        }
+      }
+
+      // 2. Normale flow: opgeslagen tenant-config gebruiken.
+      const config = await getTenantConfig();
       if (config) {
         initSupabase(config.supabaseUrl, config.supabaseAnonKey);
         setTenantReady(true);
       }
       setChecking(false);
-    });
+    })();
   }, []);
 
   if (checking) {
@@ -281,14 +321,14 @@ function AppShell() {
       return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
     }
     if (role === 'PROJECTLEIDER') {
-      // Desktop: overzicht + dossier + kaart + team
-      if (isDesktop) return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart', 'team'].includes(item.key));
+      // Desktop: overzicht + dossier + kaart + team + branding
+      if (isDesktop) return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart', 'team', 'branding'].includes(item.key));
       // Mobiel: geen team
       return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart'].includes(item.key));
     }
     if (role === 'WERKVOORBEREIDER') {
-      // Desktop: review (dashboard) + dossier + kaart — geen camera
-      if (isDesktop) return NAV_ITEMS.filter((item) => ['review', 'dossier', 'kaart'].includes(item.key));
+      // Desktop: review (dashboard) + dossier + kaart + branding — geen camera
+      if (isDesktop) return NAV_ITEMS.filter((item) => ['review', 'dossier', 'kaart', 'branding'].includes(item.key));
       // Mobiel: camera + kaart
       return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
     }
@@ -305,8 +345,8 @@ function AppShell() {
       return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
     }
     // Overige rollen (ONDERAANNEMER, AANNEMER, KWALITEITSBORGER)
-    if (isDesktop) return NAV_ITEMS.filter((item) => !['camera', 'review', 'dso', 'team', 'portal', 'overzicht'].includes(item.key));
-    return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'portal', 'overzicht'].includes(item.key));
+    if (isDesktop) return NAV_ITEMS.filter((item) => !['camera', 'review', 'dso', 'team', 'branding', 'portal', 'overzicht'].includes(item.key));
+    return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'branding', 'portal', 'overzicht'].includes(item.key));
   }, [user, isMobile]);
 
   const handleSelectTask = (task: CaptureTask, context?: StartFlowResumeContext) => {
@@ -400,20 +440,10 @@ function AppShell() {
       </View>
     );
     if (activeTab === 'camera') {
-      // Als er een taak geselecteerd is → direct naar camera
-      if (selectedTask) {
-        return (
-          <CameraView
-            selectedTask={selectedTask}
-            focusRequest={cameraFocusRequest}
-            onBackToTasks={handleBackFromCamera}
-            onBackToProject={startFlowResumeContext ? handleBackToProject : undefined}
-            onBackToMain={handleBackToMain}
-          />
-        );
-      }
-      // Begeleide startflow: welkom → klant → project → discipline → borgingspunt
-      return <StartFlow onSelectTask={handleSelectTask} resumeContext={startFlowResumeContext} />;
+      // Camera + StartFlow worden buiten renderActiveTab gemount (persistent) →
+      // tab-wissel naar Kaart en terug behoudt foto, wizard-stap én
+      // de StartFlow-stap waar je was (project / discipline / verdieping).
+      return null;
     }
     if (activeTab === 'dossier') return (
       <View style={{ flex: 1 }}>
@@ -565,6 +595,7 @@ function AppShell() {
       </View>
     );
     if (activeTab === 'team') return <TeamBeheerScreen />;
+    if (activeTab === 'branding') return <TenantBrandingScreen />;
     if (activeTab === 'presets') return <PresetsManager />;
     if (activeTab === 'dso') return <DsoLog />;
     if (activeTab === 'vakman') return (
@@ -589,7 +620,7 @@ function AppShell() {
     }
 
     if (role === 'PROJECTLEIDER') {
-      const allowed: Tab[] = ['overzicht', 'dossier', 'kaart', 'team'];
+      const allowed: Tab[] = ['overzicht', 'dossier', 'kaart', 'team', 'branding'];
       if (!allowed.includes(activeTab)) setActiveTab('overzicht');
       return;
     }
@@ -601,7 +632,7 @@ function AppShell() {
 
     if (role === 'WERKVOORBEREIDER') {
       if (isDesktop) {
-        const allowed: Tab[] = ['review', 'dossier', 'kaart'];
+        const allowed: Tab[] = ['review', 'dossier', 'kaart', 'branding'];
         if (!allowed.includes(activeTab)) setActiveTab('review');
       } else {
         const allowed: Tab[] = ['camera', 'kaart'];
@@ -632,7 +663,7 @@ function AppShell() {
     }
 
     // Overige rollen
-    const restrictedTabs: Tab[] = ['review', 'dso', 'team', 'portal', 'overzicht'];
+    const restrictedTabs: Tab[] = ['review', 'dso', 'team', 'branding', 'portal', 'overzicht'];
     if (restrictedTabs.includes(activeTab)) setActiveTab(isDesktop ? 'dossier' : 'camera');
   }, [activeTab, user, isMobile]);
 
@@ -781,7 +812,34 @@ function AppShell() {
         desktopSubtitle="Offline-first Wkb workflow voor desktop, laptop en mobiel."
         userName={user?.displayName ? user.displayName.split(' ')[0] : undefined}
       >
-        {renderActiveTab()}
+        {/* Camera-tab inhoud (StartFlow OF CameraView) blijft altijd gemount →
+            tab-wissel naar Kaart en terug houdt foto, wizard-stap, project-keuze
+            en verdieping-input intact. */}
+        {navItems.some((n) => n.key === 'camera') ? (
+          <View
+            style={{
+              flex: 1,
+              ...(activeTab === 'camera'
+                ? null
+                : { position: 'absolute', width: 0, height: 0, overflow: 'hidden', opacity: 0 }),
+            }}
+            pointerEvents={activeTab === 'camera' ? 'auto' : 'none'}
+          >
+            {selectedTask ? (
+              <CameraView
+                selectedTask={selectedTask}
+                focusRequest={cameraFocusRequest}
+                onBackToTasks={handleBackFromCamera}
+                onBackToProject={startFlowResumeContext ? handleBackToProject : undefined}
+                onBackToMain={handleBackToMain}
+              />
+            ) : (
+              <StartFlow onSelectTask={handleSelectTask} resumeContext={startFlowResumeContext} />
+            )}
+          </View>
+        ) : null}
+        {/* Andere tabs renderen alleen als ze actief zijn */}
+        {activeTab !== 'camera' ? renderActiveTab() : null}
       </ResponsiveLayout>
     </SafeAreaView>
   );
@@ -834,7 +892,41 @@ const createOpleveringStyles = (
     },
   });
 
+/**
+ * isMakerRoute — true zodra het pad `/maker` is óf `?maker=1` in de URL staat.
+ *
+ * Het maker-paneel bypasst alle tenant-gates: het draait tegen de master-DB
+ * en heeft zijn eigen auth-flow (zie MakerDashboard). Bezoekers zonder geldige
+ * maker-sessie zien gewoon het login-formulier.
+ */
+function isMakerRoute(): boolean {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+  try {
+    const path = window.location.pathname || '';
+    if (path === '/maker' || path.startsWith('/maker/')) return true;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('maker') === '1';
+  } catch {
+    return false;
+  }
+}
+
 export default function App() {
+  // Maker-route checken vóór alle providers — direct render, geen tenant-init.
+  const makerMode = isMakerRoute();
+
+  if (makerMode) {
+    return (
+      <LanguageProvider>
+        <ThemeProvider>
+          <AppErrorBoundary>
+            <MakerDashboard />
+          </AppErrorBoundary>
+        </ThemeProvider>
+      </LanguageProvider>
+    );
+  }
+
   return (
     <LanguageProvider>
       <ThemeProvider>

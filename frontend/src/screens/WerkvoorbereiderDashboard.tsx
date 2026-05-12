@@ -26,10 +26,21 @@ import {
 import SignaturePad from '../components/SignaturePad';
 import DossierExportModal from '../components/DossierExportModal';
 import FloorPlanViewer from '../components/FloorPlanViewer';
+import TenantBrandMark from '../components/TenantBrandMark';
+import { getBrandingSync } from '../services/TenantBrandingService';
 import QRStickerSheet from '../components/QRStickerSheet';
 import TaskAssignmentPanel from '../components/TaskAssignmentPanel';
 import RapportagePanel from '../components/RapportagePanel';
-import type { StoredWkbEvidence } from '../types/Evidence';
+import type { ReviewStatus, StoredWkbEvidence } from '../types/Evidence';
+import {
+  approveEvidence,
+  rejectEvidence,
+  finalizeEvidence,
+  reopenEvidence,
+  reviewBadgeFor,
+  isReviewLocked,
+  type ReviewAction,
+} from '../services/ReviewService';
 import {
   uploadDossierHtml,
   exportDossierAsPdf,
@@ -53,6 +64,12 @@ import {
   type EvidenceComment,
 } from '../services/EvidenceCommentService';
 import PWAInstallBanner from '../components/PWAInstallBanner';
+import {
+  getDocumentsForProject,
+  openDocumentAsPrintablePdf,
+  deleteDocument,
+  type ProjectDocument,
+} from '../services/BonScannerService';
 import OfflineSyncBanner from '../components/OfflineSyncBanner';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -84,7 +101,7 @@ import {
 
 type AiStatus = 'PASSED' | 'FAILED' | 'NEEDS_REVIEW' | 'PENDING' | null;
 type FilterStatus = 'alle' | 'review' | 'akkoord' | 'afgekeurd' | 'pending';
-type WvTab = 'dashboard' | 'bewijs' | 'checklist' | 'kaart' | 'tekening' | 'stickers' | 'taken' | 'rapportage';
+type WvTab = 'dashboard' | 'bewijs' | 'checklist' | 'kaart' | 'tekening' | 'stickers' | 'taken' | 'rapportage' | 'documenten';
 
 interface EvidenceRow {
   id: string;
@@ -103,6 +120,10 @@ interface EvidenceRow {
   floor_plan_id: string | null;
   pin_x: number | null;
   pin_y: number | null;
+  review_status: ReviewStatus | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
 }
 
 interface ChecklistItem {
@@ -186,6 +207,24 @@ export default function WerkvoorbereiderDashboard({
   const isDesktop = width >= 768;
 
   const [activeTab, setActiveTab] = useState<WvTab>('dashboard');
+  const [documents, setDocuments] = useState<ProjectDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+
+  // Documenten laden zodra de tab geopend wordt
+  useEffect(() => {
+    if (activeTab !== 'documenten') return;
+    if (!projectId) {
+      setDocuments([]);
+      return;
+    }
+    setDocumentsLoading(true);
+    getDocumentsForProject(projectId)
+      .then((docs) => {
+        setDocuments(docs);
+        setDocumentsLoading(false);
+      })
+      .catch(() => setDocumentsLoading(false));
+  }, [activeTab, projectId]);
   const [evidence, setEvidence]   = useState<EvidenceRow[]>([]);
   const [loading, setLoading]     = useState(true);
   const [filter, setFilter]       = useState<FilterStatus>('alle');
@@ -263,7 +302,7 @@ export default function WerkvoorbereiderDashboard({
     try {
       const { data } = await supabase
         .from('evidence')
-        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, user_id, gps_lat, gps_lng, field_note, floor_plan_id, pin_x, pin_y')
+        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, user_id, gps_lat, gps_lng, field_note, floor_plan_id, pin_x, pin_y, review_status, reviewed_by, reviewed_at, review_note')
         .eq('project_id', projectId)
         .order('timestamp', { ascending: false })
         .limit(300);
@@ -440,6 +479,46 @@ export default function WerkvoorbereiderDashboard({
     }
   }, [fetchEvidence]);
 
+  // ── Review workflow (keurmeester / projectleider sign-off) ──────────────────
+  const handleReviewAction = useCallback(async (
+    id: string,
+    action: ReviewAction,
+    note?: string,
+  ) => {
+    const cloudRecordId = Number(id);
+    if (!Number.isFinite(cloudRecordId)) {
+      showToast('Kan review niet opslaan: ongeldig id');
+      return;
+    }
+    // Optimistic update — bepaal target status uit action
+    const targetStatus: ReviewStatus =
+      action === 'APPROVE'  ? 'APPROVED'  :
+      action === 'REJECT'   ? 'REJECTED'  :
+      action === 'FINALIZE' ? 'FINALIZED' :
+                              'PENDING_REVIEW';
+    setEvidence(prev => prev.map(e => e.id === id ? {
+      ...e,
+      review_status: targetStatus,
+      reviewed_at: new Date().toISOString(),
+      review_note: note?.trim() ? note.trim() : e.review_note,
+    } : e));
+    try {
+      if (action === 'APPROVE')  await approveEvidence(cloudRecordId, note);
+      if (action === 'REJECT')   await rejectEvidence(cloudRecordId, note ?? '');
+      if (action === 'FINALIZE') await finalizeEvidence(cloudRecordId);
+      if (action === 'REOPEN')   await reopenEvidence(cloudRecordId);
+      showToast(
+        action === 'APPROVE'  ? '✅ Goedgekeurd' :
+        action === 'REJECT'   ? '❌ Afgekeurd' :
+        action === 'FINALIZE' ? '🔒 Definitief gemaakt' :
+                                '⏳ Heropend in review'
+      );
+    } catch (err) {
+      void fetchEvidence();
+      showToast(err instanceof Error ? err.message : 'Review bijwerken mislukt');
+    }
+  }, [fetchEvidence, showToast]);
+
   // ── Bewerken (keyuser / projectleider / WV / admin) ─────────────────────────
   const editEvidence = useCallback(async (
     id: string,
@@ -533,7 +612,7 @@ export default function WerkvoorbereiderDashboard({
         `Geachte,\n\nHierbij het digitale borgingsdossier van project ${projectName}.\n\n` +
         `Bekijk of download het dossier via onderstaande link:\n${publicUrl}\n\n` +
         `Dit dossier bevat alle borgingspuntfoto's met GPS, tijdstempel en AI-validatie.\n\n` +
-        `Met vriendelijke groet,\nSpeeQ — Spee Solutions`
+        `Met vriendelijke groet,\n${getBrandingSync().companyName ?? ''}`
       );
 
       window.open(`mailto:${emailAddress.trim()}?subject=${subject}&body=${body}`, '_self');
@@ -663,6 +742,7 @@ export default function WerkvoorbereiderDashboard({
     { id: 'checklist', label: `✅ ${t('nav.checklist')}`, badge: checklist.filter(i => !i.done).length || undefined },
     { id: 'kaart',     label: `🗺️ ${t('nav.kaart')}` },
     { id: 'tekening',  label: `📐 ${t('nav.tekening')}` },
+    { id: 'documenten', label: `📄 Bonnen` },
     { id: 'stickers',   label: `🏷️ ${t('nav.stickers')}` },
     { id: 'taken',      label: `📋 ${t('nav.taken')}` },
     { id: 'rapportage', label: `📑 ${t('nav.rapportage')}` },
@@ -697,6 +777,7 @@ export default function WerkvoorbereiderDashboard({
         {/* ── Header ── */}
         <View style={[st.headerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
           <View style={st.headerTop}>
+            <TenantBrandMark size="md" showName={false} theme={theme} />
             <View style={{ flex: 1 }}>
               <Text style={[st.projectTitle, { color: theme.colors.textPrimary }]} numberOfLines={1}>
                 {projectName}
@@ -1063,6 +1144,7 @@ export default function WerkvoorbereiderDashboard({
             onBulkApprove={batchApprove}
             onBulkReject={batchReject}
             onEdit={editEvidence}
+            onReview={handleReviewAction}
             projectId={projectId}
             commentCountMap={commentCountMap}
           />
@@ -1119,6 +1201,157 @@ export default function WerkvoorbereiderDashboard({
             />
           );
         })()}
+
+        {/* ── Tab: Bonnen / Documenten ── */}
+        {activeTab === 'documenten' && (
+          <View style={{ padding: isDesktop ? 28 : 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: theme.colors.textPrimary }}>
+                📄 Bonnen & documenten ({documents.length})
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  if (!projectId) return;
+                  setDocumentsLoading(true);
+                  getDocumentsForProject(projectId)
+                    .then((d) => { setDocuments(d); setDocumentsLoading(false); })
+                    .catch(() => setDocumentsLoading(false));
+                }}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                }}
+              >
+                <Text style={{ color: theme.colors.textPrimary, fontWeight: '600' }}>🔄 Ververs</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ color: theme.colors.textSecondary, marginBottom: 16, fontSize: 13 }}>
+              Bonnen, leveringsbrieven, certificaten en facturen die door de uitvoerder zijn gescand.
+              Klik op een rij om de PDF te bekijken en goed te keuren.
+            </Text>
+
+            {documentsLoading ? (
+              <ActivityIndicator size="large" color={theme.colors.accent} style={{ marginTop: 40 }} />
+            ) : documents.length === 0 ? (
+              <View
+                style={{
+                  padding: 40,
+                  backgroundColor: theme.colors.surface,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 48, marginBottom: 12 }}>📂</Text>
+                <Text style={{ color: theme.colors.textPrimary, fontWeight: '700', fontSize: 16 }}>
+                  Nog geen bonnen gescand
+                </Text>
+                <Text style={{ color: theme.colors.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' }}>
+                  Zodra de uitvoerder op de telefoon een bon scant, verschijnt deze hier voor controle.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ gap: 10 }}>
+                {documents.map((doc) => (
+                  <View
+                    key={doc.id}
+                    style={{
+                      flexDirection: isDesktop ? 'row' : 'column',
+                      gap: 14,
+                      padding: 14,
+                      backgroundColor: theme.colors.surface,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: theme.colors.border,
+                    }}
+                  >
+                    <Image
+                      source={{ uri: doc.photoUrl }}
+                      style={{ width: isDesktop ? 140 : '100%', height: isDesktop ? 100 : 180, borderRadius: 8 }}
+                      resizeMode="cover"
+                    />
+                    <View style={{ flex: 1, justifyContent: 'space-between' }}>
+                      <View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <View
+                            style={{
+                              paddingHorizontal: 10,
+                              paddingVertical: 3,
+                              borderRadius: 12,
+                              backgroundColor: theme.colors.accent + '22',
+                            }}
+                          >
+                            <Text style={{ color: theme.colors.accent, fontSize: 11, fontWeight: '800' }}>
+                              {doc.docType}
+                            </Text>
+                          </View>
+                          <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
+                            {new Date(doc.createdAt).toLocaleString('nl-NL')}
+                          </Text>
+                        </View>
+                        <Text style={{ color: theme.colors.textPrimary, fontWeight: '700', fontSize: 15, marginTop: 6 }}>
+                          {doc.title ?? '— Geen titel —'}
+                        </Text>
+                        {doc.detectedFields && Object.keys(doc.detectedFields).length > 0 && (
+                          <Text style={{ color: theme.colors.textSecondary, fontSize: 12, marginTop: 4 }} numberOfLines={2}>
+                            {Object.entries(doc.detectedFields).map(([k, v]) => `${k}: ${v}`).join(' · ')}
+                          </Text>
+                        )}
+                      </View>
+
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                        <TouchableOpacity
+                          onPress={() => openDocumentAsPrintablePdf(doc)}
+                          style={{
+                            paddingHorizontal: 14,
+                            paddingVertical: 8,
+                            borderRadius: 8,
+                            backgroundColor: theme.colors.accent,
+                          }}
+                        >
+                          <Text style={{ color: '#fff', fontWeight: '700' }}>📄 PDF bekijken</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => window.open(doc.photoUrl, '_blank')}
+                          style={{
+                            paddingHorizontal: 14,
+                            paddingVertical: 8,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: theme.colors.border,
+                          }}
+                        >
+                          <Text style={{ color: theme.colors.textPrimary, fontWeight: '600' }}>🔍 Origineel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={async () => {
+                            if (!window.confirm(`Weet je zeker dat je "${doc.title ?? doc.docType}" wilt verwijderen?`)) return;
+                            await deleteDocument(doc.id);
+                            setDocuments((cur) => cur.filter((d) => d.id !== doc.id));
+                          }}
+                          style={{
+                            paddingHorizontal: 14,
+                            paddingVertical: 8,
+                            borderRadius: 8,
+                            borderWidth: 1,
+                            borderColor: '#fca5a5',
+                          }}
+                        >
+                          <Text style={{ color: '#dc2626', fontWeight: '600' }}>🗑️</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* ── Tab: QR-stickers ── */}
         {activeTab === 'stickers' && (
@@ -1566,6 +1799,7 @@ interface BewijsTabProps {
   onBulkApprove: (ids: string[]) => Promise<void>;
   onBulkReject: (ids: string[]) => Promise<void>;
   onEdit: (id: string, updates: { field_note?: string; inspection_point_id?: string; ai_status?: string }) => void;
+  onReview: (id: string, action: ReviewAction, note?: string) => Promise<void>;
   projectId: string;
   commentCountMap: Map<string, number>;
 }
@@ -1578,7 +1812,10 @@ const FILTERS: { id: FilterStatus; label: string }[] = [
   { id: 'pending',   label: '○ Pending' },
 ];
 
-function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading, theme, isDark, onApprove, onReject, onBulkApprove, onBulkReject, onEdit, projectId, commentCountMap }: BewijsTabProps) {
+function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading, theme, isDark, onApprove, onReject, onBulkApprove, onBulkReject, onEdit, onReview, projectId, commentCountMap }: BewijsTabProps) {
+  const [reviewRejectId, setReviewRejectId] = useState<string | null>(null);
+  const [reviewRejectNote, setReviewRejectNote] = useState('');
+  const [reviewBusyId, setReviewBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [commentsOpenId, setCommentsOpenId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -1929,6 +2166,17 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                         {cfg.icon} {bucket.charAt(0).toUpperCase() + bucket.slice(1)}
                       </Text>
                     </View>
+                    {/* Review badge — keurmeester workflow, los van AI-status */}
+                    {(() => {
+                      const rb = reviewBadgeFor(item.review_status);
+                      return (
+                        <View style={[tabSt.statusBadge, { backgroundColor: rb.bg }]}>
+                          <Text style={[tabSt.statusBadgeText, { color: rb.fg }]}>
+                            {rb.emoji} {rb.label}
+                          </Text>
+                        </View>
+                      );
+                    })()}
                     {stale && (
                       <View style={[tabSt.statusBadge, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
                         <Text style={[tabSt.statusBadgeText, { color: '#ef4444' }]}>⏰ 24u+</Text>
@@ -2107,6 +2355,131 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                         </View>
                       </View>
                     )}
+
+                    {/* Review workflow — keurmeester / projectleider sign-off */}
+                    {(() => {
+                      const locked = isReviewLocked(item.review_status);
+                      const isApproved = item.review_status === 'APPROVED';
+                      const isRejected = item.review_status === 'REJECTED';
+                      const isPending  = item.review_status === 'PENDING_REVIEW' || item.review_status == null;
+                      const busy = reviewBusyId === item.id;
+                      const rb = reviewBadgeFor(item.review_status);
+                      return (
+                        <View style={[tabSt.editBox, { backgroundColor: theme.colors.background, borderColor: rb.fg + '40' }]}>
+                          <Text style={[tabSt.editTitle, { color: rb.fg }]}>
+                            {rb.emoji} REVIEW · {rb.label.toUpperCase()}
+                          </Text>
+                          {item.reviewed_at && (
+                            <Text style={{ fontSize: 11, color: theme.colors.textSecondary, marginBottom: 6 }}>
+                              Laatste beslissing: {fmtDate(item.reviewed_at)}
+                              {item.reviewed_by ? ` · door ${item.reviewed_by.slice(0, 8)}…` : ''}
+                            </Text>
+                          )}
+                          {item.review_note && (
+                            <Text style={{ fontSize: 12, color: theme.colors.textPrimary, marginBottom: 8, fontStyle: 'italic' }}>
+                              💬 {item.review_note}
+                            </Text>
+                          )}
+                          {locked ? (
+                            <View style={{ flexDirection: 'row', gap: 8 }}>
+                              <View style={[tabSt.approveBtn, { flex: 1, backgroundColor: 'rgba(15,118,110,0.15)' }]}>
+                                <Text style={[tabSt.approveBtnText, { color: '#0f766e' }]}>🔒 Vergrendeld</Text>
+                              </View>
+                            </View>
+                          ) : reviewRejectId === item.id ? (
+                            <View>
+                              <Text style={[tabSt.editLabel, { color: theme.colors.textSecondary }]}>Reden van afkeuring (verplicht)</Text>
+                              {/* @ts-ignore web textarea */}
+                              <textarea
+                                value={reviewRejectNote}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReviewRejectNote(e.target.value)}
+                                rows={2}
+                                placeholder="Bijv. 'Foto is onscherp, EXIF mist tijdstempel'"
+                                style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.colors.border}`, background: theme.colors.surface, color: theme.colors.textPrimary, fontSize: 13, resize: 'vertical', outline: 'none', marginBottom: 8, fontFamily: 'inherit' }}
+                              />
+                              <View style={{ flexDirection: 'row', gap: 8 }}>
+                                <TouchableOpacity
+                                  style={[tabSt.rejectBtn, { flex: 1, opacity: busy || !reviewRejectNote.trim() ? 0.5 : 1, borderColor: '#ef4444' }]}
+                                  disabled={busy || !reviewRejectNote.trim()}
+                                  onPress={async () => {
+                                    setReviewBusyId(item.id);
+                                    await onReview(item.id, 'REJECT', reviewRejectNote);
+                                    setReviewBusyId(null);
+                                    setReviewRejectId(null);
+                                    setReviewRejectNote('');
+                                  }}
+                                  activeOpacity={0.8}
+                                >
+                                  <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>✗ Bevestig afkeuring</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={[tabSt.rejectBtn, { flex: 1, borderColor: theme.colors.border }]}
+                                  onPress={() => { setReviewRejectId(null); setReviewRejectNote(''); }}
+                                  activeOpacity={0.8}
+                                >
+                                  <Text style={[tabSt.rejectBtnText, { color: theme.colors.textSecondary }]}>Annuleren</Text>
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          ) : (
+                            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                              {isPending && (
+                                <TouchableOpacity
+                                  style={[tabSt.approveBtn, { flex: 1, minWidth: 110, opacity: busy ? 0.5 : 1 }]}
+                                  disabled={busy}
+                                  onPress={async () => {
+                                    setReviewBusyId(item.id);
+                                    await onReview(item.id, 'APPROVE');
+                                    setReviewBusyId(null);
+                                  }}
+                                  activeOpacity={0.8}
+                                >
+                                  <Text style={tabSt.approveBtnText}>✅ Goedkeuren</Text>
+                                </TouchableOpacity>
+                              )}
+                              {(isPending || isApproved) && (
+                                <TouchableOpacity
+                                  style={[tabSt.rejectBtn, { flex: 1, minWidth: 110, borderColor: '#ef4444', opacity: busy ? 0.5 : 1 }]}
+                                  disabled={busy}
+                                  onPress={() => { setReviewRejectId(item.id); setReviewRejectNote(''); }}
+                                  activeOpacity={0.8}
+                                >
+                                  <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>❌ Afkeuren</Text>
+                                </TouchableOpacity>
+                              )}
+                              {isApproved && (
+                                <TouchableOpacity
+                                  style={[tabSt.approveBtn, { flex: 1, minWidth: 110, backgroundColor: '#0f766e', opacity: busy ? 0.5 : 1 }]}
+                                  disabled={busy}
+                                  onPress={async () => {
+                                    setReviewBusyId(item.id);
+                                    await onReview(item.id, 'FINALIZE');
+                                    setReviewBusyId(null);
+                                  }}
+                                  activeOpacity={0.8}
+                                >
+                                  <Text style={tabSt.approveBtnText}>🔒 Definitief maken</Text>
+                                </TouchableOpacity>
+                              )}
+                              {isRejected && (
+                                <TouchableOpacity
+                                  style={[tabSt.rejectBtn, { flex: 1, minWidth: 110, borderColor: theme.colors.accent, opacity: busy ? 0.5 : 1 }]}
+                                  disabled={busy}
+                                  onPress={async () => {
+                                    setReviewBusyId(item.id);
+                                    await onReview(item.id, 'REOPEN');
+                                    setReviewBusyId(null);
+                                  }}
+                                  activeOpacity={0.8}
+                                >
+                                  <Text style={[tabSt.rejectBtnText, { color: theme.colors.accent }]}>↩️ Heropenen</Text>
+                                </TouchableOpacity>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })()}
 
                     {/* Opmerkingen thread */}
                     {commentsOpenId === item.id && (

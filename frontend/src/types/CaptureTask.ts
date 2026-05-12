@@ -134,4 +134,5 @@ export type CaptureTask = {
   selectionSource?: 'WKB' | 'NEN' | 'OPLEVERING' | 'ROUTING';
   defaultBinnenBuiten?: 'BINNEN' | 'BUITEN';
   defaultEtage?: string;
+  defaultHuisnummer?: string;
 };

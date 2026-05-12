@@ -11,6 +11,12 @@
  * Output: HTML-string → window.print() of blob-download als PDF
  */
 
+import { getBrandingSync } from './TenantBrandingService';
+
+function pdfBrandLabel(): string {
+  return getBrandingSync().companyName ?? '';
+}
+
 export interface KeuringsrapportEvidence {
   id: string;
   inspectionPointId: string | null;
@@ -207,7 +213,7 @@ export function generateKeuringsrapportHtml(opts: KeuringsrapportOptions): strin
 
   <!-- Cover -->
   <div class="cover">
-    <div class="cover-brand">SpeeQ · Spee Solutions</div>
+    <div class="cover-brand">${pdfBrandLabel()}</div>
     <div class="cover-title">${opts.projectName}</div>
     <div class="cover-sub">WKB Keuringsrapport</div>
     <table class="cover-table">
@@ -219,7 +225,7 @@ export function generateKeuringsrapportHtml(opts: KeuringsrapportOptions): strin
       ${opts.uitvoerder       ? `<tr><td>Uitvoerder / WV</td><td>${opts.uitvoerder}</td></tr>` : ''}
       <tr><td>Totaal borgingspunten</td><td><strong>${totaal}</strong></td></tr>
     </table>
-    <div class="cover-art">Gegenereerd door SpeeQ (Spee Solutions) · Referentie: ${opts.projectId}</div>
+    <div class="cover-art">${pdfBrandLabel() ? `${pdfBrandLabel()} · ` : ''}Referentie: ${opts.projectId}</div>
   </div>
 
   <!-- Samenvatting -->

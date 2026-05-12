@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,10 @@ import {
 import { useTheme } from '../theme/ThemeProvider';
 import { Camera, ShieldCheck, FileCheck2, ArrowRight } from 'lucide-react-native';
 
-const speeqLogo3D       = require('../assets/speeq-logo-3d.png');
-const speeqQLogo        = require('../assets/speeq-q-logo.png');
-const landingVideoSmall = require('../assets/landing-hero.mp4');
-const landingVideoDesk  = require('../assets/landing-hero-desktop.mp4');
+const speeqLogo3D        = require('../assets/speeq-logo-3d.png');
+const speeqQLogo         = require('../assets/speeq-q-logo.png');
+const landingVideoDesk   = require('../assets/landing-hero-desktop.mp4');
+const landingVideoMobile = require('../assets/landing-hero-mobile.mp4');
 
 const DESKTOP_BREAKPOINT = 1024;
 
@@ -192,10 +192,192 @@ function DesktopLanding({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
- *  MOBILE / NATIVE — compacte hero
+ *  MOBILE — op web (< 1024px breed): cinematic fullscreen verticale video.
+ *  Op native (Expo iOS/Android): compacte fallback met statisch 3D-logo
+ *  (React Native heeft geen ingebouwd <video>; web krijgt de premium experience).
  *  ───────────────────────────────────────────────────────────────────── */
 
 function MobileLanding({
+  onEnterTool,
+  theme,
+}: {
+  onEnterTool: () => void;
+  theme: ReturnType<typeof useTheme>['theme'];
+}) {
+  if (Platform.OS === 'web') {
+    return <MobileWebLanding onEnterTool={onEnterTool} theme={theme} />;
+  }
+  return <MobileNativeLanding onEnterTool={onEnterTool} theme={theme} />;
+}
+
+/**
+ * Mobile WEB landing — fullscreen 100vh video met tekst onderaan (35–45%).
+ * Bottom-gradient houdt tekst leesbaar. Bovenste helft van de video blijft schoon
+ * zodat het SpeeQ-logo in de video nooit door tekst wordt afgedekt.
+ */
+function MobileWebLanding({
+  onEnterTool,
+  theme,
+}: {
+  onEnterTool: () => void;
+  theme: ReturnType<typeof useTheme>['theme'];
+}) {
+  const { height } = useWindowDimensions();
+  const s = createMobileStyles(theme);
+
+  // Match de video's eigen achtergrond (warm off-white) zodat er geen
+  // zwart paneel boven/onder de video opduikt op iOS Safari.
+  const VIDEO_BG = '#EDE6D8';
+
+  // Fullscreen mobiele hero — gebruikt actuele viewport-hoogte, met min-guard
+  // zodat 't ook op landscape-phones netjes blijft.
+  const heroHeight = Math.max(height, 560);
+
+  // Body/html → cream achtergrond + alle marge weg, zodat de video
+  // strak tegen de bovenkant van het scherm zit en er geen zwart of
+  // wit randje boven verschijnt (iOS Safari chrome-area).
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const prev = {
+      bodyBg: document.body.style.backgroundColor,
+      bodyMargin: document.body.style.margin,
+      bodyPadding: document.body.style.padding,
+      htmlBg: document.documentElement.style.backgroundColor,
+      htmlMargin: document.documentElement.style.margin,
+    };
+    document.body.style.backgroundColor = VIDEO_BG;
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.documentElement.style.backgroundColor = VIDEO_BG;
+    document.documentElement.style.margin = '0';
+    return () => {
+      document.body.style.backgroundColor = prev.bodyBg;
+      document.body.style.margin = prev.bodyMargin;
+      document.body.style.padding = prev.bodyPadding;
+      document.documentElement.style.backgroundColor = prev.htmlBg;
+      document.documentElement.style.margin = prev.htmlMargin;
+    };
+  }, []);
+
+  return (
+    <ScrollView
+      style={[s.container, { backgroundColor: VIDEO_BG }]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* ─── Hero wrapper (fullscreen, alles absoluut t.o.v. dit blok) ─── */}
+      <View style={[s.mobileHeroWrap, { height: heroHeight, backgroundColor: VIDEO_BG }]}>
+        {/* Laag 0: video achtergrond.
+            Truuk: de video krijgt expliciet een negatieve top en is 120%
+            van de hoogte — daardoor wordt het bovenste deel (waar in de
+            bron-video een zwarte rand baked-in zit) buiten beeld geclipt
+            door overflow:hidden op de container. Het logo schuift
+            visueel omhoog, en de wordmark verdwijnt uit de tekstzone.
+            Werkt betrouwbaarder op iOS Safari dan CSS transform. */}
+        {React.createElement('video', {
+          src: videoSrc(landingVideoMobile),
+          autoPlay: true,
+          muted: true,
+          loop: false,
+          playsInline: true,
+          'webkit-playsinline': 'true',
+          preload: 'auto',
+          style: {
+            position: 'absolute',
+            // Crop de top ~23% van de bron-video weg (zwarte band),
+            // maar laat het logo wat ademruimte aan de bovenkant zodat
+            // het netjes en georganiseerd in beeld zit.
+            top: '-30%',
+            left: 0,
+            width: '100%',
+            height: '130%',
+            objectFit: 'cover',
+            objectPosition: 'center top',
+            display: 'block',
+            background: VIDEO_BG,
+            zIndex: 0,
+          },
+        })}
+
+        {/* Subtiele bottom-gradient → houdt tekst leesbaar zonder de
+            video bovenin (waar het logo zit) te dimmen. */}
+        {React.createElement('div', {
+          style: {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: '32%',
+            background:
+              'linear-gradient(to top, rgba(11,22,40,0.72) 0%, rgba(11,22,40,0.45) 50%, rgba(11,22,40,0) 100%)',
+            zIndex: 1,
+            pointerEvents: 'none',
+          },
+        })}
+
+        {/* Laag 3: tekst + CTA — onderaan, met safe-area padding */}
+        <View style={s.mobileHeroOverlay} pointerEvents="box-none">
+          <View style={s.mobileHeroTextBlock}>
+            <Text style={s.mobileEyebrow}>SPEEQ WKB TOOL</Text>
+            <Text style={s.mobileHeadline}>Wkb-dossier in {'\n'}één foto.</Text>
+            <Text style={s.mobileSub}>
+              De vakman maakt een foto, SpeeQ doet de rest — AI-validatie,
+              GPS-koppeling, dossier-opbouw.
+            </Text>
+
+            <Pressable
+              onPress={onEnterTool}
+              style={({ pressed }) => [s.mobileCta, pressed && s.ctaPressed]}
+            >
+              <Text style={s.ctaText}>Open de tool</Text>
+              <ArrowRight size={18} color="#FFFFFF" />
+            </Pressable>
+
+            <Text style={s.mobileCtaHint}>
+              Toegangscode nodig — vraag aan bij Spee Solutions.
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ─── Below the fold ─── */}
+      <View style={s.belowFoldMobile}>
+        <View style={s.featuresWrap}>
+          <FeatureCard
+            Icon={Camera}
+            title="Vakman maakt foto"
+            body="In het veld, met je telefoon. SpeeQ herkent het borgingspunt automatisch."
+            theme={theme}
+          />
+          <FeatureCard
+            Icon={ShieldCheck}
+            title="AI-validatie"
+            body="Automatische controle of de foto aan de Wkb-eisen voldoet. Direct feedback."
+            theme={theme}
+          />
+          <FeatureCard
+            Icon={FileCheck2}
+            title="Borgingsdossier"
+            body="Compleet PDF-dossier voor de gemeente — met alle bewijzen, geo-tags en tijdstempels."
+            theme={theme}
+          />
+        </View>
+
+        <View style={s.footer}>
+          <View style={s.footerDot} />
+          <Text style={s.footerText}>
+            Spee Solutions 2026 · Kwaliteitsborging voor de bouw
+          </Text>
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
+/**
+ * Mobile NATIVE landing (Expo iOS/Android) — compacte fallback met statisch logo.
+ * Geen <video> tag op native zonder extra dependency; we houden de oude flow intact.
+ */
+function MobileNativeLanding({
   onEnterTool,
   theme,
 }: {
@@ -215,7 +397,11 @@ function MobileLanding({
       </View>
 
       <View style={s.hero}>
-        <HeroMediaCompact size={Platform.OS === 'web' ? 240 : 180} />
+        <Image
+          source={speeqLogo3D}
+          style={{ width: 180, height: 180, marginBottom: 24 }}
+          resizeMode="contain"
+        />
         <Text style={s.eyebrow}>SPEEQ WKB TOOL</Text>
         <Text style={s.headline}>Wkb-dossier in {'\n'}één foto.</Text>
         <Text style={s.sub}>
@@ -264,34 +450,6 @@ function MobileLanding({
         </Text>
       </View>
     </ScrollView>
-  );
-}
-
-/** Compacte hero-media voor mobiel / native (klein vierkant blok). */
-function HeroMediaCompact({ size }: { size: number }) {
-  if (Platform.OS === 'web') {
-    return React.createElement('video', {
-      src: videoSrc(landingVideoSmall),
-      autoPlay: true,
-      muted: true,
-      loop: false,
-      playsInline: true,
-      'webkit-playsinline': 'true',
-      style: {
-        width: size,
-        height: size,
-        objectFit: 'contain',
-        background: 'transparent',
-        marginBottom: 24,
-      },
-    });
-  }
-  return (
-    <Image
-      source={speeqLogo3D}
-      style={{ width: size, height: size, marginBottom: 24 }}
-      resizeMode="contain"
-    />
   );
 }
 
@@ -593,5 +751,95 @@ const createMobileStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       fontSize: 12,
       color: theme.colors.textSecondary,
       letterSpacing: 0.2,
+    },
+
+    /* ── Mobile WEB fullscreen hero (web < 1024px) ───────────────── */
+    mobileHeroWrap: {
+      position: 'relative',
+      width: '100%',
+      backgroundColor: '#EDE6D8',
+      overflow: 'hidden',
+    },
+    mobileHeroOverlay: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      paddingHorizontal: 22,
+      paddingBottom: 28,
+      paddingTop: 16,
+      zIndex: 3,
+    },
+    mobileHeroTextBlock: {
+      maxWidth: 520,
+      alignSelf: 'center',
+      width: '100%',
+      alignItems: 'flex-start',
+    },
+    mobileEyebrow: {
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 2.2,
+      color: '#7CB94B',
+      textTransform: 'uppercase',
+      marginBottom: 6,
+      textShadowColor: 'rgba(0,0,0,0.7)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 8,
+    },
+    mobileHeadline: {
+      fontSize: 24,
+      lineHeight: 30,
+      fontWeight: '800',
+      letterSpacing: -0.6,
+      color: '#FFFFFF',
+      marginBottom: 8,
+      textShadowColor: 'rgba(0,0,0,0.85)',
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 16,
+    },
+    mobileSub: {
+      fontSize: 13,
+      lineHeight: 19,
+      color: 'rgba(255,255,255,0.94)',
+      marginBottom: 16,
+      textShadowColor: 'rgba(0,0,0,0.75)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 12,
+    },
+    mobileCta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+      backgroundColor: theme.colors.accent,
+      paddingHorizontal: 28,
+      paddingVertical: 14,
+      borderRadius: 12,
+      alignSelf: 'stretch',
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.3,
+      shadowRadius: 20,
+      elevation: 5,
+    },
+    mobileCtaHint: {
+      marginTop: 10,
+      fontSize: 11,
+      color: 'rgba(255,255,255,0.82)',
+      alignSelf: 'center',
+      textAlign: 'center',
+      textShadowColor: 'rgba(0,0,0,0.65)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 8,
+    },
+    belowFoldMobile: {
+      paddingHorizontal: 24,
+      paddingTop: 48,
+      paddingBottom: 48,
+      maxWidth: 1100,
+      width: '100%',
+      alignSelf: 'center',
+      backgroundColor: '#EDE6D8',
     },
   });

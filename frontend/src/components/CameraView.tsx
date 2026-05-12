@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
+  Modal,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -58,9 +59,11 @@ import {
   triggerBlurryPhotoAlert,
 } from '../services/NotificationService';
 import { useTheme } from '../theme/ThemeProvider';
+import type { Theme } from '../theme/theme';
 import CaptureSuccessCard from './CaptureSuccessCard';
 import FloorPlanPinPicker from './FloorPlanPinPicker';
 import { getFloorPlansForProject, type FloorPlan } from '../services/FloorPlanService';
+import BonScannerModal from './BonScannerModal';
 import type { SharePayload } from '../services/ShareService';
 import type {
   CaptureTask,
@@ -149,12 +152,6 @@ const inferTaskByInspectionPointId = (
   }
 
   return null;
-};
-
-const buildTaskFieldNoteSeed = (task: CaptureTask) => {
-  const secondary = task.standards?.trim() || task.description.trim();
-  const seed = secondary ? `${task.title} - ${secondary}` : task.title;
-  return seed.slice(0, 180);
 };
 
 const buildTimerEvidenceNote = (
@@ -299,16 +296,38 @@ export default function CameraView({
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<ExpoCameraView | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
+  // Web-only: bewaart de browser geolocation foutcode zodat we de juiste
+  // platform-instructie kunnen tonen (Safari iOS, Chrome Android, etc).
+  const [webGeoErrorCode, setWebGeoErrorCode] = useState<number | null>(null);
   const [liveLocation, setLiveLocation] = useState<LiveLocation | null>(null);
   const [projectId, setProjectId] = useState(DEFAULT_PROJECT_ID);
   const [inspectionPointId, setInspectionPointId] = useState('kik-wapening-002');
   const [fieldNote, setFieldNote] = useState('');
+  // Toont na succesvol opslaan een keuzemenu: nog een foto, ander punt, of klaar.
+  const [postSaveResult, setPostSaveResult] = useState<null | {
+    aiStatus: string | null;
+    aiNotes: string | null;
+    uploadOk: boolean;
+  }>(null);
   const [contextData, setContextData] = useState<ContextData>(() => ({
     ...defaultContextData(),
     binnenbuiten: selectedTask?.defaultBinnenBuiten ?? 'BINNEN',
     etage: selectedTask?.defaultEtage ?? '',
     huisnummer: '',
   }));
+
+  // Sync etage + binnenbuiten als de gekozen task wijzigt.
+  // Belangrijk: FORCE de task-waarde — niet terugvallen op prev.etage,
+  // want na een save staat prev.etage op '' en dat is wat we willen.
+  // Als StartFlow expliciet "-4" doorgaf moet dat ALTIJD landen.
+  useEffect(() => {
+    if (!selectedTask) return;
+    setContextData((prev) => ({
+      ...prev,
+      binnenbuiten: selectedTask.defaultBinnenBuiten ?? prev.binnenbuiten,
+      etage: selectedTask.defaultEtage ?? '',
+    }));
+  }, [selectedTask?.id, selectedTask?.defaultEtage, selectedTask?.defaultBinnenBuiten]);
   const [desktopPhoto, setDesktopPhoto] = useState<File | null>(null);
   const [mobileWebPhotoUri, setMobileWebPhotoUri] = useState<string | null>(null);
   const mobileWebInputRef = useRef<HTMLInputElement | null>(null);
@@ -341,6 +360,8 @@ export default function CameraView({
   const [floorPlans, setFloorPlans] = useState<FloorPlan[]>([]);
   const [showFloorPlanPicker, setShowFloorPlanPicker] = useState(false);
   const pendingEvidenceRef = useRef<WkbEvidence | null>(null);
+  // Bon-scanner modal (OCR voor leveringsbonnen, certificaten, facturen)
+  const [showBonScanner, setShowBonScanner] = useState(false);
   const styles = useMemo(() => createStyles(theme), [theme]);
   const activeTask = useMemo(
     () => selectedTask ?? inferTaskByInspectionPointId(inspectionPointId),
@@ -392,12 +413,17 @@ export default function CameraView({
       }
 
       if (isWeb) {
-        setLocationPermission(true);
-        // Browser GPS + automatisch weer ophalen op web — watchPosition voor real-time updates
+        // Browser GPS + automatisch weer ophalen op web — watchPosition voor real-time updates.
+        // We zetten permission op true ZODRA we daadwerkelijk een coördinaat krijgen.
+        // Bij PERMISSION_DENIED (code 1) zetten we 'm op false zodat de uitleg-schermen verschijnen.
         if (typeof window !== 'undefined' && navigator.geolocation) {
+          // Optimistic: ga er vanuit dat het lukt; geo error callback corrigeert anders.
+          setLocationPermission(true);
           const watchId = navigator.geolocation.watchPosition(
             (pos) => {
               if (!isMounted) return;
+              setWebGeoErrorCode(null);
+              setLocationPermission(true);
               setDesktopLatitude(pos.coords.latitude.toFixed(6));
               setDesktopLongitude(pos.coords.longitude.toFixed(6));
               setDesktopAccuracy(String(Math.round(pos.coords.accuracy)));
@@ -407,7 +433,15 @@ export default function CameraView({
                 .then((w) => { if (isMounted && w) setWeatherSnapshot(w); })
                 .catch(() => {});
             },
-            () => {},
+            (err) => {
+              if (!isMounted) return;
+              setWebGeoErrorCode(err.code);
+              // PERMISSION_DENIED = 1 → blokkeer; andere fouten (timeout/unavailable)
+              // niet meteen blokkeren want die kunnen tijdelijk zijn.
+              if (err.code === 1) {
+                setLocationPermission(false);
+              }
+            },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
           );
           return () => {
@@ -415,6 +449,9 @@ export default function CameraView({
             navigator.geolocation.clearWatch(watchId);
           };
         }
+        // Geen geolocation API beschikbaar — markeer als geweigerd
+        setLocationPermission(false);
+        setWebGeoErrorCode(2); // POSITION_UNAVAILABLE
         return;
       }
 
@@ -495,10 +532,18 @@ export default function CameraView({
     }
 
     setInspectionPointId(activeTask.inspectionPointId);
-    setContextData(defaultContextData());
-    setFieldNote((current) =>
-      current.trim() ? current : buildTaskFieldNoteSeed(activeTask)
-    );
+    // BEHOUD etage + binnenbuiten uit StartFlow — anders wist 'ie de -4
+    // die de vakman zojuist op het verdieping-scherm intypte.
+    setContextData({
+      ...defaultContextData(),
+      etage: activeTask.defaultEtage ?? '',
+      huisnummer: activeTask.defaultHuisnummer ?? '',
+      binnenbuiten: activeTask.defaultBinnenBuiten ?? 'BINNEN',
+    });
+    // Notitie blijft leeg tot de vakman zelf iets typt of inspreekt.
+    // Geen voorgevulde "Title - Standard" tekst meer — die werd vaak
+    // per ongeluk meegestuurd en zorgde voor verwarring.
+    setFieldNote((current) => (current.trim() ? current : ''));
     setStopMomentConfirmed(!activeTask.stopMoment);
     setMeasurementToolConfirmed(!activeTask.requiresMeasurementTool);
     setTimerStartedAt(null);
@@ -634,10 +679,68 @@ export default function CameraView({
   }, []);
 
   const handleGrantAccess = async () => {
+    // Op web: een nieuwe getCurrentPosition triggert de browser-prompt weer
+    // (mits gebruiker hem nog niet permanent geblokkeerd heeft).
+    if (isWeb) {
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          () => {
+            setWebGeoErrorCode(null);
+            setLocationPermission(true);
+          },
+          (err) => {
+            setWebGeoErrorCode(err.code);
+            setLocationPermission(false);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+      }
+      return;
+    }
     await requestCameraPermission();
     const result = await Location.requestForegroundPermissionsAsync();
     setLocationPermission(result.status === 'granted');
   };
+
+  // Detecteert welke browser/OS we draaien zodat we de juiste instructies
+  // kunnen tonen wanneer locatie geweigerd is.
+  const webPlatformHint = useMemo(() => {
+    if (typeof navigator === 'undefined') return null;
+    const ua = navigator.userAgent ?? '';
+    const isIos = /iPhone|iPad|iPod/i.test(ua);
+    const isAndroid = /Android/i.test(ua);
+    const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(ua);
+    const isChromeIos = /CriOS/i.test(ua);
+    if (isIos && isSafari) return 'safari-ios';
+    if (isIos && isChromeIos) return 'chrome-ios';
+    if (isAndroid) return 'android';
+    if (isSafari) return 'safari-mac';
+    return 'desktop';
+  }, []);
+
+  const webGeoHelpText = useMemo(() => {
+    if (webGeoErrorCode === null) return null;
+    if (webGeoErrorCode === 3) {
+      return 'GPS reageerde niet binnen 10 seconden. Loop even naar buiten of probeer opnieuw.';
+    }
+    if (webGeoErrorCode === 2) {
+      return 'Je apparaat kan op dit moment geen GPS-positie bepalen. Controleer of locatie aanstaat in je systeeminstellingen en probeer opnieuw.';
+    }
+    // PERMISSION_DENIED
+    if (webPlatformHint === 'safari-ios') {
+      return 'Tik op het "AA"-icoon links in de adresbalk → Website-instellingen → Locatie → Sta toe. Of: Instellingen → Safari → Locatie → Vraag.';
+    }
+    if (webPlatformHint === 'chrome-ios') {
+      return 'iOS-Chrome heeft een eigen locatie-instelling: Instellingen-app → Chrome → Locatie → "Bij gebruik". Daarna deze pagina opnieuw laden.';
+    }
+    if (webPlatformHint === 'android') {
+      return 'Tik op het slotje links in de adresbalk → Toestemmingen → Locatie → Toestaan. Daarna de pagina opnieuw laden.';
+    }
+    if (webPlatformHint === 'safari-mac') {
+      return 'Safari → Instellingen → Websites → Locatie → kies "Toestaan" voor deze site.';
+    }
+    return 'Klik op het slotje of locatie-icoon links in de adresbalk en kies "Toestaan". Daarna de pagina opnieuw laden.';
+  }, [webGeoErrorCode, webPlatformHint]);
 
   // Detect mobile browser (Android / iOS / iPadOS) on web
   const isMobileWebDevice =
@@ -899,6 +1002,37 @@ export default function CameraView({
     ? 'Leg via de Timer Overlay eerst de beginfoto vast, wacht de volledige normtijd af en maak daarna de eindfoto.'
     : 'Bevestig eerst het vereiste stopmoment, het meetmiddel in beeld en rond indien nodig de beproevingstimer af.';
 
+  // Bouwt een duidelijk lijstje van wat de vakman nog moet doen voordat
+  // hij kan opslaan. Voorkomt de stille "save doet niets" bug.
+  const captureMissingChecklist = (): string[] => {
+    const missing: string[] = [];
+    if (activeTask?.stopMoment && !stopMomentConfirmed) {
+      missing.push(`• Tik op het bolletje "${activeTask.stopMoment}" om te bevestigen`);
+    }
+    if (activeTask?.requiresMeasurementTool && !measurementToolConfirmed) {
+      missing.push('• Tik op "Meetmiddel in beeld" om te bevestigen');
+    }
+    if (activeTask?.requiresTimer && !timerCompleted) {
+      missing.push('• Rond eerst de beproevingstimer af');
+    }
+    return missing;
+  };
+
+  const handleMobileSavePress = () => {
+    if (isCapturing) return;
+    if (!captureComplianceReady) {
+      const missing = captureMissingChecklist();
+      Alert.alert(
+        'Nog één stap',
+        missing.length
+          ? `Voordat je kunt opslaan:\n\n${missing.join('\n')}`
+          : captureBlockingMessage,
+      );
+      return;
+    }
+    void saveDesktopEvidence();
+  };
+
   const saveDesktopEvidenceForTask = async (
     task: CaptureTask,
     options?: {
@@ -991,10 +1125,14 @@ export default function CameraView({
         return null;
       }
 
-      // Directe upload naar Supabase — onmiddellijk zichtbaar in dashboard
+      // Directe upload naar Supabase — met 6s timeout zodat de knop
+      // nooit eindeloos blijft hangen op een traag/offline mobiel netwerk.
       let uploadOk = false;
       try {
-        const uploadResult = await uploadEvidenceDirectly(newEvidence, permanentUri);
+        const uploadResult = await Promise.race([
+          uploadEvidenceDirectly(newEvidence, permanentUri),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000)),
+        ]);
         uploadOk = !!uploadResult;
       } catch {
         uploadOk = false;
@@ -1023,7 +1161,15 @@ export default function CameraView({
 
       if (!options?.preserveFieldNote) {
         setFieldNote('');
-        setContextData(defaultContextData());
+        // Behoud verdieping + binnen/buiten + locatieDetail.
+        // De vakman maakt vaak meerdere foto's op dezelfde verdieping —
+        // hij hoeft -4 niet 8x in te typen.
+        setContextData((prev) => ({
+          ...defaultContextData(),
+          etage: prev.etage,
+          binnenbuiten: prev.binnenbuiten,
+          locatieDetail: prev.locatieDetail,
+        }));
       }
 
       setDesktopPhoto(null);
@@ -1211,18 +1357,32 @@ export default function CameraView({
       return;
     }
 
-    const result = await saveDesktopEvidenceForTask(activeTask);
+    // ⏱️ Backstop: 15s harde deadline. Als de hele save-flow nog steeds hangt
+    // (ondanks de upload + hash timeouts), reset isCapturing en toon foutmelding.
+    const result = await Promise.race([
+      saveDesktopEvidenceForTask(activeTask),
+      new Promise<null>((resolve) =>
+        setTimeout(() => {
+          setIsCapturing(false);
+          resolve(null);
+        }, 15000)
+      ),
+    ]);
 
     if (!result) {
+      Alert.alert(
+        'Opslaan duurde te lang',
+        'Probeer het opnieuw. Je foto is mogelijk lokaal bewaard en wordt later gesynchroniseerd.'
+      );
       return;
     }
 
-    if (result.aiStatus === 'FAILED') {
-      Alert.alert(
-        'Bewijs opgeslagen met waarschuwing',
-        result.aiNotes ?? 'Edge check markeert deze desktopfoto als onvoldoende.'
-      );
-    }
+    // Toon post-save scherm met vervolg-opties i.p.v. losse Alert.
+    setPostSaveResult({
+      aiStatus: result.aiStatus,
+      aiNotes: result.aiNotes,
+      uploadOk: Boolean(result.uploadOk),
+    });
 
     if (!(result as { uploadOk?: boolean }).uploadOk) {
       // Niet blokkeren — bewijs staat lokaal opgeslagen en sync loopt op achtergrond
@@ -1447,6 +1607,23 @@ export default function CameraView({
             </View>
           ) : null}
 
+          {/* 📄 Bon-scanner shortcut — altijd zichtbaar tijdens foto-stap */}
+          <TouchableOpacity
+            style={[
+              styles.mobileBonBtn,
+              { backgroundColor: '#f97316', borderColor: '#ea580c' },
+            ]}
+            onPress={() => {
+              console.log('[BonScanner] knop tap');
+              setShowBonScanner(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.mobileBonBtnText, { color: '#fff' }]}>
+              📄 Bon / leveringsbrief scannen
+            </Text>
+          </TouchableOpacity>
+
           {/* Timer overlays */}
           {usesNen1006TimerOverlay ? (
             <View style={styles.embeddedTimerOverlay}>
@@ -1592,27 +1769,37 @@ export default function CameraView({
               📍 Exacte locatie
             </Text>
 
-            {/* Verdieping — pre-fill uit task, altijd editable */}
-            <View style={styles.mobileField}>
-              <Text style={styles.mobileLabel}>Verdieping</Text>
-              <TextInput
-                style={[
-                  styles.mobileNoteInput,
-                  {
-                    backgroundColor: theme.colors.surface,
-                    borderColor: theme.colors.border,
-                    color: theme.colors.textPrimary,
-                  },
-                ]}
-                placeholder="0 = begane grond, 1 = eerste etage…"
-                placeholderTextColor={theme.colors.textSecondary + '88'}
-                value={contextData.etage}
-                onChangeText={(v) => setContextData({ ...contextData, etage: v })}
-                keyboardType="default"
-                autoCapitalize="none"
-                maxLength={20}
-              />
-            </View>
+            {/* Verdieping — alleen tonen als StartFlow het NIET heeft gevuld.
+                Geen dubbele invoer: vakman koos al verdieping in StartFlow. */}
+            {!contextData.etage ? (
+              <View style={styles.mobileField}>
+                <Text style={styles.mobileLabel}>Verdieping</Text>
+                <TextInput
+                  style={[
+                    styles.mobileNoteInput,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      borderColor: theme.colors.border,
+                      color: theme.colors.textPrimary,
+                    },
+                  ]}
+                  placeholder="bv. -4, BG, 1, 7"
+                  placeholderTextColor={theme.colors.textSecondary + '88'}
+                  value={contextData.etage}
+                  onChangeText={(v) => setContextData((prev) => ({ ...prev, etage: v }))}
+                  keyboardType="default"
+                  autoCapitalize="none"
+                  maxLength={20}
+                />
+              </View>
+            ) : (
+              <View style={styles.mobileField}>
+                <Text style={styles.mobileLabel}>Verdieping</Text>
+                <Text style={[styles.mobileLabel, { fontWeight: '400', color: theme.colors.textSecondary }]}>
+                  ✓ {contextData.etage} (uit StartFlow — wijzig via ‹ Foto opnieuw)
+                </Text>
+              </View>
+            )}
             {/* Huisnummer — GPS vult straat, vakman vult nummer */}
             <View style={styles.mobileField}>
               <Text style={styles.mobileLabel}>Huisnummer</Text>
@@ -1628,7 +1815,7 @@ export default function CameraView({
                 placeholder="bv. 12A"
                 placeholderTextColor={theme.colors.textSecondary + '88'}
                 value={contextData.huisnummer}
-                onChangeText={(v) => setContextData({ ...contextData, huisnummer: v })}
+                onChangeText={(v) => setContextData((prev) => ({ ...prev, huisnummer: v }))}
                 keyboardType="default"
                 autoCapitalize="characters"
                 maxLength={10}
@@ -1764,31 +1951,53 @@ export default function CameraView({
             </View>
           ) : null}
 
-          {/* Optional note */}
-          <TextInput
-            style={[styles.mobileNoteInput, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, color: theme.colors.textPrimary }]}
-            value={fieldNote}
-            onChangeText={setFieldNote}
-            placeholder="Notitie (optioneel)"
-            placeholderTextColor={theme.colors.textSecondary + '88'}
-            maxLength={180}
-          />
+          {/* Notitie — duidelijk gelabeld zodat de vakman weet dat dit kan */}
+          <View style={[styles.mobileLocatieCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, marginBottom: 12 }]}>
+            <Text style={[styles.mobileLocatieTitle, { color: theme.colors.textSecondary }]}>
+              📝 Notitie (optioneel) — typen of inspreken
+            </Text>
+            <View style={styles.mobileNoteRow}>
+              <TextInput
+                style={[
+                  styles.mobileNoteInputFlex,
+                  {
+                    backgroundColor: theme.name === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                    borderColor: theme.colors.border,
+                    color: theme.colors.textPrimary,
+                    minHeight: 64,
+                  },
+                ]}
+                value={fieldNote}
+                onChangeText={setFieldNote}
+                placeholder="Bijv. 'doorvoering achter wand, kit nog niet gedroogd'"
+                placeholderTextColor={theme.colors.textSecondary + '88'}
+                maxLength={180}
+                multiline
+              />
+              <VoiceNoteButton onResult={(text) => setFieldNote(text)} />
+            </View>
+          </View>
 
-          {/* Save button */}
+          {/* Save button — altijd tikbaar; bij ontbrekende stap toont een Alert wat nog moet. */}
           <TouchableOpacity
             style={[
               styles.mobileSaveBtn,
               { backgroundColor: theme.colors.accent },
               (isCapturing || !captureComplianceReady) && styles.mobileSaveBtnDisabled,
             ]}
-            onPress={saveDesktopEvidence}
-            disabled={isCapturing || !captureComplianceReady}
+            onPress={handleMobileSavePress}
+            disabled={isCapturing}
             activeOpacity={0.85}
           >
             <Text style={styles.mobileSaveBtnText}>
               {isCapturing ? '⏳ Opslaan…' : '✅ Opslaan als bewijs'}
             </Text>
           </TouchableOpacity>
+          {!captureComplianceReady && !isCapturing ? (
+            <Text style={[styles.mobileSaveHint, { color: theme.colors.textSecondary }]}>
+              ⚠️ Tik eerst de gevraagde bevestigingen aan (bolletjes hierboven)
+            </Text>
+          ) : null}
         </View>
       );
     }
@@ -2076,6 +2285,24 @@ export default function CameraView({
           </View>
         ) : null}
 
+        {/* 📄 Bon Scanner modal — OCR voor leveringsbonnen, certificaten, facturen */}
+        <BonScannerModal
+          visible={showBonScanner}
+          projectId={projectId.trim() || 'onbekend'}
+          theme={theme}
+          onClose={() => setShowBonScanner(false)}
+        />
+
+        {/* ✅ Post-save scherm — vervolgkeuze na succesvolle opslag */}
+        <PostSaveSheet
+          result={postSaveResult}
+          theme={theme}
+          taskTitle={activeTask?.title ?? null}
+          onAnother={() => setPostSaveResult(null)}
+          onBackToProject={onBackToProject ?? onBackToTasks ?? null}
+          onDone={onBackToMain ?? onBackToTasks ?? null}
+        />
+
       </View>
     );
   }
@@ -2092,14 +2319,60 @@ export default function CameraView({
   }
 
   if (!cameraPermission.granted || !locationPermission) {
+    const cameraMissing = !cameraPermission.granted;
+    const gpsMissing = !locationPermission;
     return (
       <View style={styles.centeredState}>
-        <Text style={styles.stateTitle}>Camera en GPS zijn verplicht</Text>
+        <Text style={styles.stateTitle}>
+          {cameraMissing && gpsMissing
+            ? 'Camera en GPS zijn verplicht'
+            : cameraMissing
+              ? 'Camera-toegang nodig'
+              : '📍 Locatie-toegang nodig'}
+        </Text>
         <Text style={styles.infoText}>
           Zonder camera, GPS en tijdstempel is de bewijslast niet Wkb-proof.
         </Text>
+
+        {gpsMissing && webGeoHelpText ? (
+          <View
+            style={{
+              backgroundColor: 'rgba(217, 119, 6, 0.10)',
+              borderColor: '#d97706',
+              borderWidth: 1,
+              borderRadius: 12,
+              padding: 14,
+              marginVertical: 16,
+              alignSelf: 'stretch',
+              maxWidth: 460,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '800',
+                color: '#9a3412',
+                marginBottom: 6,
+              }}
+            >
+              {webPlatformHint === 'safari-ios'
+                ? 'Zo zet je het aan op Safari (iPhone/iPad):'
+                : webPlatformHint === 'chrome-ios'
+                  ? 'Zo zet je het aan op Chrome iOS:'
+                  : webPlatformHint === 'android'
+                    ? 'Zo zet je het aan op Android:'
+                    : 'Zo geef je toegang:'}
+            </Text>
+            <Text style={{ fontSize: 14, color: '#7c2d12', lineHeight: 20 }}>
+              {webGeoHelpText}
+            </Text>
+          </View>
+        ) : null}
+
         <TouchableOpacity style={styles.permissionButton} onPress={handleGrantAccess}>
-          <Text style={styles.permissionButtonText}>Geef toegang</Text>
+          <Text style={styles.permissionButtonText}>
+            {gpsMissing ? 'Opnieuw vragen om toegang' : 'Geef toegang'}
+          </Text>
         </TouchableOpacity>
       </View>
     );
@@ -2489,6 +2762,14 @@ export default function CameraView({
         </SafeAreaView>
       </ExpoCameraView>
 
+      {/* 📄 Bon Scanner modal — OCR voor leveringsbonnen, certificaten, facturen */}
+      <BonScannerModal
+        visible={showBonScanner}
+        projectId={projectId.trim() || 'onbekend'}
+        theme={theme}
+        onClose={() => setShowBonScanner(false)}
+      />
+
       {/* Floor Plan Pin Picker modal */}
       {showFloorPlanPicker && (
         <View style={{
@@ -2566,7 +2847,190 @@ export default function CameraView({
           </View>
         </View>
       )}
+
+      {/* ✅ Post-save scherm — werkt ook na native camera capture */}
+      <PostSaveSheet
+        result={postSaveResult}
+        theme={theme}
+        taskTitle={activeTask?.title ?? null}
+        onAnother={() => setPostSaveResult(null)}
+        onBackToProject={onBackToProject ?? onBackToTasks ?? null}
+        onDone={onBackToMain ?? onBackToTasks ?? null}
+      />
     </View>
+  );
+}
+
+// ─── PostSaveSheet — modal met vervolg-opties na succesvolle save ──────────────
+
+interface PostSaveSheetProps {
+  result: { aiStatus: string | null; aiNotes: string | null; uploadOk: boolean } | null;
+  theme: Theme;
+  taskTitle: string | null;
+  onAnother: () => void;
+  onBackToProject: (() => void) | null;
+  onDone: (() => void) | null;
+}
+
+function PostSaveSheet({
+  result,
+  theme,
+  taskTitle,
+  onAnother,
+  onBackToProject,
+  onDone,
+}: PostSaveSheetProps) {
+  if (!result) return null;
+  const failed = result.aiStatus === 'FAILED';
+  const headline = failed
+    ? '⚠️ Opgeslagen met waarschuwing'
+    : '✅ Bewijs opgeslagen';
+  const subline = failed
+    ? (result.aiNotes ?? 'Edge check markeert deze foto als onvoldoende.')
+    : result.uploadOk
+      ? 'Foto staat in het dossier en is gesynchroniseerd.'
+      : 'Foto staat lokaal opgeslagen — sync volgt zodra je online bent.';
+  const accent = failed ? '#d97706' : '#059669';
+
+  return (
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      onRequestClose={onAnother}
+    >
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.55)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 20,
+        }}
+      >
+        <View
+          style={{
+            width: '100%',
+            maxWidth: 440,
+            backgroundColor: theme.colors.surface,
+            borderRadius: 18,
+            padding: 22,
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 22,
+              fontWeight: '900',
+              color: accent,
+              marginBottom: 6,
+            }}
+          >
+            {headline}
+          </Text>
+          {taskTitle ? (
+            <Text
+              style={{
+                fontSize: 14,
+                color: theme.colors.textSecondary,
+                marginBottom: 8,
+              }}
+            >
+              {taskTitle}
+            </Text>
+          ) : null}
+          <Text
+            style={{
+              fontSize: 15,
+              color: theme.colors.textPrimary,
+              lineHeight: 22,
+              marginBottom: 18,
+            }}
+          >
+            {subline}
+          </Text>
+
+          <Text
+            style={{
+              fontSize: 13,
+              fontWeight: '700',
+              color: theme.colors.textSecondary,
+              marginBottom: 10,
+              textTransform: 'uppercase',
+              letterSpacing: 0.6,
+            }}
+          >
+            Wat wil je nu doen?
+          </Text>
+
+          <TouchableOpacity
+            onPress={onAnother}
+            activeOpacity={0.85}
+            style={{
+              backgroundColor: theme.colors.accent,
+              paddingVertical: 14,
+              borderRadius: 12,
+              alignItems: 'center',
+              marginBottom: 10,
+              minHeight: 48,
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>
+              📸 Nog een foto van hetzelfde punt
+            </Text>
+          </TouchableOpacity>
+
+          {onBackToProject ? (
+            <TouchableOpacity
+              onPress={() => {
+                onAnother();
+                onBackToProject();
+              }}
+              activeOpacity={0.85}
+              style={{
+                backgroundColor: theme.colors.surface,
+                borderWidth: 1.5,
+                borderColor: theme.colors.accent,
+                paddingVertical: 14,
+                borderRadius: 12,
+                alignItems: 'center',
+                marginBottom: 10,
+                minHeight: 48,
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ color: theme.colors.accent, fontSize: 16, fontWeight: '800' }}>
+                ↩️ Ander borgingspunt kiezen
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {onDone ? (
+            <TouchableOpacity
+              onPress={() => {
+                onAnother();
+                onDone();
+              }}
+              activeOpacity={0.85}
+              style={{
+                backgroundColor: 'transparent',
+                paddingVertical: 12,
+                borderRadius: 12,
+                alignItems: 'center',
+                minHeight: 44,
+                justifyContent: 'center',
+              }}
+            >
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 15, fontWeight: '700' }}>
+                ✅ Klaar voor nu — terug naar start
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -3799,10 +4263,45 @@ const createStyles = (theme: { name?: string; colors: Record<string, string> }) 
       fontSize: 15,
       minHeight: 52,
     },
+    mobileNoteRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+      marginBottom: 12,
+    },
+    mobileNoteInputFlex: {
+      flex: 1,
+      borderRadius: 12,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      minHeight: 52,
+      maxHeight: 140,
+    },
     mobileSaveBtn: {
       borderRadius: 16,
       paddingVertical: 22,
       alignItems: 'center',
+    },
+    mobileBonBtn: {
+      marginHorizontal: 14,
+      marginTop: 12,
+      marginBottom: 4,
+      paddingVertical: 18,
+      borderWidth: 2,
+      borderRadius: 14,
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.18,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+    mobileBonBtnText: {
+      fontSize: 17,
+      fontWeight: '800',
+      letterSpacing: 0.3,
     },
     mobileSaveBtnDisabled: {
       opacity: 0.45,
@@ -3811,6 +4310,12 @@ const createStyles = (theme: { name?: string; colors: Record<string, string> }) 
       color: '#fff',
       fontSize: 19,
       fontWeight: '900',
+    },
+    mobileSaveHint: {
+      marginTop: 8,
+      fontSize: 13,
+      fontWeight: '600',
+      textAlign: 'center',
     },
     mobileField: {
       marginBottom: 12,

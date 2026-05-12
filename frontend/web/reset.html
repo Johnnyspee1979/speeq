@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SpeeQ — Reset</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #f8fafc;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 24px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      text-align: center;
+    }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    p { color: #475569; line-height: 1.5; margin: 0 0 12px; }
+    #status {
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 12px;
+      margin: 16px 0;
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+      text-align: left;
+      white-space: pre-line;
+      min-height: 80px;
+    }
+    .ok { color: #15803d; font-weight: 600; }
+    .err { color: #b91c1c; }
+    a.btn {
+      display: inline-block;
+      background: #f97316;
+      color: white;
+      padding: 14px 24px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔄 SpeeQ Reset</h1>
+    <p>Hier worden alle oude versies van SpeeQ verwijderd zodat je de nieuwste versie krijgt.</p>
+    <div id="status">Bezig…</div>
+    <a class="btn" id="go" href="/?fresh=1" style="display:none">▶ Open de app</a>
+  </div>
+  <script>
+    (async function() {
+      const status = document.getElementById('status');
+      const btn = document.getElementById('go');
+      const log = (msg, cls) => {
+        const span = document.createElement('div');
+        if (cls) span.className = cls;
+        span.textContent = msg;
+        status.appendChild(span);
+      };
+      status.textContent = '';
+
+      try {
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          log('• Service workers gevonden: ' + regs.length);
+          for (const r of regs) {
+            await r.unregister();
+          }
+          log('• Alle service workers uitgeschakeld', 'ok');
+        } else {
+          log('• Geen service workers ondersteund');
+        }
+
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          log('• Cache-stores gevonden: ' + keys.length);
+          for (const k of keys) await caches.delete(k);
+          log('• Alle caches gewist', 'ok');
+        }
+
+        try {
+          localStorage.clear();
+          log('• localStorage gewist', 'ok');
+        } catch {}
+
+        log('');
+        log('✅ Klaar! Open de app via de knop hieronder.', 'ok');
+        btn.style.display = 'inline-block';
+      } catch (err) {
+        log('❌ Fout: ' + err.message, 'err');
+      }
+    })();
+  </script>
+</body>
+</html>

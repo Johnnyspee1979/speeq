@@ -15,6 +15,12 @@
  *  6. Bijlagen checklist
  */
 
+import { getBrandingSync } from './TenantBrandingService';
+
+function pdfBrandLabel(): string {
+  return getBrandingSync().companyName ?? '';
+}
+
 export interface GemeenteEvidenceItem {
   id: string;
   inspectionPointId: string | null;
@@ -265,8 +271,7 @@ export function generateGemeenteRapportHtml(opts: GemeenteRapportOptions): strin
       is gebouwd in overeenstemming met de technische voorschriften uit het
       Besluit bouwwerken leefomgeving (Bbl), voor zover van toepassing op een
       bouwwerk van ${gevolgklasse}.<br /><br />
-      De kwaliteitsborging is uitgevoerd conform de goedgekeurde borgingstool
-      van SpeeQ (Spee Solutions). De borgingspunten zijn
+      De kwaliteitsborging is uitgevoerd conform de goedgekeurde borgingstool${pdfBrandLabel() ? ` van ${pdfBrandLabel()}` : ''}. De borgingspunten zijn
       systematisch gecontroleerd, gefotografeerd en beoordeeld. Dit dossier
       bevoegd gezag omvat alle bewijsstukken die zijn verzameld gedurende de
       bouwperiode.<br /><br />
@@ -371,7 +376,7 @@ export function generateGemeenteRapportHtml(opts: GemeenteRapportOptions): strin
   </div>
 
   <div class="footer">
-    Gegenereerd door SpeeQ · Spee Solutions · ${today} ·
+    ${pdfBrandLabel() ? `${pdfBrandLabel()} · ` : ''}${today} ·
     Projectreferentie: ${opts.projectId} ·
     Wkb art. 2.17 / BKL art. 7.16
   </div>

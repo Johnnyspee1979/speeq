@@ -104,6 +104,10 @@ type EvidenceRow = {
   floor_plan_id?: string | null;
   pin_x?: number | null;
   pin_y?: number | null;
+  review_status?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  review_note?: string | null;
 };
 
 type PunchlistRow = {
@@ -310,6 +314,10 @@ const normalizeEvidence = (evidence: StoredWkbEvidence): StoredWkbEvidence => ({
   pinX: evidence.pinX ?? null,
   pinY: evidence.pinY ?? null,
   huisnummer: evidence.huisnummer ?? null,
+  reviewStatus: evidence.reviewStatus ?? null,
+  reviewedBy: evidence.reviewedBy ?? null,
+  reviewedAt: evidence.reviewedAt ?? null,
+  reviewNote: evidence.reviewNote ?? null,
 });
 
 const normalizePunchlistItem = (
@@ -599,6 +607,13 @@ const mapRowToEvidence = (row: EvidenceRow): StoredWkbEvidence =>
     binnenbuiten: (row.binnenbuiten as 'BINNEN' | 'BUITEN' | null) ?? null,
     locatieDetail: row.locatie_detail ?? null,
     weatherLabel: row.weather_label ?? null,
+    floorPlanId: row.floor_plan_id ?? null,
+    pinX: row.pin_x ?? null,
+    pinY: row.pin_y ?? null,
+    reviewStatus: (row.review_status as WkbEvidence['reviewStatus']) ?? null,
+    reviewedBy: row.reviewed_by ?? null,
+    reviewedAt: row.reviewed_at ?? null,
+    reviewNote: row.review_note ?? null,
   });
 
 const mapRowToPunchlistItem = (row: PunchlistRow): StoredPunchlistItem =>
@@ -1247,6 +1262,10 @@ const nativeAdapter: DatabaseAdapter = {
         'ALTER TABLE evidence ADD COLUMN pin_x REAL;',
         'ALTER TABLE evidence ADD COLUMN pin_y REAL;',
         'ALTER TABLE evidence ADD COLUMN huisnummer TEXT;',
+        'ALTER TABLE evidence ADD COLUMN review_status TEXT;',
+        'ALTER TABLE evidence ADD COLUMN reviewed_by TEXT;',
+        'ALTER TABLE evidence ADD COLUMN reviewed_at TEXT;',
+        'ALTER TABLE evidence ADD COLUMN review_note TEXT;',
       ];
 
       for (const statement of migrations) {
@@ -1346,8 +1365,12 @@ const nativeAdapter: DatabaseAdapter = {
             weather_label,
             floor_plan_id,
             pin_x,
-            pin_y
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            pin_y,
+            review_status,
+            reviewed_by,
+            reviewed_at,
+            review_note
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           evidence.id,
@@ -1393,6 +1416,10 @@ const nativeAdapter: DatabaseAdapter = {
           evidence.floorPlanId ?? null,
           evidence.pinX ?? null,
           evidence.pinY ?? null,
+          evidence.reviewStatus ?? null,
+          evidence.reviewedBy ?? null,
+          evidence.reviewedAt ?? null,
+          evidence.reviewNote ?? null,
         ]
       );
 

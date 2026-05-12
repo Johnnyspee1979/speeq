@@ -22,6 +22,7 @@ import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProject } from '../context/ProjectContext';
 import { exportDossierAsPdf } from '../services/BorgingsDossierService';
+import { useTenantBranding } from '../hooks/useTenantBranding';
 import type { StoredWkbEvidence } from '../types/Evidence';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -61,6 +62,7 @@ interface OpdrachtgeverPortaalProps {
 
 export default function OpdrachtgeverPortaal({ projectId: propProjectId }: OpdrachtgeverPortaalProps = {}) {
   const { theme } = useTheme();
+  const tenantBranding = useTenantBranding();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const { activeProject } = useProject();
 
@@ -346,7 +348,7 @@ export default function OpdrachtgeverPortaal({ projectId: propProjectId }: Opdra
       {/* ── Footer ── */}
       <Text style={[styles.footer, { color: theme.colors.textSecondary }]}>
         Gegenereerd op {new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}
-        {' · '}SpeeQ
+        {tenantBranding.companyName ? ` · ${tenantBranding.companyName}` : ''}
       </Text>
     </ScrollView>
   );

@@ -24,6 +24,7 @@ import {
   type DrawingChangeRequest,
 } from '../services/DrawingChangeRequestService';
 import { supabase } from '../lib/supabase';
+import { useTenantBranding } from '../hooks/useTenantBranding';
 
 interface Props {
   token: string;
@@ -32,6 +33,7 @@ interface Props {
 type Screen = 'loading' | 'notFound' | 'alreadyHandled' | 'form' | 'rejecting' | 'done';
 
 export default function TekenGoedkeuringScreen({ token }: Props) {
+  const tenantBranding = useTenantBranding();
   const [screen, setScreen] = useState<Screen>('loading');
   const [request, setRequest] = useState<DrawingChangeRequest | null>(null);
   const [floorPlanUrl, setFloorPlanUrl] = useState<string | null>(null);
@@ -309,7 +311,7 @@ export default function TekenGoedkeuringScreen({ token }: Props) {
       </View>
 
       <Text style={st.footer}>
-        SpeeQ • Veilig en versleuteld
+        {tenantBranding.companyName ? `${tenantBranding.companyName} • ` : ''}Veilig en versleuteld
       </Text>
     </ScrollView>
   );

@@ -45,6 +45,7 @@ import {
 } from '../services/wkbCompliance';
 import { useTheme } from '../theme/ThemeProvider';
 import { useProject } from '../context/ProjectContext';
+import { reviewBadgeFor } from '../services/ReviewService';
 
 type StatusFilter = 'all' | 'offline' | 'cloud' | 'attention' | 'ready';
 
@@ -562,6 +563,17 @@ export default function EvidenceList() {
                 {getAiLabel(item)}
               </Text>
             </View>
+            {/* Review-status chip — keurmeester / projectleider sign-off */}
+            {(() => {
+              const rb = reviewBadgeFor(item.reviewStatus);
+              return (
+                <View style={[styles.detailChip, { backgroundColor: rb.bg }]}>
+                  <Text style={[styles.detailChipText, { color: rb.fg }]}>
+                    {rb.emoji} {rb.label}
+                  </Text>
+                </View>
+              );
+            })()}
             {complianceContext.stopMoment ? (
               <View
                 style={[

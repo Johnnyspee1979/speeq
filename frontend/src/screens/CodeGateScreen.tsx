@@ -17,28 +17,28 @@ import { ArrowLeft, KeyRound } from 'lucide-react-native';
 const speeqQLogo = require('../assets/speeq-q-logo.png');
 
 /** Letterlijke toegangscode — case-insensitive vergeleken. */
-export const TOOL_ACCESS_CODE = 'code';
+export const TOOL_ACCESS_CODE = '0987';
 
-/** localStorage key — onthoudt dat de bezoeker de gate gepasseerd is. */
+/** sessionStorage key — onthoudt de gate alléén binnen dezelfde tab-sessie. */
 export const GATE_STORAGE_KEY = 'speeq_gate_passed_v1';
 
-/** Web-only helper: heeft deze browser de gate al gepasseerd? */
+/** Web-only helper: heeft deze tab de gate al gepasseerd? */
 export function hasPassedGate(): boolean {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
   try {
-    return window.localStorage.getItem(GATE_STORAGE_KEY) === 'true';
+    return window.sessionStorage.getItem(GATE_STORAGE_KEY) === 'true';
   } catch {
     return false;
   }
 }
 
-/** Markeer de gate als gepasseerd (alleen web). */
+/** Markeer de gate als gepasseerd voor deze tab-sessie. */
 export function markGatePassed(): void {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(GATE_STORAGE_KEY, 'true');
+    window.sessionStorage.setItem(GATE_STORAGE_KEY, 'true');
   } catch {
-    /* private mode, quota — geen probleem, gate werkt dan per sessie */
+    /* private mode, quota — geen probleem, gate werkt dan per call */
   }
 }
 
@@ -132,7 +132,7 @@ export default function CodeGateScreen({
             <TextInput
               ref={inputRef}
               style={[s.input, error ? s.inputError : null]}
-              placeholder="Bijv. een woord van 4 letters"
+              placeholder="4-cijferige code"
               placeholderTextColor={theme.colors.textSecondary}
               value={code}
               onChangeText={(v) => {

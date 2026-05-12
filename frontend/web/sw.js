@@ -1,8 +1,8 @@
-/* SpeeQ — Service Worker v3 */
-const CACHE_NAME = 'wkb-snap-v3';
+/* SpeeQ — Service Worker v4 — network-first, geen stale code meer */
+const CACHE_NAME = 'wkb-snap-v4';
 const OFFLINE_SHELL = ['/'];
 
-// Install: cache app shell
+// Install: cache app shell, direct activeren
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(OFFLINE_SHELL))
@@ -10,39 +10,47 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: clean up old caches
+// Activate: oude caches WEG, neem direct over
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      )
-    )
-  );
-  self.clients.claim();
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    // Verwijder ALLE oude caches (niet alleen de v3-naam)
+    await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
+    await self.clients.claim();
+    // Forceer alle open tabs te herladen zodat nieuwe code direct draait
+    const clientsList = await self.clients.matchAll({ type: 'window' });
+    for (const client of clientsList) {
+      client.postMessage({ type: 'SW_UPDATED' });
+    }
+  })());
 });
 
-// Fetch: stale-while-revalidate for static, network-first for API
+// Fetch: NETWORK-FIRST voor HTML/JS (altijd verse code).
+// Cache-fallback alleen als offline.
 self.addEventListener('fetch', (event) => {
-  const url = event.request.url;
-
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = req.url;
   if (url.includes('supabase.co') || url.includes('/api/')) return;
   if (url.startsWith('chrome-extension')) return;
 
-  event.respondWith(
-    caches.open(CACHE_NAME).then(async cache => {
-      const cached = await cache.match(event.request);
-      const networkFetch = fetch(event.request).then(response => {
-        if (response.ok && response.type !== 'opaque') {
-          cache.put(event.request, response.clone());
-        }
-        return response;
-      }).catch(() => cached);
-
-      return cached ?? networkFetch;
-    })
-  );
+  event.respondWith((async () => {
+    try {
+      const response = await fetch(req);
+      // Cache alleen succesvolle responses
+      if (response.ok && response.type !== 'opaque') {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(req, response.clone());
+      }
+      return response;
+    } catch (err) {
+      // Offline: pak cache
+      const cached = await caches.match(req);
+      if (cached) return cached;
+      // Echt niets: fallback naar shell
+      return caches.match('/');
+    }
+  })());
 });
 
 // ── Push notificatie handler ─────────────────────────────────────────────────
@@ -106,27 +114,29 @@ self.addEventListener('notificationclick', (event) => {
 // ── Push subscription change ─────────────────────────────────────────────────
 
 self.addEventListener('pushsubscriptionchange', function() {
-  // Browser heeft subscription vernieuwd — app hersubscribeert bij volgende laad
   console.log('[SW] Push subscription changed');
 });
 
 // ── Background Sync ──────────────────────────────────────────────────────────
-// Vuurt wanneer het netwerk terugkomt, ook als de PWA in de achtergrond zit.
-// Stuurt een bericht naar alle open tabbladen zodat de app de wachtrij kan uploaden.
 
 self.addEventListener('sync', (event) => {
   if (event.tag === 'wkb-sync-evidence') {
     console.log('[SW] Background sync gestart: wkb-sync-evidence');
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        if (clientList.length === 0) {
-          // Geen open vensters — niks te doen, app triggert sync zelf bij openen
-          return;
-        }
+        if (clientList.length === 0) return;
         for (const client of clientList) {
           client.postMessage({ type: 'BG_SYNC_REQUESTED' });
         }
       })
     );
+  }
+});
+
+// ── Message handler — app kan SKIP_WAITING vragen ───────────────────────────
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
   }
 });

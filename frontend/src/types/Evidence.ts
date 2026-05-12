@@ -29,8 +29,15 @@ export interface WkbEvidence {
   floorPlanId?: string | null;   // Verwijzing naar geüploade bouwtekening
   pinX?: number | null;          // 0.0–1.0 genormaliseerde x-positie op tekening
   pinY?: number | null;          // 0.0–1.0 genormaliseerde y-positie op tekening
+  // ─── Review workflow ───────────────────────────────────────────────────────
+  reviewStatus?: ReviewStatus | null;     // PENDING_REVIEW → APPROVED → FINALIZED, of REJECTED
+  reviewedBy?: string | null;             // user-id van keurmeester/projectleider
+  reviewedAt?: string | null;             // ISO-8601 tijdstempel van laatste beslissing
+  reviewNote?: string | null;             // toelichting (verplicht bij REJECTED)
   syncStatus: 'PENDING' | 'SYNCED' | 'FAILED'; // Offline-first syncstatus
 }
+
+export type ReviewStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'FINALIZED';
 
 export type EvidenceSyncStatus = WkbEvidence['syncStatus'];
 

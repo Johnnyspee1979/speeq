@@ -142,6 +142,10 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
           floor_plan_id: item.floorPlanId ?? null,
           pin_x: item.pinX ?? null,
           pin_y: item.pinY ?? null,
+          review_status: item.reviewStatus ?? null,
+          reviewed_by: item.reviewedBy ?? null,
+          reviewed_at: item.reviewedAt ?? null,
+          review_note: item.reviewNote ?? null,
         };
         const legacyPayload = {
           photo_uri: publicUrlData.publicUrl,
@@ -369,6 +373,10 @@ export const uploadEvidenceDirectly = async (
       floor_plan_id: evidence.floorPlanId ?? null,
       pin_x: evidence.pinX ?? null,
       pin_y: evidence.pinY ?? null,
+      review_status: evidence.reviewStatus ?? null,
+      reviewed_by: evidence.reviewedBy ?? null,
+      reviewed_at: evidence.reviewedAt ?? null,
+      review_note: evidence.reviewNote ?? null,
     };
 
     const { data, error: dbError } = await supabase
