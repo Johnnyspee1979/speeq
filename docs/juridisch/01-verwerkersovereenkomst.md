@@ -9,14 +9,14 @@
 - Vertegenwoordigd door: [KLANT_CONTACTPERSOON]
 
 **Verwerker** (SpeeQ-leverancier):
-- Naam: [BEDRIJF_NAAM]
-- KvK: [KVK_NUMMER]
-- BTW: [BTW_NUMMER]
-- Adres: [VESTIGINGSADRES], [POSTCODE_PLAATS]
+- Naam: Spee Solutions
+- KvK: 99314770
+- BTW: NL005384070B84
+- Adres: Escamplaan 870 F, 2547 EX 's-Gravenhage
 - Vertegenwoordigd door: Johnny Spee
 
-**Datum ingang:** [DATUM]
-**Versie:** [VERSIE]
+**Datum ingang:** 2026-05-13
+**Versie:** 1.0
 
 ---
 
@@ -161,4 +161,4 @@ Handtekening: ___________________________
 
 ---
 
-*Versie [VERSIE] · gepubliceerd [DATUM] · contact: [EMAIL_DPO]*
+*Versie 1.0 · gepubliceerd 2026-05-13 · contact: privacy@speesolutions.com*

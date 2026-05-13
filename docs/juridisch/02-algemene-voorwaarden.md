@@ -1,18 +1,18 @@
 # Algemene Voorwaarden SpeeQ
 
-**Uitgegeven door:** [BEDRIJF_NAAM]
-**KvK:** [KVK_NUMMER] · **BTW:** [BTW_NUMMER]
-**Adres:** [VESTIGINGSADRES], [POSTCODE_PLAATS]
-**Contact:** [EMAIL_CONTACT]
+**Uitgegeven door:** Spee Solutions
+**KvK:** 99314770 · **BTW:** NL005384070B84
+**Adres:** Escamplaan 870 F, 2547 EX 's-Gravenhage
+**Contact:** info@speesolutions.com
 
-**Versie:** [VERSIE] · **Datum:** [DATUM]
+**Versie:** 1.0 · **Datum:** 2026-05-13
 
 ---
 
 ## Artikel 1 — Definities
 
-- **SpeeQ**: het softwareproduct "SpeeQ" voor Wkb-borging, geleverd door [BEDRIJF_NAAM].
-- **Leverancier**: [BEDRIJF_NAAM], h.o.d.n. Spee Solutions.
+- **SpeeQ**: het softwareproduct "SpeeQ" voor Wkb-borging, geleverd door Spee Solutions.
+- **Leverancier**: Spee Solutions, h.o.d.n. Spee Solutions.
 - **Klant**: de natuurlijke of rechtspersoon die met Leverancier een Overeenkomst sluit.
 - **Gebruiker**: een natuurlijk persoon die SpeeQ via een account gebruikt.
 - **Overeenkomst**: de tussen Leverancier en Klant gesloten dienstverleningsovereenkomst.
@@ -59,7 +59,7 @@
 ## Artikel 7 — Looptijd, opzegging, verlenging
 
 1. De Overeenkomst geldt voor onbepaalde tijd, **maandelijks opzegbaar** per kalendermaand.
-2. Opzegging geschiedt via een knop "Annuleren" in het account-paneel of via e-mail naar [EMAIL_CONTACT].
+2. Opzegging geschiedt via een knop "Annuleren" in het account-paneel of via e-mail naar info@speesolutions.com.
 3. Bij jaarcontract: opzegging tegen einde looptijd met opzegtermijn 30 dagen.
 4. Bij ontbinding wegens toerekenbare tekortkoming Leverancier: restitutie naar rato.
 
@@ -118,4 +118,4 @@
 
 ---
 
-*Versie [VERSIE] · [DATUM] · [BEDRIJF_NAAM] · [WEBSITE]*
+*Versie 1.0 · 2026-05-13 · Spee Solutions · https://speesolutions.com*

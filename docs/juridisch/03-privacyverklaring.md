@@ -1,18 +1,18 @@
 # Privacyverklaring SpeeQ
 
-**Verantwoordelijke:** [BEDRIJF_NAAM]
-**KvK:** [KVK_NUMMER]
-**Adres:** [VESTIGINGSADRES], [POSTCODE_PLAATS]
-**Contact privacy:** [EMAIL_DPO]
-**Algemeen contact:** [EMAIL_CONTACT]
+**Verantwoordelijke:** Spee Solutions
+**KvK:** 99314770
+**Adres:** Escamplaan 870 F, 2547 EX 's-Gravenhage
+**Contact privacy:** privacy@speesolutions.com
+**Algemeen contact:** info@speesolutions.com
 
-**Versie:** [VERSIE] · **Datum:** [DATUM]
+**Versie:** 1.0 · **Datum:** 2026-05-13
 
 ---
 
 ## 1. Inleiding
 
-SpeeQ is een softwareproduct van [BEDRIJF_NAAM] voor het digitaal borgen van bouwprojecten conform de Wet kwaliteitsborging voor de bouw (Wkb). Wij hechten veel waarde aan jouw privacy en gaan zorgvuldig om met persoonsgegevens conform de Algemene Verordening Gegevensbescherming (AVG).
+SpeeQ is een softwareproduct van Spee Solutions voor het digitaal borgen van bouwprojecten conform de Wet kwaliteitsborging voor de bouw (Wkb). Wij hechten veel waarde aan jouw privacy en gaan zorgvuldig om met persoonsgegevens conform de Algemene Verordening Gegevensbescherming (AVG).
 
 Deze privacyverklaring legt uit welke persoonsgegevens wij verwerken, waarom, hoe lang, en welke rechten je hebt.
 
@@ -108,7 +108,7 @@ Op grond van de AVG heb je de volgende rechten:
 - **Bezwaar** — bezwaar maken tegen verwerking op grond van gerechtvaardigd belang
 - **Intrekken toestemming** — voor verwerkingen waarvoor je toestemming gaf
 
-**Hoe maak je gebruik van je rechten?** Stuur een e-mail naar [EMAIL_DPO]. Wij reageren binnen 30 dagen.
+**Hoe maak je gebruik van je rechten?** Stuur een e-mail naar privacy@speesolutions.com. Wij reageren binnen 30 dagen.
 
 Je hebt ook het recht een klacht in te dienen bij de **Autoriteit Persoonsgegevens** (autoriteitpersoonsgegevens.nl).
 
@@ -140,13 +140,13 @@ Wij kunnen deze privacyverklaring wijzigen. Wezenlijke wijzigingen kondigen wij 
 Vragen over privacy of deze verklaring?
 
 **Functionaris Gegevensbescherming / Privacy-contact:**
-[EMAIL_DPO]
+privacy@speesolutions.com
 
 **Postadres:**
-[BEDRIJF_NAAM]
-[VESTIGINGSADRES]
-[POSTCODE_PLAATS]
+Spee Solutions
+Escamplaan 870 F
+2547 EX 's-Gravenhage
 
 ---
 
-*Versie [VERSIE] · [DATUM] · [BEDRIJF_NAAM] · [WEBSITE]*
+*Versie 1.0 · 2026-05-13 · Spee Solutions · https://speesolutions.com*

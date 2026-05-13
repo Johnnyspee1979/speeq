@@ -3,11 +3,11 @@
 **Tussen:**
 
 **Leverancier:**
-- [BEDRIJF_NAAM]
-- KvK: [KVK_NUMMER] · BTW: [BTW_NUMMER]
-- [VESTIGINGSADRES], [POSTCODE_PLAATS]
+- Spee Solutions
+- KvK: 99314770 · BTW: NL005384070B84
+- Escamplaan 870 F, 2547 EX 's-Gravenhage
 - Vertegenwoordigd door: Johnny Spee
-- Contact: [EMAIL_CONTACT]
+- Contact: info@speesolutions.com
 
 **Klant:**
 - [KLANT_BEDRIJFSNAAM]
@@ -18,7 +18,7 @@
 
 **Datum ingang:** [DATUM_INGANG]
 **Looptijd:** [LOOPTIJD] (standaard: 12 maanden, daarna maandelijks opzegbaar)
-**Versie:** [VERSIE]
+**Versie:** 1.0
 
 ---
 
@@ -70,12 +70,12 @@ Bij strijdigheid prevaleert deze SOA boven de algemene voorwaarden.
 - 98,0% – 99,0%: 25% credit
 - < 98,0%: 50% credit + opzegrecht zonder kosten
 
-Credit aanvragen binnen 30 dagen via [EMAIL_CONTACT].
+Credit aanvragen binnen 30 dagen via info@speesolutions.com.
 
 ## Artikel 4 — Onboarding
 
 1. **Remote onboarding** (standaard): 1 sessie van 60 min via videoconferentie. Klant krijgt vooraf een instructie-PDF.
-2. **On-site onboarding** (alleen Enterprise, op offerte): maximaal 4 uur ter plaatse binnen 50 km van [VESTIGINGSADRES]. Reistijd > 50 km in rekening gebracht à € [REISTARIEF]/km.
+2. **On-site onboarding** (alleen Enterprise, op offerte): maximaal 4 uur ter plaatse binnen 50 km van Escamplaan 870 F. Reistijd > 50 km in rekening gebracht à € 0,55/km.
 3. Klant levert vooraf aan:
    - Bedrijfslogo (PNG, min 512×512)
    - Bedrijfsnaam en footer-tekst voor PDF-dossiers
@@ -88,7 +88,7 @@ Credit aanvragen binnen 30 dagen via [EMAIL_CONTACT].
 | **Pro support** | E-mail support op werkdagen 09:00–17:00, reactie < 4 werkuren |
 | **Enterprise support** | E-mail + telefoon, prio-lijn, reactie < 1 werkuur, dedicated contactpersoon |
 
-Support omvat **geen** training, consultancy, of inhoudelijke Wkb-advisering. Dit is op offerte beschikbaar à € [UURTARIEF]/uur.
+Support omvat **geen** training, consultancy, of inhoudelijke Wkb-advisering. Dit is op offerte beschikbaar à € 125/uur.
 
 ## Artikel 6 — Prijzen en betaling
 
@@ -103,7 +103,7 @@ Support omvat **geen** training, consultancy, of inhoudelijke Wkb-advisering. Di
 
 1. **Initiële looptijd:** [LOOPTIJD] vanaf [DATUM_INGANG].
 2. Na initiële looptijd: maandelijks opzegbaar per kalendermaand.
-3. **Opzegging:** via e-mail aan [EMAIL_CONTACT] of via account-paneel.
+3. **Opzegging:** via e-mail aan info@speesolutions.com of via account-paneel.
 4. Bij tussentijdse opzegging door Klant tijdens de initiële looptijd zonder toerekenbare tekortkoming Leverancier: resterende termijnen verschuldigd.
 5. Bij beëindiging: data-export binnen 5 werkdagen na verzoek; vernietiging binnen 60 dagen na export.
 
@@ -147,7 +147,7 @@ Support omvat **geen** training, consultancy, of inhoudelijke Wkb-advisering. Di
 
 ## Artikel 13 — Verwerkersovereenkomst
 
-De afzonderlijke Verwerkersovereenkomst (DPA, versie [DPA_VERSIE]) maakt integraal onderdeel uit van deze SOA.
+De afzonderlijke Verwerkersovereenkomst (DPA, versie 1.0) maakt integraal onderdeel uit van deze SOA.
 
 ## Artikel 14 — Wijzigingen
 
@@ -175,7 +175,7 @@ Datum: __________________________________
 Handtekening: ___________________________
 
 
-**Namens Leverancier ([BEDRIJF_NAAM]):**
+**Namens Leverancier (Spee Solutions):**
 
 Naam: Johnny Spee
 
@@ -189,10 +189,10 @@ Handtekening: ___________________________
 
 ## Bijlagen
 
-- Bijlage A: Algemene Voorwaarden SpeeQ versie [VERSIE]
-- Bijlage B: Verwerkersovereenkomst (DPA) versie [DPA_VERSIE]
-- Bijlage C: Privacyverklaring versie [VERSIE]
+- Bijlage A: Algemene Voorwaarden SpeeQ versie 1.0
+- Bijlage B: Verwerkersovereenkomst (DPA) versie 1.0
+- Bijlage C: Privacyverklaring versie 1.0
 
 ---
 
-*SOA versie [VERSIE] · [DATUM] · [BEDRIJF_NAAM] · [WEBSITE]*
+*SOA versie 1.0 · 2026-05-13 · Spee Solutions · https://speesolutions.com*
