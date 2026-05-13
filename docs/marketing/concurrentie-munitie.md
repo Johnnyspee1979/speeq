@@ -88,4 +88,52 @@ Concurrenten zijn niet "fout" — ze zijn alleen **niet transparant op deze punt
 
 ---
 
-*Onderzoek versie 1.0 · 2026-05-13 · te updaten bij nieuwe concurrentie-info*
+## Wat dit voor je prijs betekent — gefaseerde strategie
+
+> Toegevoegd 2026-05-13 op basis van gesprek met Johnny.
+> Conclusie: prijzen MOGEN omhoog op Pro/Enterprise, maar pas ná klant #3.
+
+### Wat de research feitelijk rechtvaardigt
+
+| Pakket | Huidig | Toekomstig | Onderbouwing |
+|---|---|---|---|
+| **Solo** (€49) | €49 | **€49 houden** | ZZP koopt op prijs. Vastlegg zit op €29,95 — onder ons. Juridiek wint hier niet. |
+| **Team** (€149) | €149 | **€169** | Kleine MKB-aannemer waardeert "eigen database" zodra z'n opdrachtgever ernaar vraagt. |
+| **Pro** (€299) | €299 | **€349** | Mid-size aannemer krijgt AVG-audits van gemeentes/woningcorporaties. Eigen DB + publieke DPA = echt argument. |
+| **Enterprise** (€699+) | €699+ | **€899–1.499** | Grote partijen eisen data-isolatie. Concurrenten kunnen dit structureel niet. Hier zit je sowieso te laag. |
+
+### Rekensom — 30 klanten verdeeld 5/15/8/2
+
+- **Nu:** €49×5 + €149×15 + €299×8 + €699×2 = **€6.280/maand**
+- **Premium:** €49×5 + €169×15 + €349×8 + €999×2 = **€7.580/maand**
+- **Verschil: +€1.300/maand = +€15.600/jaar** zonder één extra klant
+
+### De gefaseerde uitrol (4 stappen)
+
+1. **Klant #1 t/m #3** — huidige prijzen (€49 / €149 / €299 / €699)
+2. **Klant #1 specifiek** — bied de founder-deal: 12 mnd Pro à €149 i.p.v. €299 in ruil voor testimonial + logo op website
+3. **Vanaf klant #4** — verhoog Pro naar €349, Enterprise naar €999. Site-prijslijst toont de nieuwe prijzen.
+4. **Bestaande klanten = grandfathering** — behouden hun oude prijs. Voorkomt churn, en is goede marketing: *"loyaliteit beloond, geen sluipverhogingen"*.
+
+### Wat je in de Stitch-website meteen kunt zetten
+
+Op de pricing-pagina van het ontwerp gebruik je de **toekomstige** prijzen (€349 Pro, €999 Enterprise). Er is nog niemand om mee te onderhandelen. Bij klant #1 geef je korting via de founder-deal — niet via een lager prijslabel.
+
+Zo positioneer je premium **zonder** geld op tafel te leggen dat niemand vraagt.
+
+### Waarom dit werkt psychologisch
+
+- **Anchoring:** een hoger publiek tarief verandert hoe prospects naar SpeeQ kijken. €349 voelt mid-market; €299 voelt budget.
+- **Founder-deal:** korting bij €349 ("ik geef je 12 mnd Pro voor €149") voelt waardevoller dan dezelfde €149 zonder anker.
+- **Grandfathering:** loyalty signaal dat reputatie opbouwt voordat de markt 't doorheeft.
+
+### Wat we **NIET** doen (bewust)
+
+- ❌ Geen prijsverhoging vóór klant #1 — papier-actie zonder validatie
+- ❌ Geen verhoging van Solo — daar koopt men op prijs, niet op juridiek
+- ❌ Geen sluipverhoging bij bestaande klanten — vertrouwen breekt
+- ❌ Geen €19,99-tier toevoegen om Vastlegg te matchen — commodity-trap
+
+---
+
+*Onderzoek versie 1.1 · 2026-05-13 · concurrentie + prijsstrategie geïntegreerd*
