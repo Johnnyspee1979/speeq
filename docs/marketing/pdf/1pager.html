@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>SpeeQ — Eén pagina, alles wat je moet weten</title>
+<style>
+@page { size: A4; margin: 0; }
+
+:root {
+  --navy: #0B2545;
+  --navy-soft: #134074;
+  --cream: #FAF7F2;
+  --line: #e5e7eb;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --accent: #C9A961;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
+  font-size: 10pt;
+  line-height: 1.5;
+  color: var(--text);
+  background: white;
+  width: 210mm;
+  height: 297mm;
+}
+
+.page {
+  width: 210mm;
+  height: 297mm;
+  padding: 18mm 16mm;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+.hero {
+  border-bottom: 1.5px solid var(--navy);
+  padding-bottom: 8mm;
+  margin-bottom: 7mm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hero .logo img {
+  height: 14mm;
+  width: auto;
+}
+
+.hero .eyebrow {
+  font-family: 'Acumin Pro', 'Inter', -apple-system, sans-serif;
+  font-size: 8.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--navy-soft);
+  text-align: right;
+}
+
+.hero .eyebrow strong {
+  display: block;
+  color: var(--navy);
+  font-size: 10.5pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 1mm;
+}
+
+/* HEADLINE */
+.headline {
+  margin-bottom: 8mm;
+}
+
+.headline h1 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 30pt;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--navy);
+  margin-bottom: 3mm;
+}
+
+.headline .lede {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 13pt;
+  color: var(--navy-soft);
+  line-height: 1.4;
+  max-width: 150mm;
+}
+
+/* USP's */
+.usp-row {
+  display: flex;
+  gap: 6mm;
+  margin-bottom: 9mm;
+}
+
+.usp {
+  flex: 1;
+  background: var(--cream);
+  border-left: 2px solid var(--navy);
+  padding: 5mm 5mm 5mm 6mm;
+}
+
+.usp .num {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 22pt;
+  color: var(--accent);
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 3mm;
+}
+
+.usp h3 {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 10pt;
+  font-weight: 600;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 2mm;
+}
+
+.usp p {
+  font-size: 9pt;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+/* COMPARISON */
+.compare {
+  margin-bottom: 9mm;
+}
+
+.compare h2 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 14pt;
+  color: var(--navy);
+  margin-bottom: 4mm;
+  font-weight: 600;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5mm;
+}
+
+.compare-col {
+  border: 1px solid var(--line);
+  padding: 5mm;
+  border-radius: 1.5mm;
+}
+
+.compare-col.us {
+  background: var(--navy);
+  color: white;
+  border: none;
+}
+
+.compare-col h4 {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 9.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  margin-bottom: 3mm;
+  opacity: 0.95;
+}
+
+.compare-col ul {
+  list-style: none;
+}
+
+.compare-col li {
+  font-size: 9.5pt;
+  padding: 1.5mm 0;
+  padding-left: 5mm;
+  position: relative;
+  line-height: 1.4;
+}
+
+.compare-col li::before {
+  position: absolute;
+  left: 0;
+  top: 1.5mm;
+  font-size: 9pt;
+}
+
+.compare-col.them li::before { content: "✗"; color: #d4a4a4; font-weight: bold; }
+.compare-col.us li::before { content: "✓"; color: #8fd4a4; font-weight: bold; }
+
+/* PRICING */
+.pricing {
+  margin-bottom: 7mm;
+}
+
+.pricing h2 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 14pt;
+  color: var(--navy);
+  margin-bottom: 4mm;
+  font-weight: 600;
+}
+
+.price-row {
+  display: flex;
+  gap: 5mm;
+}
+
+.plan {
+  flex: 1;
+  border: 1px solid var(--line);
+  padding: 4mm;
+  border-radius: 1.5mm;
+  text-align: center;
+}
+
+.plan.featured {
+  border: 1.5px solid var(--navy);
+  background: var(--cream);
+}
+
+.plan .plan-name {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 9pt;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--navy-soft);
+  margin-bottom: 2mm;
+}
+
+.plan .plan-price {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 19pt;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 1mm;
+}
+
+.plan .plan-price small {
+  font-size: 9pt;
+  color: var(--muted);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.plan .plan-detail {
+  font-size: 8.5pt;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* FOOTER / CTA */
+.cta {
+  margin-top: auto;
+  padding-top: 6mm;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8mm;
+}
+
+.cta .quote {
+  flex: 1;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 11pt;
+  color: var(--navy-soft);
+  line-height: 1.4;
+}
+
+.cta .contact {
+  text-align: right;
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 9pt;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.cta .contact strong {
+  display: block;
+  font-size: 11pt;
+  color: var(--navy);
+  margin-bottom: 1.5mm;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.cta .contact a {
+  color: var(--navy);
+  text-decoration: none;
+}
+
+/* Versie-footer onderaan */
+.version {
+  position: absolute;
+  bottom: 7mm;
+  left: 16mm;
+  right: 16mm;
+  text-align: center;
+  font-size: 7.5pt;
+  font-style: italic;
+  color: var(--muted);
+  font-family: 'Source Serif 4', Georgia, serif;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <div class="logo"><img src="assets/logo.png" alt="SpeeQ"></div>
+    <div class="eyebrow">
+      <strong>Wkb-borging</strong>
+      Eén pagina · alles wat je moet weten
+    </div>
+  </header>
+
+  <section class="headline">
+    <h1>Een Wkb-tool met je eigen database.</h1>
+    <p class="lede">Geen gedeelde Postgres-pot waar jouw projectfoto&apos;s en die van je concurrent in dezelfde tabel staan. Eigen geïsoleerde database in Frankfurt — voor elke klant.</p>
+  </section>
+
+  <section class="usp-row">
+    <div class="usp">
+      <div class="num">01</div>
+      <h3>Eigen database</h3>
+      <p>Per klant een afgeschermde Supabase-instance in EU-regio. Geen multi-tenant rommel.</p>
+    </div>
+    <div class="usp">
+      <div class="num">02</div>
+      <h3>Wkb-volledig</h3>
+      <p>Borgingsdossier-PDF, foto&apos;s met GPS &amp; tijdstempel, checklists, signing-flow voor kwaliteitsborger.</p>
+    </div>
+    <div class="usp">
+      <div class="num">03</div>
+      <h3>Nederlands gemaakt</h3>
+      <p>Eén lijntje naar de bouwer van het systeem (Johnny Spee, Den Haag). Geen support-ticket in Bulgarije.</p>
+    </div>
+  </section>
+
+  <section class="compare">
+    <h2>Waarin SpeeQ anders is</h2>
+    <div class="compare-grid">
+      <div class="compare-col them">
+        <h4>STA · Vastlegg · BKapp</h4>
+        <ul>
+          <li>Eén gedeelde database voor alle klanten</li>
+          <li>Generiek dashboard, weinig branding</li>
+          <li>Support via ticket-systeem</li>
+          <li>Standaard-pakket — meer features = meer prijs</li>
+        </ul>
+      </div>
+      <div class="compare-col us">
+        <h4>SpeeQ</h4>
+        <ul>
+          <li>Eigen Supabase-database per klant in Frankfurt</li>
+          <li>Tenant-branding (jouw logo in PDF-dossier)</li>
+          <li>Directe lijn naar bouwer eerste 6 mnd</li>
+          <li>Pro is alles-in, geen feature-onderhandelingen</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="pricing">
+    <h2>Pakketten</h2>
+    <div class="price-row">
+      <div class="plan">
+        <div class="plan-name">Solo</div>
+        <div class="plan-price">€49<small>/mnd</small></div>
+        <div class="plan-detail">5 projecten · 3 gebruikers · 25 GB</div>
+      </div>
+      <div class="plan featured">
+        <div class="plan-name">Team · meest gekozen</div>
+        <div class="plan-price">€149<small>/mnd</small></div>
+        <div class="plan-detail">25 projecten · ∞ gebruikers · 100 GB</div>
+      </div>
+      <div class="plan">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">€299<small>/mnd</small></div>
+        <div class="plan-detail">∞ projecten · ∞ gebruikers · 250 GB</div>
+      </div>
+      <div class="plan">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price">€699<small>+/mnd</small></div>
+        <div class="plan-detail">on-site onboarding · prio support · 1 TB</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="cta">
+    <div class="quote">
+      &ldquo;Founder-klanten van het eerste uur krijgen 12 maanden Pro voor de Team-prijs &mdash; €149 in plaats van €299.&rdquo;
+    </div>
+    <div class="contact">
+      <strong>Johnny Spee · Spee Solutions</strong>
+      johnny@speesolutions.com<br>
+      +31 6 81908480<br>
+      speesolutions.com
+    </div>
+  </div>
+
+  <div class="version">Versie 1.0 · 2026-05-13 · KvK 99314770 · NL005384070B84</div>
+
+</div>
+</body>
+</html>

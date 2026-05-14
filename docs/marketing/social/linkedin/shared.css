@@ -1,0 +1,479 @@
+/* SpeeQ LinkedIn — gedeelde stijl
+   Versie 1.0 · 2026-05-13 · Spee Solutions */
+
+:root {
+  --navy: #0B2545;
+  --navy-soft: #134074;
+  --cream: #FAF7F2;
+  --line: #e5e7eb;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --accent: #C9A961;
+  --success: #2f7d56;
+  --danger: #b04646;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, serif;
+  color: var(--text);
+  background: white;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.canvas {
+  position: relative;
+  overflow: hidden;
+  background: var(--cream);
+}
+
+/* ====== Banner 1584x396 ====== */
+.canvas.banner {
+  width: 1584px;
+  height: 396px;
+  display: flex;
+  align-items: stretch;
+}
+
+.banner .left {
+  flex: 1.4;
+  background: var(--navy);
+  color: white;
+  padding: 60px 60px 60px 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+.banner .left::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -60px;
+  width: 120px;
+  height: 100%;
+  background: var(--navy);
+  transform: skewX(-12deg);
+}
+
+.banner .eyebrow {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.banner h1 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+}
+
+.banner .lede {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.4;
+  color: rgba(255,255,255,0.85);
+  max-width: 600px;
+}
+
+.banner .right {
+  flex: 1;
+  background: var(--cream);
+  padding: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+.banner .right .who {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--navy-soft);
+  margin-bottom: 10px;
+}
+
+.banner .right .name {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 6px;
+}
+
+.banner .right .role {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--navy-soft);
+  margin-bottom: 18px;
+}
+
+.banner .right .contact {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.banner .right .contact strong { color: var(--navy); font-weight: 600; }
+
+/* ====== Post 1080x1080 ====== */
+.canvas.post {
+  width: 1080px;
+  height: 1080px;
+  padding: 70px 70px 80px 70px;
+  display: flex;
+  flex-direction: column;
+}
+
+.post .post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 50px;
+  padding-bottom: 22px;
+  border-bottom: 2px solid var(--navy);
+}
+
+.post .post-header .logo img {
+  height: 56px;
+  width: auto;
+}
+
+.post .post-header .badge {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: rgba(11, 37, 69, 0.08);
+  padding: 8px 16px;
+  border-radius: 4px;
+}
+
+.post .post-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.post .post-footer {
+  margin-top: auto;
+  padding-top: 30px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.post .post-footer .handle {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+/* === Variant 1: testimonial === */
+.post.t-testimonial .quote-mark {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 200px;
+  line-height: 0.7;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+
+.post.t-testimonial .quote {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 42px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--text);
+  letter-spacing: -0.005em;
+  margin-bottom: 36px;
+}
+
+.post.t-testimonial .quote em {
+  font-style: italic;
+  color: var(--navy-soft);
+}
+
+.post.t-testimonial .author {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--navy);
+  margin-bottom: 4px;
+  letter-spacing: 0.02em;
+}
+
+.post.t-testimonial .author-role {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+/* === Variant 2: tip === */
+.post.t-tip .label {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.post.t-tip .tip-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--navy);
+  letter-spacing: -0.012em;
+  margin-bottom: 28px;
+}
+
+.post.t-tip .tip-body {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 25px;
+  line-height: 1.45;
+  color: var(--text);
+  max-width: 90%;
+  margin-bottom: 28px;
+}
+
+.post.t-tip .tip-body em {
+  font-style: italic;
+  color: var(--navy-soft);
+}
+
+.post.t-tip .tip-source {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* === Variant 3: product update === */
+.post.t-update .label {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.post.t-update .update-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 54px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--navy);
+  letter-spacing: -0.01em;
+  margin-bottom: 22px;
+}
+
+.post.t-update .update-lede {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 23px;
+  line-height: 1.4;
+  color: var(--navy-soft);
+  margin-bottom: 36px;
+}
+
+.post.t-update .features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.post.t-update .feature {
+  background: white;
+  border-left: 3px solid var(--navy);
+  padding: 16px 20px;
+}
+
+.post.t-update .feature .icon {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 24px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.post.t-update .feature h4 {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.post.t-update .feature p {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+/* === Variant 4: achter de schermen === */
+.post.t-bts {
+  background: var(--navy);
+  color: white;
+}
+
+.post.t-bts .post-header { border-bottom-color: rgba(255,255,255,0.2); }
+.post.t-bts .post-header .badge { background: rgba(255,255,255,0.15); color: white; }
+
+.post.t-bts .label {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.post.t-bts .bts-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 60px;
+  font-weight: 600;
+  line-height: 1.05;
+  color: white;
+  letter-spacing: -0.012em;
+  margin-bottom: 32px;
+}
+
+.post.t-bts .bts-body {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1.45;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 26px;
+  max-width: 90%;
+}
+
+.post.t-bts .bts-signature {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 16px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+
+.post.t-bts .post-footer { border-top-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+.post.t-bts .post-footer .handle { color: white; }
+
+/* === Variant 5: vergelijking === */
+.post.t-compare .label {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.post.t-compare .compare-title {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 46px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--navy);
+  letter-spacing: -0.01em;
+  margin-bottom: 32px;
+}
+
+.post.t-compare .compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-bottom: 26px;
+}
+
+.post.t-compare .col {
+  padding: 26px 24px;
+  border-radius: 4px;
+}
+
+.post.t-compare .col.them {
+  background: white;
+  border: 1px solid var(--line);
+}
+
+.post.t-compare .col.us {
+  background: var(--navy);
+  color: white;
+}
+
+.post.t-compare .col h3 {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.post.t-compare .col.them h3 { color: var(--muted); }
+.post.t-compare .col.us h3 { color: var(--accent); }
+
+.post.t-compare .col ul {
+  list-style: none;
+}
+
+.post.t-compare .col li {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 19px;
+  line-height: 1.45;
+  padding: 7px 0 7px 30px;
+  position: relative;
+}
+
+.post.t-compare .col li::before {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.post.t-compare .col.them li::before { content: "—"; color: var(--muted); }
+.post.t-compare .col.us li::before { content: "✓"; color: var(--accent); }
+
+.post.t-compare .closing {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 18px;
+  color: var(--navy-soft);
+  text-align: center;
+  margin-top: 8px;
+}

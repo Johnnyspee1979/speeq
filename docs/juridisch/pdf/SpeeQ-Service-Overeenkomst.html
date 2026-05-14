@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Service-Overeenkomst (SOA) — SpeeQ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<section class="cover">
+  <div class="brand">
+    <img src="assets/logo.png" alt="SpeeQ" />
+    <div class="brand-text">Spee Solutions · Wkb-borging</div>
+  </div>
+  <h1>Service-Overeenkomst (SOA)</h1>
+  <p class="subtitle">Inhoudelijke afspraken per pakket</p>
+  <div class="meta">
+    <strong>Versie 1.0</strong> &nbsp;·&nbsp; 2026-05-13 &nbsp;·&nbsp; Spee Solutions &nbsp;·&nbsp; KvK 99314770
+  </div>
+</section>
+
+<main>
+<p><strong>Tussen:</strong></p>
+<p><strong>Leverancier:</strong>
+- Spee Solutions
+- KvK: 99314770 · BTW: NL005384070B84
+- Escamplaan 870 F, 2547 EX 's-Gravenhage
+- Vertegenwoordigd door: Johnny Spee
+- Contact: info@speesolutions.com</p>
+<p><strong>Klant:</strong>
+- [KLANT_BEDRIJFSNAAM]
+- KvK: [KLANT_KVK]
+- [KLANT_ADRES]
+- Vertegenwoordigd door: [KLANT_CONTACTPERSOON]
+- Contact: [KLANT_EMAIL]</p>
+<p><strong>Datum ingang:</strong> [DATUM_INGANG]
+<strong>Looptijd:</strong> [LOOPTIJD] (standaard: 12 maanden, daarna maandelijks opzegbaar)
+<strong>Versie:</strong> 1.0</p>
+<hr />
+<h2>Artikel 1 — Onderwerp</h2>
+<ol>
+<li>Leverancier biedt Klant een gebruiksrecht op <strong>SpeeQ</strong>, een SaaS-platform voor digitale kwaliteitsborging conform de Wet kwaliteitsborging voor de bouw (Wkb).</li>
+<li>Deze SOA is van toepassing op het Pakket <strong>[PAKKET]</strong> (Pro / Enterprise).</li>
+<li>Op deze SOA zijn van toepassing:
+   - Deze service-overeenkomst (hoofddocument)
+   - De Algemene Voorwaarden SpeeQ ([versie/datum])
+   - De Verwerkersovereenkomst (DPA, integraal onderdeel)
+   - De Privacyverklaring</li>
+</ol>
+<p>Bij strijdigheid prevaleert deze SOA boven de algemene voorwaarden.</p>
+<h2>Artikel 2 — Pakket en limieten</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Inhoud</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pakket</td>
+<td>[PAKKET]</td>
+</tr>
+<tr>
+<td>Maandprijs</td>
+<td>€ [MAANDPRIJS] excl. BTW</td>
+</tr>
+<tr>
+<td>Jaarprijs (vooruit)</td>
+<td>€ [JAARPRIJS] excl. BTW (2 maanden gratis)</td>
+</tr>
+<tr>
+<td>Max actieve projecten</td>
+<td>[LIMIET_PROJECTEN]</td>
+</tr>
+<tr>
+<td>Max gebruikers</td>
+<td>[LIMIET_GEBRUIKERS]</td>
+</tr>
+<tr>
+<td>Foto-opslag (fair-use)</td>
+<td>[LIMIET_OPSLAG]</td>
+</tr>
+<tr>
+<td>Eigen Supabase-database</td>
+<td>Ja, EU-regio</td>
+</tr>
+<tr>
+<td>Tenant-branding (logo, naam, footer in PDF)</td>
+<td>Ja</td>
+</tr>
+<tr>
+<td>Onboarding</td>
+<td>[ONBOARDING_TYPE] (remote / on-site)</td>
+</tr>
+<tr>
+<td>Support</td>
+<td>[SUPPORT_NIVEAU] (e-mail / prio / dedicated)</td>
+</tr>
+</tbody>
+</table>
+<h2>Artikel 3 — Service Levels (SLA)</h2>
+<table>
+<thead>
+<tr>
+<th>Metriek</th>
+<th>Doelstelling</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Uptime productie-omgeving</td>
+<td><strong>99,5% per maand</strong></td>
+</tr>
+<tr>
+<td>Eerste reactie support (kantoortijden)</td>
+<td>&lt; 4 werkuren</td>
+</tr>
+<tr>
+<td>Eerste reactie support (Enterprise)</td>
+<td>&lt; 1 werkuur</td>
+</tr>
+<tr>
+<td>Resolutie kritieke storing (P1)</td>
+<td>&lt; 8 werkuren</td>
+</tr>
+<tr>
+<td>Resolutie hoge prioriteit (P2)</td>
+<td>&lt; 2 werkdagen</td>
+</tr>
+<tr>
+<td>Resolutie normaal (P3)</td>
+<td>&lt; 5 werkdagen</td>
+</tr>
+<tr>
+<td>Onderhoudsvensters</td>
+<td>Aangekondigd ≥ 48u vooraf, bij voorkeur 22:00–06:00 NL</td>
+</tr>
+<tr>
+<td>Back-up frequentie</td>
+<td>Dagelijks + 7-daagse point-in-time recovery</td>
+</tr>
+<tr>
+<td>Data-export op verzoek</td>
+<td>Binnen 5 werkdagen</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Definitie kritieke storing (P1):</strong> systeem volledig onbereikbaar voor alle gebruikers van Klant gedurende &gt; 30 minuten.</p>
+<p><strong>Bij niet behalen 99,5% uptime in een maand:</strong>
+- 99,0% – 99,5%: 10% credit op de volgende maandfactuur
+- 98,0% – 99,0%: 25% credit
+- &lt; 98,0%: 50% credit + opzegrecht zonder kosten</p>
+<p>Credit aanvragen binnen 30 dagen via info@speesolutions.com.</p>
+<h2>Artikel 4 — Onboarding</h2>
+<ol>
+<li><strong>Remote onboarding</strong> (standaard): 1 sessie van 60 min via videoconferentie. Klant krijgt vooraf een instructie-PDF.</li>
+<li><strong>On-site onboarding</strong> (alleen Enterprise, op offerte): maximaal 4 uur ter plaatse binnen 50 km van Escamplaan 870 F. Reistijd &gt; 50 km in rekening gebracht à € 0,55/km.</li>
+<li>Klant levert vooraf aan:
+   - Bedrijfslogo (PNG, min 512×512)
+   - Bedrijfsnaam en footer-tekst voor PDF-dossiers
+   - Contactgegevens beheerder(s)</li>
+</ol>
+<h2>Artikel 5 — Support</h2>
+<table>
+<thead>
+<tr>
+<th>Niveau</th>
+<th>Inhoud</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pro support</strong></td>
+<td>E-mail support op werkdagen 09:00–17:00, reactie &lt; 4 werkuren</td>
+</tr>
+<tr>
+<td><strong>Enterprise support</strong></td>
+<td>E-mail + telefoon, prio-lijn, reactie &lt; 1 werkuur, dedicated contactpersoon</td>
+</tr>
+</tbody>
+</table>
+<p>Support omvat <strong>geen</strong> training, consultancy, of inhoudelijke Wkb-advisering. Dit is op offerte beschikbaar à € 125/uur.</p>
+<h2>Artikel 6 — Prijzen en betaling</h2>
+<ol>
+<li>Prijzen zijn <strong>exclusief BTW</strong>.</li>
+<li><strong>Facturatie:</strong> maandelijks vooraf óf jaarlijks vooruit (2 maanden gratis bij jaarbetaling).</li>
+<li><strong>Betalingstermijn:</strong> 14 dagen na factuurdatum.</li>
+<li>Betaalmethoden: automatische incasso (SEPA), iDEAL, bankoverschrijving, creditcard via Mollie/Stripe.</li>
+<li><strong>Prijsindexatie:</strong> jaarlijks per 1 januari volgens CBS dienstenprijsindex, maximaal +5%.</li>
+<li>Wezenlijke prijswijzigingen worden 60 dagen vooraf aangekondigd; Klant heeft opzegrecht tegen ingangsdatum.</li>
+</ol>
+<h2>Artikel 7 — Looptijd en opzegging</h2>
+<ol>
+<li><strong>Initiële looptijd:</strong> [LOOPTIJD] vanaf [DATUM_INGANG].</li>
+<li>Na initiële looptijd: maandelijks opzegbaar per kalendermaand.</li>
+<li><strong>Opzegging:</strong> via e-mail aan info@speesolutions.com of via account-paneel.</li>
+<li>Bij tussentijdse opzegging door Klant tijdens de initiële looptijd zonder toerekenbare tekortkoming Leverancier: resterende termijnen verschuldigd.</li>
+<li>Bij beëindiging: data-export binnen 5 werkdagen na verzoek; vernietiging binnen 60 dagen na export.</li>
+</ol>
+<h2>Artikel 8 — Verplichtingen Klant</h2>
+<ol>
+<li>Klant verstrekt actuele en juiste gegevens.</li>
+<li>Klant beheert eigen gebruikersaccounts (toevoegen/verwijderen).</li>
+<li>Klant zorgt dat gebruikers de gedragsregels uit de Algemene Voorwaarden naleven.</li>
+<li>Klant meldt onmiddellijk vermoede compromittering van accounts.</li>
+</ol>
+<h2>Artikel 9 — Wijzigingen scope</h2>
+<ol>
+<li>Toevoegingen aan het Pakket (extra opslag, extra projecten, custom features): op offerte.</li>
+<li>Pakket-upgrade gaat direct in; pro rata facturatie eerstvolgende maand.</li>
+<li>Pakket-downgrade: pas mogelijk per einde kalendermaand.</li>
+</ol>
+<h2>Artikel 10 — Aansprakelijkheid</h2>
+<ol>
+<li>Maximale aansprakelijkheid van Leverancier: het bedrag dat Klant in de 12 maanden voorafgaand aan het schadevoorval heeft betaald.</li>
+<li>Leverancier is <strong>niet aansprakelijk</strong> voor:
+   - Indirecte schade (gederfde winst, gemiste opdrachten)
+   - Schade door foutief gebruik door medewerkers van Klant
+   - Schade door downtime van sub-leveranciers (Supabase, Vercel)
+   - Verlies van data als gevolg van handelen Klant zelf
+   - Wkb-juridische gevolgen van onvolledige of onjuiste dossier-inhoud</li>
+<li>Aansprakelijkheidsbeperkingen vervallen bij opzet of bewuste roekeloosheid.</li>
+</ol>
+<p><strong>Disclaimer Wkb-verantwoordelijkheid:</strong> SpeeQ is een hulpmiddel voor het samenstellen van een digitaal kwaliteitsdossier. De juridische verantwoordelijkheid voor de inhoud, volledigheid en juistheid van het dossier blijft bij Klant en de aangewezen kwaliteitsborger.</p>
+<h2>Artikel 11 — Vertrouwelijkheid</h2>
+<ol>
+<li>Partijen behandelen alle niet-publieke informatie van de andere partij vertrouwelijk.</li>
+<li>Geheimhouding geldt gedurende de overeenkomst en 3 jaar daarna.</li>
+<li>Niet onder geheimhouding: informatie die reeds publiek is, zelfstandig ontwikkeld, of op grond van wet openbaar gemaakt moet worden.</li>
+</ol>
+<h2>Artikel 12 — Intellectueel eigendom</h2>
+<ol>
+<li>Alle IE-rechten op SpeeQ (broncode, design, documentatie) blijven bij Leverancier.</li>
+<li>Klant krijgt een niet-exclusief, niet-overdraagbaar gebruiksrecht voor de looptijd.</li>
+<li>Data, foto's en projectinformatie ingevoerd door Klant blijven eigendom van Klant.</li>
+</ol>
+<h2>Artikel 13 — Verwerkersovereenkomst</h2>
+<p>De afzonderlijke Verwerkersovereenkomst (DPA, versie 1.0) maakt integraal onderdeel uit van deze SOA.</p>
+<h2>Artikel 14 — Wijzigingen</h2>
+<ol>
+<li>Wijzigingen op deze SOA gelden alleen na schriftelijke (e-mail) bevestiging van beide partijen.</li>
+<li>Wijzigingen in de Algemene Voorwaarden worden volgens artikel 13 van de AV doorgevoerd.</li>
+</ol>
+<h2>Artikel 15 — Toepasselijk recht en geschillen</h2>
+<ol>
+<li>Nederlands recht.</li>
+<li>Geschillen aan de <strong>Rechtbank Oost-Brabant, locatie Eindhoven</strong>, tenzij dwingend recht anders bepaalt.</li>
+<li>Partijen zullen eerst proberen geschillen in der minne op te lossen via een schriftelijke ingebrekestelling met redelijke termijn (minimaal 14 dagen).</li>
+</ol>
+<hr />
+<h2>Ondertekening</h2>
+<p><strong>Namens Klant ([KLANT_BEDRIJFSNAAM]):</strong></p>
+<p>Naam: <strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong></p>
+<p>Functie: <strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong>_____</p>
+<p>Datum: <strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong>______</p>
+<p>Handtekening: <strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong>______</p>
+<p><strong>Namens Leverancier (Spee Solutions):</strong></p>
+<p>Naam: Johnny Spee</p>
+<p>Functie: Directeur/eigenaar</p>
+<p>Datum: <strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong>______</p>
+<p>Handtekening: <strong><em>_</em></strong><strong><em>_</em></strong><strong><em>_</em></strong>______</p>
+<hr />
+<h2>Bijlagen</h2>
+<ul>
+<li>Bijlage A: Algemene Voorwaarden SpeeQ versie 1.0</li>
+<li>Bijlage B: Verwerkersovereenkomst (DPA) versie 1.0</li>
+<li>Bijlage C: Privacyverklaring versie 1.0</li>
+</ul>
+<hr />
+<p><em>SOA versie 1.0 · 2026-05-13 · Spee Solutions · https://speesolutions.com</em></p>
+</main>
+<footer class="doc-footer">
+  Versie 1.0 · 2026-05-13 · Spee Solutions · https://speesolutions.com
+</footer>
+</body>
+</html>

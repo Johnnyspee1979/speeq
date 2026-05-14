@@ -1,0 +1,188 @@
+/* SpeeQ Juridisch PDF — Branded styling
+   Versie 1.0 · 2026-05-13 · Spee Solutions
+   Kleurpalet: deep navy + cream, italic serif accents */
+
+@page {
+  size: A4;
+  margin: 20mm 18mm 22mm 18mm;
+  @bottom-left { content: "Spee Solutions · KvK 99314770 · NL005384070B84"; font-size: 8pt; color: #6b7280; font-family: 'Source Serif 4', Georgia, serif; }
+  @bottom-right { content: "Pagina " counter(page) " / " counter(pages); font-size: 8pt; color: #6b7280; font-family: 'Source Serif 4', Georgia, serif; }
+}
+
+:root {
+  --navy: #0B2545;
+  --navy-soft: #134074;
+  --cream: #FAF7F2;
+  --line: #e5e7eb;
+  --text: #1f2937;
+  --muted: #6b7280;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Source Serif 4', 'Source Serif Pro', Georgia, 'Times New Roman', serif;
+  font-size: 10.5pt;
+  line-height: 1.55;
+  color: var(--text);
+  background: white;
+}
+
+/* HEADER op pagina 1 */
+.cover {
+  border-bottom: 2px solid var(--navy);
+  padding-bottom: 14mm;
+  margin-bottom: 10mm;
+}
+
+.cover .brand {
+  display: flex;
+  align-items: center;
+  gap: 12mm;
+  margin-bottom: 8mm;
+}
+
+.cover .brand img {
+  height: 18mm;
+  width: auto;
+}
+
+.cover .brand-text {
+  font-family: 'Acumin Pro', 'Inter', -apple-system, sans-serif;
+  font-size: 9pt;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cover h1 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 26pt;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0 0 4mm 0;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.cover .subtitle {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-style: italic;
+  font-size: 12pt;
+  color: var(--navy-soft);
+  margin: 0 0 6mm 0;
+}
+
+.cover .meta {
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-size: 9pt;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.cover .meta strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* HEADINGS */
+h1, h2, h3, h4 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  color: var(--navy);
+  page-break-after: avoid;
+}
+
+h1 { font-size: 18pt; margin: 12mm 0 4mm 0; }
+h2 { font-size: 13pt; margin: 8mm 0 3mm 0; font-weight: 600; border-bottom: 1px solid var(--line); padding-bottom: 1.5mm; }
+h3 { font-size: 11pt; margin: 5mm 0 2mm 0; font-weight: 600; }
+h4 { font-size: 10pt; margin: 4mm 0 1.5mm 0; font-weight: 600; color: var(--navy-soft); }
+
+/* PARAGRAFEN + LIJSTEN */
+p { margin: 0 0 3mm 0; orphans: 3; widows: 3; }
+ul, ol { margin: 0 0 3mm 0; padding-left: 6mm; }
+li { margin: 0 0 1.5mm 0; }
+
+/* SUBTLE EMPHASIS */
+em { font-style: italic; color: var(--navy-soft); }
+strong { font-weight: 600; color: var(--text); }
+
+/* BLOCKQUOTE */
+blockquote {
+  margin: 4mm 0;
+  padding: 3mm 5mm;
+  background: var(--cream);
+  border-left: 3px solid var(--navy);
+  font-style: italic;
+  color: var(--navy-soft);
+  font-size: 10pt;
+}
+blockquote p { margin: 0; }
+
+/* TABEL */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0 6mm 0;
+  font-size: 9.5pt;
+  page-break-inside: avoid;
+}
+th, td {
+  text-align: left;
+  padding: 2mm 3mm;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+th {
+  background: var(--navy);
+  color: white;
+  font-family: 'Acumin Pro', 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 9pt;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+tr:nth-child(even) td { background: var(--cream); }
+
+/* CODE */
+code {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 9pt;
+  background: var(--cream);
+  padding: 0.5mm 1.5mm;
+  border-radius: 1mm;
+}
+
+/* HORIZONTAL RULE */
+hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 6mm 0;
+}
+
+/* SIGNATURE BLOCK voor SOA */
+.signature {
+  margin-top: 10mm;
+  page-break-inside: avoid;
+}
+.signature .signature-line {
+  border-bottom: 1px solid var(--text);
+  display: inline-block;
+  min-width: 60mm;
+  margin-left: 3mm;
+}
+
+/* PRINT-ONLY: forceer paginabreuk */
+.page-break { page-break-after: always; }
+
+/* LAATSTE FOOTER op laatste pagina */
+.doc-footer {
+  margin-top: 10mm;
+  padding-top: 4mm;
+  border-top: 1px solid var(--line);
+  font-size: 8.5pt;
+  color: var(--muted);
+  font-style: italic;
+  text-align: center;
+}
