@@ -39,7 +39,9 @@ function buildTenantLink(slugOrId: string): string {
   return `${origin}/?t=${encodeURIComponent(slugOrId)}`;
 }
 import { useTheme } from '../theme/ThemeProvider';
-import { OrganizationSwitcherModal } from '../components/ui/OrganizationSwitcherModal';
+import { PageHeader } from '../components/ui/PageHeader';
+import { PrimaryButton } from '../components/ui/PrimaryButton';
+import { SecondaryButton } from '../components/ui/SecondaryButton';
 import {
   signInMaker,
   signOutMaker,
@@ -52,6 +54,7 @@ import {
   type NewTenantInput,
 } from '../services/MakerService';
 import { setTenantConfig } from '../config/tenant';
+import { setBrandingFromMaster } from '../services/TenantBrandingService';
 
 type ViewState = 'loading' | 'login' | 'list' | 'add' | 'edit';
 
@@ -64,11 +67,6 @@ export default function MakerDashboard() {
   const [editing, setEditing] = useState<Tenant | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null);
-
-  // Organisatie-switcher: tenant_id wordt UITSLUITEND als lokale state beheerd
-  // (NOOIT in JWT custom claims) — RLS valideert elke API-call op de backend.
-  const [orgModalOpen, setOrgModalOpen] = useState(false);
-  const [activeTenantId, setActiveTenantId] = useState<string | null>(null);
 
   const flash = useCallback((tone: 'ok' | 'err', text: string) => {
     setMsg({ tone, text });
@@ -167,57 +165,55 @@ export default function MakerDashboard() {
       style={{ flex: 1, backgroundColor: theme.colors.background }}
       contentContainerStyle={s.listContent}
     >
-      <View style={s.headerRow}>
+      <View style={s.headerTopRow}>
         <Image
           source={SPEEQ_Q_LOGO}
-          style={{ width: 56, height: 56, marginRight: 14 }}
+          style={{ width: 40, height: 40, marginRight: 12 }}
           resizeMode="contain"
         />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[s.title, { color: theme.colors.textPrimary }]}>Maker</Text>
-          <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
-            {tenants.length} van {TENANT_LIMIT} klanten · nog {slotsLeft} plek{slotsLeft !== 1 ? 'ken' : ''} vrij
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={[s.primaryBtn, { backgroundColor: theme.colors.accent, opacity: slotsLeft === 0 ? 0.4 : 1 }]}
-          onPress={() => slotsLeft > 0 && setView('add')}
-          activeOpacity={0.85}
-          disabled={slotsLeft === 0}
-        >
-          <Text style={s.primaryBtnText}>+ Nieuwe klant</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.ghostBtn, { borderColor: theme.colors.border }]}
-          onPress={() => setOrgModalOpen(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={[s.ghostBtnText, { color: theme.colors.textSecondary }]}>Open als klant</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.ghostBtn, { borderColor: theme.colors.border }]}
+        <View style={{ flex: 1 }} />
+        <SecondaryButton
+          title="Uitloggen"
           onPress={async () => { await signOutMaker(); setView('login'); }}
-          activeOpacity={0.7}
-        >
-          <Text style={[s.ghostBtnText, { color: theme.colors.textSecondary }]}>Uitloggen</Text>
-        </TouchableOpacity>
+        />
+      </View>
+
+      <PageHeader
+        title="Maker-paneel"
+        rightAction={
+          <PrimaryButton
+            label="➕ Klant toevoegen"
+            onPress={() => slotsLeft > 0 && setView('add')}
+            disabled={slotsLeft === 0}
+          />
+        }
+      />
+
+      <View style={[s.headerMeta, { borderBottomColor: theme.colors.borderWarm }]}>
+        <Text style={[s.eyebrow, { color: theme.colors.textMuted }]}>MULTI-TENANT BEHEER</Text>
+        <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
+          {tenants.length} van {TENANT_LIMIT} klanten · nog {slotsLeft} plek{slotsLeft !== 1 ? 'ken' : ''} vrij
+        </Text>
       </View>
 
       {msg && (
         <View
           style={[s.toast, {
-            backgroundColor: msg.tone === 'ok' ? 'rgba(5,150,105,0.12)' : 'rgba(239,68,68,0.12)',
-            borderColor:     msg.tone === 'ok' ? 'rgba(5,150,105,0.35)' : 'rgba(239,68,68,0.35)',
+            backgroundColor: msg.tone === 'ok' ? theme.colors.statusSuccess : theme.colors.statusWarning,
+            borderColor:     theme.colors.borderWarm,
           }]}
         >
-          <Text style={{ color: msg.tone === 'ok' ? '#047857' : '#991b1b', fontWeight: '700' }}>
+          <Text style={{
+            color: msg.tone === 'ok' ? theme.colors.background : theme.colors.textPrimary,
+            fontWeight: '700',
+          }}>
             {msg.tone === 'ok' ? '✓ ' : '⚠ '}{msg.text}
           </Text>
         </View>
       )}
 
       {tenants.length === 0 ? (
-        <View style={[s.empty, { borderColor: theme.colors.border }]}>
+        <View style={[s.empty, { borderColor: theme.colors.borderWarm }]}>
           <Text style={{ fontSize: 32 }}>🏗️</Text>
           <Text style={[s.emptyTitle, { color: theme.colors.textPrimary }]}>Nog geen klanten</Text>
           <Text style={[s.emptyText, { color: theme.colors.textSecondary }]}>
@@ -237,8 +233,18 @@ export default function MakerDashboard() {
                   supabaseUrl:      t.supabaseUrl,
                   supabaseAnonKey:  t.supabaseAnonKey,
                 });
-                // Hard reload zodat de Supabase-proxy een nieuwe client krijgt
+                // Push branding uit master-tenants direct in de cache → header
+                // toont meteen de juiste naam/kleur/logo na reload (geen flash).
+                setBrandingFromMaster({
+                  companyName:  t.displayName ?? t.name ?? null,
+                  logoUrl:      t.logoUrl ?? null,
+                  primaryColor: t.primaryColor ?? null,
+                });
+                // Sla ook tenant_id op voor data-isolatie (ProjectService leest dit)
                 if (typeof window !== 'undefined') {
+                  try {
+                    window.localStorage.setItem('wkb_active_tenant_id', t.companyId);
+                  } catch { /* ignore */ }
                   window.location.href = '/';
                 }
               }}
@@ -278,18 +284,6 @@ export default function MakerDashboard() {
         Tip: zet de eerste klant op met een test-Supabase project. Zodra dat goed werkt,
         is het verschil tussen 1 en 40 klanten alleen nog data — geen code.
       </Text>
-
-      {/* Organisatie-switcher modal — voedt activeTenantId aan TenantProvider */}
-      <OrganizationSwitcherModal
-        visible={orgModalOpen}
-        currentTenantId={activeTenantId}
-        onClose={() => setOrgModalOpen(false)}
-        onSelectTenant={(tenantId) => {
-          setActiveTenantId(tenantId);
-          // tenant_id blijft puur in React-state — geen JWT-claim injectie.
-          // TenantProvider haalt branding live op zodra de gebruiker is ingelogd.
-        }}
-      />
     </ScrollView>
   );
 }
@@ -304,7 +298,7 @@ function LoginView({
   msg: { tone: 'ok' | 'err'; text: string } | null;
   onLogin: (email: string, password: string) => Promise<void>;
 }) {
-  const [email, setEmail] = useState('johnny@speesolutions.nl');
+  const [email, setEmail] = useState('johnny@speesolutions.com');
   const [password, setPassword] = useState('');
 
   return (
@@ -315,7 +309,7 @@ function LoginView({
           style={{ width: 72, height: 72, alignSelf: 'center', marginBottom: 12 }}
           resizeMode="contain"
         />
-        <Text style={[s.title, { color: theme.colors.textPrimary, marginBottom: 4, textAlign: 'center' }]}>Maker</Text>
+        <Text style={[s.title, { color: theme.colors.textPrimary, marginBottom: 4, textAlign: 'center' }]}>Maker-paneel</Text>
         <Text style={[s.subtitle, { color: theme.colors.textSecondary, marginBottom: 18, textAlign: 'center' }]}>
           Toegang alleen voor Johnny (eigenaar).
         </Text>
@@ -594,14 +588,17 @@ function Field({ label, value, onChange, theme, placeholder, multiline }: {
 const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   listContent: { padding: 24, maxWidth: 1180, alignSelf: 'center', width: '100%', gap: 16, paddingBottom: 60 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
-  title: {
-    fontSize: 36,
-    fontFamily: 'Georgia, "Playfair Display", serif',
-    fontStyle: 'italic',
-    fontWeight: '500',
-    letterSpacing: -1,
+  headerMeta: { paddingBottom: 16, borderBottomWidth: 1, marginBottom: 4 },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    marginBottom: 6,
   },
+  title: { fontSize: 24, fontWeight: '900' },
   subtitle: { fontSize: 13, lineHeight: 18, marginTop: 4 },
   primaryBtn: { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
   primaryBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },

@@ -100,6 +100,22 @@ export async function getBranding(opts?: { force?: boolean }): Promise<TenantBra
 }
 
 /**
+ * Voedt de lokale branding-cache vanuit de master-tenants-rij (slug-routing).
+ * Schrijft NIET naar `tenant_branding` (die tabel is gedeeld tussen alle
+ * tenants in een single-DB setup) — alleen in-memory + localStorage zodat de
+ * UI direct het juiste logo/kleur ziet.
+ */
+export function setBrandingFromMaster(b: Partial<TenantBranding>): void {
+  const merged: TenantBranding = {
+    companyName:  b.companyName  ?? cache?.companyName  ?? null,
+    logoUrl:      b.logoUrl      ?? cache?.logoUrl      ?? null,
+    primaryColor: b.primaryColor ?? cache?.primaryColor ?? null,
+    updatedAt:    new Date().toISOString(),
+  };
+  notify(merged);
+}
+
+/**
  * Snelle synchrone read voor componenten — geeft cache (kan null zijn bij
  * eerste render). Gebruik samen met `useTenantBranding` voor reactiviteit.
  */
