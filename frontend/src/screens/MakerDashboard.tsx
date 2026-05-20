@@ -39,6 +39,9 @@ function buildTenantLink(slugOrId: string): string {
   return `${origin}/?t=${encodeURIComponent(slugOrId)}`;
 }
 import { useTheme } from '../theme/ThemeProvider';
+import { PageHeader } from '../components/ui/PageHeader';
+import { PrimaryButton } from '../components/ui/PrimaryButton';
+import { SecondaryButton } from '../components/ui/SecondaryButton';
 import {
   signInMaker,
   signOutMaker,
@@ -162,50 +165,55 @@ export default function MakerDashboard() {
       style={{ flex: 1, backgroundColor: theme.colors.background }}
       contentContainerStyle={s.listContent}
     >
-      <View style={s.headerRow}>
+      <View style={s.headerTopRow}>
         <Image
           source={SPEEQ_Q_LOGO}
-          style={{ width: 56, height: 56, marginRight: 14 }}
+          style={{ width: 40, height: 40, marginRight: 12 }}
           resizeMode="contain"
         />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[s.title, { color: theme.colors.textPrimary }]}>Maker-paneel</Text>
-          <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
-            {tenants.length} van {TENANT_LIMIT} klanten · nog {slotsLeft} plek{slotsLeft !== 1 ? 'ken' : ''} vrij
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={[s.primaryBtn, { backgroundColor: theme.colors.accent, opacity: slotsLeft === 0 ? 0.4 : 1 }]}
-          onPress={() => slotsLeft > 0 && setView('add')}
-          activeOpacity={0.85}
-          disabled={slotsLeft === 0}
-        >
-          <Text style={s.primaryBtnText}>➕ Klant toevoegen</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.ghostBtn, { borderColor: theme.colors.border }]}
+        <View style={{ flex: 1 }} />
+        <SecondaryButton
+          title="Uitloggen"
           onPress={async () => { await signOutMaker(); setView('login'); }}
-          activeOpacity={0.7}
-        >
-          <Text style={[s.ghostBtnText, { color: theme.colors.textSecondary }]}>Uitloggen</Text>
-        </TouchableOpacity>
+        />
+      </View>
+
+      <PageHeader
+        title="Maker-paneel"
+        rightAction={
+          <PrimaryButton
+            label="➕ Klant toevoegen"
+            onPress={() => slotsLeft > 0 && setView('add')}
+            disabled={slotsLeft === 0}
+          />
+        }
+      />
+
+      <View style={[s.headerMeta, { borderBottomColor: theme.colors.borderWarm }]}>
+        <Text style={[s.eyebrow, { color: theme.colors.textMuted }]}>MULTI-TENANT BEHEER</Text>
+        <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
+          {tenants.length} van {TENANT_LIMIT} klanten · nog {slotsLeft} plek{slotsLeft !== 1 ? 'ken' : ''} vrij
+        </Text>
       </View>
 
       {msg && (
         <View
           style={[s.toast, {
-            backgroundColor: msg.tone === 'ok' ? 'rgba(5,150,105,0.12)' : 'rgba(239,68,68,0.12)',
-            borderColor:     msg.tone === 'ok' ? 'rgba(5,150,105,0.35)' : 'rgba(239,68,68,0.35)',
+            backgroundColor: msg.tone === 'ok' ? theme.colors.statusSuccess : theme.colors.statusWarning,
+            borderColor:     theme.colors.borderWarm,
           }]}
         >
-          <Text style={{ color: msg.tone === 'ok' ? '#047857' : '#991b1b', fontWeight: '700' }}>
+          <Text style={{
+            color: msg.tone === 'ok' ? theme.colors.background : theme.colors.textPrimary,
+            fontWeight: '700',
+          }}>
             {msg.tone === 'ok' ? '✓ ' : '⚠ '}{msg.text}
           </Text>
         </View>
       )}
 
       {tenants.length === 0 ? (
-        <View style={[s.empty, { borderColor: theme.colors.border }]}>
+        <View style={[s.empty, { borderColor: theme.colors.borderWarm }]}>
           <Text style={{ fontSize: 32 }}>🏗️</Text>
           <Text style={[s.emptyTitle, { color: theme.colors.textPrimary }]}>Nog geen klanten</Text>
           <Text style={[s.emptyText, { color: theme.colors.textSecondary }]}>
@@ -580,7 +588,16 @@ function Field({ label, value, onChange, theme, placeholder, multiline }: {
 const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   listContent: { padding: 24, maxWidth: 1180, alignSelf: 'center', width: '100%', gap: 16, paddingBottom: 60 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  headerMeta: { paddingBottom: 16, borderBottomWidth: 1, marginBottom: 4 },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
   title: { fontSize: 24, fontWeight: '900' },
   subtitle: { fontSize: 13, lineHeight: 18, marginTop: 4 },
   primaryBtn: { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
