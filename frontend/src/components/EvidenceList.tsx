@@ -1006,6 +1006,12 @@ export default function EvidenceList() {
           keyExtractor={(item) => item.id}
           renderItem={renderEvidenceCard}
           contentContainerStyle={styles.listContent}
+          // Verplichte performance-optimalisaties voor grote Wkb-dossiers.
+          // Houdt geheugen onder controle bij honderden foto's.
+          initialNumToRender={5}
+          maxToRenderPerBatch={5}
+          windowSize={5}
+          removeClippedSubviews={true}
         />
       )}
 

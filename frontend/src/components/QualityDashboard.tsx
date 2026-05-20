@@ -2,8 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
+  Dimensions,
   FlatList,
   Image,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -20,8 +22,29 @@ import {
   updateEvidenceStatus,
 } from '../services/cloudEvidenceService';
 import { useWkbAuth } from '../hooks/useWkbAuth';
+import { useIsAdmin } from '../hooks/useIsAdmin';
 import { pushApprovedEvidenceToKik } from '../services/kik';
 import { useTheme } from '../theme/ThemeProvider';
+import { tokens } from '../theme/designTokens';
+import { PageHeader } from './ui/PageHeader';
+import { PrimaryButton } from './ui/PrimaryButton';
+import { SecondaryButton } from './ui/SecondaryButton';
+import { StatusPill } from './ui/StatusPill';
+import { EmptyState } from './ui/EmptyState';
+
+const formatShortDate = (iso?: string | null) => {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('nl-NL', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return '—';
+  }
+};
 
 type ReviewStatusFilter = 'all' | 'pending' | 'approved' | 'review' | 'rejected';
 
@@ -60,6 +83,17 @@ export default function QualityDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
   const [isPushingKik, setIsPushingKik] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  // Laag 3 (Actie) — modal-state: welk record + welke beslissing
+  type ActionKind = 'APPROVED' | 'NEEDS_REVIEW' | 'REJECTED';
+  const [actionTarget, setActionTarget] = useState<
+    { record: CloudEvidence; kind: ActionKind } | null
+  >(null);
+  const [actionNote, setActionNote] = useState('');
+
+  // Dev-info wordt alleen aan beheerders getoond (ruisreductie voor gewone gebruikers)
+  const isAdmin = useIsAdmin();
   const { width } = useWindowDimensions();
   const deviceType = getDeviceType(width);
   const isWide = deviceType === 'DESKTOP';
@@ -222,170 +256,136 @@ export default function QualityDashboard() {
     const imageUri = item.photo_uri ?? item.media_uri ?? '';
     const isSaving = isSavingId === item.id;
     const reviewBucket = getReviewBucket(item.ai_status);
+    const isOpen = expandedId === item.id;
+
+    // Map de fijnmazige reviewBucket op het 3-status Calm Design model.
+    // approved → success · review/rejected/pending → warning (actie nodig).
+    const pillStatus: 'success' | 'warning' | 'neutral' =
+      reviewBucket === 'approved' ? 'success' : 'warning';
 
     return (
-      <View style={styles.recordCard}>
-        {imageUri ? <Image source={{ uri: imageUri }} style={styles.recordImage} /> : null}
-        <View style={styles.recordBody}>
-          <View style={styles.recordHeader}>
-            <View style={styles.recordTitleBlock}>
-              <Text style={styles.recordTitle}>
-                {item.inspection_point_id ?? 'Onbekend inspectiepunt'}
-              </Text>
-              <Text style={styles.recordSubtitle}>
-                {item.project_id ?? 'Onbekend project'} •{' '}
-                {item.timestamp
-                  ? new Date(item.timestamp).toLocaleString('nl-NL')
-                  : 'Geen tijdstip'}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.statusPill,
-                reviewBucket === 'approved'
-                  ? styles.pillApproved
-                  : reviewBucket === 'review'
-                    ? styles.pillReview
-                    : reviewBucket === 'rejected'
-                      ? styles.pillRejected
-                      : styles.pillPending,
-              ]}
-            >
-              <Text style={styles.statusPillText}>{getHumanStatusLabel(item.ai_status)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.detailGrid}>
-            <Text style={styles.detailText}>
-              GPS: {item.latitude ?? '—'}, {item.longitude ?? '—'}
+      <View style={styles.evidenceCardCompact}>
+        <View style={styles.evidenceRowCompact}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.evidenceThumb} />
+          ) : (
+            <View style={[styles.evidenceThumb, styles.evidenceThumbEmpty]} />
+          )}
+          <View style={styles.evidenceInfo}>
+            <Text style={styles.evidenceId} numberOfLines={1}>
+              {item.inspection_point_id ?? 'Onbekend inspectiepunt'}
             </Text>
-            <Text style={styles.detailText}>
-              GPS nauwkeurigheid:{' '}
-              {item.gps_accuracy != null ? `${Number(item.gps_accuracy).toFixed(1)} m` : '—'}
+            <Text style={styles.evidenceMeta} numberOfLines={1}>
+              {item.project_id ?? 'Project onbekend'} {' · '} {formatShortDate(item.timestamp)}
             </Text>
-            <Text style={styles.detailText}>
-              AI confidence:{' '}
-              {item.ai_confidence != null ? `${Math.round(item.ai_confidence * 100)}%` : '—'}
-            </Text>
-            <Text style={styles.detailText}>
-              SHA-256: {item.exif_hash ? `${item.exif_hash.slice(0, 24)}...` : '—'}
-            </Text>
-            {(item.betonkwaliteit || item.milieuklasse || item.volume || item.leverdatum) && (
-              <Text style={styles.detailText}>
-                OCR: {item.betonkwaliteit || '—'}
-                {item.milieuklasse ? ` • ${item.milieuklasse}` : ''}
-                {item.volume ? ` • ${item.volume} m3` : ''}
-                {item.leverdatum ? ` • ${item.leverdatum}` : ''}
-              </Text>
-            )}
           </View>
-
-          <View style={styles.auditRow}>
-            <View
-              style={[
-                styles.auditPill,
-                isConfirmed(item.exif_verified) ? styles.pillApproved : styles.pillRejected,
-              ]}
-            >
-              <Text style={styles.auditPillText}>
-                {isConfirmed(item.exif_verified) ? 'EXIF bevestigd' : 'EXIF open'}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.auditPill,
-                isConfirmed(item.location_verified)
-                  ? styles.pillApproved
-                  : styles.pillRejected,
-              ]}
-            >
-              <Text style={styles.auditPillText}>
-                {isConfirmed(item.location_verified)
-                  ? `Locatie akkoord${item.location_spoof_risk ? ` (${item.location_spoof_risk})` : ''}`
-                  : 'Locatie open'}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.auditPill,
-                isConfirmed(item.stop_moment_confirmed)
-                  ? styles.pillApproved
-                  : styles.pillRejected,
-              ]}
-            >
-              <Text style={styles.auditPillText}>
-                {isConfirmed(item.stop_moment_confirmed)
-                  ? 'Stopmoment bevestigd'
-                  : 'Stopmoment open'}
-              </Text>
-            </View>
-            <View
-              style={[
-                styles.auditPill,
-                isConfirmed(item.measurement_tool_confirmed)
-                  ? styles.pillApproved
-                  : styles.pillRejected,
-              ]}
-            >
-              <Text style={styles.auditPillText}>
-                {isConfirmed(item.measurement_tool_confirmed)
-                  ? 'Meetmiddel bevestigd'
-                  : 'Meetmiddel open'}
-              </Text>
-            </View>
-          </View>
-
-          {item.field_note ? (
-            <View style={styles.noteBox}>
-              <Text style={styles.noteBoxLabel}>Veldnotitie</Text>
-              <Text style={styles.noteBoxText}>{item.field_note}</Text>
-            </View>
-          ) : null}
-
-          {item.location_security_message ? (
-            <View style={styles.noteBox}>
-              <Text style={styles.noteBoxLabel}>Locatiecontrole</Text>
-              <Text style={styles.noteBoxText}>{item.location_security_message}</Text>
-            </View>
-          ) : null}
-
-          <TextInput
-            style={styles.reviewInput}
-            multiline
-            value={noteDrafts[item.id] ?? ''}
-            onChangeText={(value) =>
-              setNoteDrafts((current) => ({ ...current, [item.id]: value }))
-            }
-            placeholder="Notitie van kwaliteitsborger of review-opmerking"
-            placeholderTextColor={theme.colors.textSecondary}
-          />
-
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.actionApprove]}
-              onPress={() => void persistReview(item, 'APPROVED')}
-              disabled={isSaving}
-            >
-              <Text style={styles.actionButtonText}>Goedkeuren</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.actionReview]}
-              onPress={() => void persistReview(item, 'NEEDS_REVIEW')}
-              disabled={isSaving}
-            >
-              <Text style={styles.actionButtonText}>Review nodig</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.actionReject]}
-              onPress={() => void persistReview(item, 'REJECTED')}
-              disabled={isSaving}
-            >
-              <Text style={styles.actionButtonText}>Afkeuren</Text>
-            </TouchableOpacity>
-          </View>
-
-          {isSaving ? <ActivityIndicator color={theme.colors.accent} /> : null}
+          <StatusPill label={getHumanStatusLabel(item.ai_status)} status={pillStatus} />
+          <TouchableOpacity
+            style={styles.detailBtn}
+            onPress={() => setExpandedId(isOpen ? null : item.id)}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.detailBtnText}>{isOpen ? 'Sluiten ▾' : 'Details →'}</Text>
+          </TouchableOpacity>
         </View>
+
+        {isOpen ? (
+          <View style={styles.evidenceExpand}>
+            {/* Laag 2 — Diagnose: betekenisvolle audit-pills voor iedereen */}
+            <View style={styles.auditRowCompact}>
+              <StatusPill
+                label={isConfirmed(item.exif_verified) ? 'EXIF ✓' : 'EXIF open'}
+                status={isConfirmed(item.exif_verified) ? 'success' : 'neutral'}
+              />
+              <StatusPill
+                label={isConfirmed(item.location_verified) ? 'Locatie ✓' : 'Locatie open'}
+                status={isConfirmed(item.location_verified) ? 'success' : 'neutral'}
+              />
+              <StatusPill
+                label={isConfirmed(item.stop_moment_confirmed) ? 'Stopmoment ✓' : 'Stopmoment open'}
+                status={isConfirmed(item.stop_moment_confirmed) ? 'success' : 'neutral'}
+              />
+              <StatusPill
+                label={isConfirmed(item.measurement_tool_confirmed) ? 'Meetmiddel ✓' : 'Meetmiddel open'}
+                status={isConfirmed(item.measurement_tool_confirmed) ? 'success' : 'neutral'}
+              />
+            </View>
+
+            {(item.betonkwaliteit || item.milieuklasse || item.volume || item.leverdatum) ? (
+              <Text style={styles.detailTextMuted}>
+                OCR: {item.betonkwaliteit || '—'}
+                {item.milieuklasse ? ` · ${item.milieuklasse}` : ''}
+                {item.volume ? ` · ${item.volume} m³` : ''}
+                {item.leverdatum ? ` · ${item.leverdatum}` : ''}
+              </Text>
+            ) : null}
+
+            {item.field_note ? (
+              <View style={styles.noteBox}>
+                <Text style={styles.noteBoxLabel}>Veldnotitie</Text>
+                <Text style={styles.noteBoxText}>{item.field_note}</Text>
+              </View>
+            ) : null}
+
+            {item.location_security_message ? (
+              <View style={styles.noteBox}>
+                <Text style={styles.noteBoxLabel}>Locatiecontrole</Text>
+                <Text style={styles.noteBoxText}>{item.location_security_message}</Text>
+              </View>
+            ) : null}
+
+            {/* Dev-info (GPS-coords, SHA, AI-vertrouwen): alleen voor ADMIN */}
+            {isAdmin ? (
+              <View style={styles.devInfoBox}>
+                <Text style={styles.devInfoLabel}>DEV — alleen voor beheer</Text>
+                <Text style={styles.detailTextMuted}>
+                  GPS: {item.latitude ?? '—'}, {item.longitude ?? '—'}
+                  {item.gps_accuracy != null
+                    ? `  ·  ±${Number(item.gps_accuracy).toFixed(1)} m`
+                    : ''}
+                </Text>
+                <Text style={styles.detailTextMuted}>
+                  AI-vertrouwen:{' '}
+                  {item.ai_confidence != null
+                    ? `${Math.round(item.ai_confidence * 100)}%`
+                    : '—'}
+                  {item.exif_hash
+                    ? `  ·  SHA ${item.exif_hash.slice(0, 12)}…`
+                    : ''}
+                </Text>
+              </View>
+            ) : null}
+
+            {/* Laag 3 — Actie: openen via modal zodat context behouden blijft */}
+            <View style={styles.actionRowCompact}>
+              <PrimaryButton
+                label="Goedkeuren"
+                size="sm"
+                onPress={() => {
+                  setActionNote(noteDrafts[item.id] ?? item.ai_notes ?? '');
+                  setActionTarget({ record: item, kind: 'APPROVED' });
+                }}
+                disabled={isSaving}
+              />
+              <SecondaryButton
+                title="Review aanvragen"
+                onPress={() => {
+                  setActionNote(noteDrafts[item.id] ?? item.ai_notes ?? '');
+                  setActionTarget({ record: item, kind: 'NEEDS_REVIEW' });
+                }}
+                disabled={isSaving}
+              />
+              <SecondaryButton
+                title="Afkeuren"
+                onPress={() => {
+                  setActionNote(noteDrafts[item.id] ?? item.ai_notes ?? '');
+                  setActionTarget({ record: item, kind: 'REJECTED' });
+                }}
+                disabled={isSaving}
+              />
+            </View>
+          </View>
+        ) : null}
       </View>
     );
   };
@@ -412,76 +412,66 @@ export default function QualityDashboard() {
     );
   }
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.hero}>
-        <View style={styles.heroCopy}>
-          <Text style={styles.heroTitle}>Kwaliteitsborger Dashboard</Text>
-          <Text style={styles.heroSubtitle}>
-            Beoordeel geüpload bewijs, voeg review-notities toe en zet dossiers klaar
-            voor bevoegd gezag.
+  // Max 1 CTA in de PageHeader — "Push naar KiK" verschuift naar de toolbar.
+  const headerActions = (
+    <PrimaryButton
+      label="Vernieuwen"
+      size="sm"
+      onPress={() => void loadCloudEvidence()}
+    />
+  );
+
+  // ListHeaderComponent — page header, stats, search/filter (rendert 1x boven de lijst).
+  // Hard begrensd op 20% van de viewport zodat er ALTIJD 5 evidence-cards onder passen.
+  const windowHeight = Dimensions.get('window').height;
+  const renderListHeader = () => (
+    <View style={[styles.listHeader, { maxHeight: windowHeight * 0.2, overflow: 'hidden' }]}>
+      <PageHeader title="Bewijs & dossier" rightAction={headerActions} />
+
+      {metrics.total === 0 && !isLoading ? null : (
+        <View style={styles.statInline}>
+          <Text style={styles.statInlineText}>
+            <Text style={styles.statInlineNum}>{metrics.total}</Text> totaal
+            {'  ·  '}
+            <Text style={styles.statInlineNum}>{metrics.pending}</Text> openstaand
+            {'  ·  '}
+            <Text style={[styles.statInlineNum, { color: tokens.forest }]}>{metrics.approved}</Text> goedgekeurd
+            {'  ·  '}
+            <Text style={[styles.statInlineNum, { color: tokens.amber }]}>{metrics.review}</Text> review
+            {'  ·  '}
+            <Text style={[styles.statInlineNum, { color: tokens.terracotta }]}>{metrics.rejected}</Text> afgekeurd
           </Text>
         </View>
-        <View style={styles.heroActions}>
-          <TouchableOpacity
-            style={styles.kikButton}
-            onPress={() => void handlePushToKik()}
-            disabled={isPushingKik}
-          >
-            <Text style={styles.refreshButtonText}>
-              {isPushingKik ? 'KiK push…' : 'Push naar KiK'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.refreshButton} onPress={() => void loadCloudEvidence()}>
-            <Text style={styles.refreshButtonText}>Vernieuwen</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      )}
 
-      <View style={styles.contextBanner}>
-        <Text style={styles.contextBannerTitle}>Projectcontext</Text>
-        <Text style={styles.contextBannerText}>
-          Alleen cloudbewijs voor project {DEFAULT_PROJECT_ID} wordt hier getoond,
-          beoordeeld en klaargezet voor dossier of KiK-sync.
-        </Text>
-      </View>
-
-      <View style={styles.metricsRow}>
-        {renderMetric('Totaal', metrics.total)}
-        {renderMetric('Openstaand', metrics.pending)}
-        {renderMetric('Goedgekeurd', metrics.approved)}
-        {renderMetric('Review', metrics.review)}
-        {renderMetric('Afgekeurd', metrics.rejected)}
-      </View>
-
-      <View style={styles.toolbar}>
+      <View style={styles.toolbarRow}>
         <TextInput
-          style={styles.searchInput}
+          style={styles.searchInputV2}
           value={searchQuery}
           onChangeText={setSearchQuery}
           placeholder="Zoek op project, inspectiepunt of hash"
           placeholderTextColor={theme.colors.textSecondary}
         />
-        <View style={styles.filterRow}>
+        <View style={styles.filterRowInline}>
           {[
             ['all', 'Alles'],
-            ['pending', 'Openstaand'],
-            ['approved', 'Goedgekeurd'],
+            ['pending', 'Open'],
+            ['approved', 'Goed'],
             ['review', 'Review'],
             ['rejected', 'Afgekeurd'],
           ].map(([key, label]) => (
             <TouchableOpacity
               key={key}
               style={[
-                styles.filterChip,
-                statusFilter === key && styles.filterChipActive,
+                styles.filterChipV2,
+                statusFilter === key && styles.filterChipV2Active,
               ]}
               onPress={() => setStatusFilter(key as ReviewStatusFilter)}
             >
               <Text
                 style={[
-                  styles.filterChipText,
-                  statusFilter === key && styles.filterChipTextActive,
+                  styles.filterChipV2Text,
+                  statusFilter === key && styles.filterChipV2TextActive,
                 ]}
               >
                 {label}
@@ -489,30 +479,134 @@ export default function QualityDashboard() {
             </TouchableOpacity>
           ))}
         </View>
+        <SecondaryButton
+          title={isPushingKik ? 'KiK push…' : 'Push naar KiK'}
+          onPress={() => void handlePushToKik()}
+          disabled={isPushingKik}
+        />
       </View>
+    </View>
+  );
 
-      {isLoading ? (
+  // ListEmptyComponent — toont laad-state, échte lege staat of filter-resultaat
+  const renderListEmpty = () => {
+    if (isLoading) {
+      return (
         <View style={styles.emptyState}>
           <ActivityIndicator color={theme.colors.accent} />
           <Text style={styles.emptyText}>Cloudbewijs laden…</Text>
         </View>
-      ) : filteredRecords.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Geen cloudbewijs gevonden</Text>
-          <Text style={styles.emptyText}>
-            Pas filters aan of synchroniseer eerst bewijs vanuit de bouwplaats.
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredRecords}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderRecord}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
+      );
+    }
+    if (metrics.total === 0) {
+      return (
+        <EmptyState
+          icon="📭"
+          title="Nog geen bewijs binnen"
+          subtitle="Zodra de vakman op de bouw foto's maakt, verschijnt het bewijs hier voor jouw beoordeling."
         />
-      )}
-    </View>
+      );
+    }
+    return (
+      <EmptyState
+        icon="🔍"
+        title="Geen resultaten met deze filters"
+        subtitle="Pas de zoekterm of het statusfilter aan om bewijs terug te vinden."
+      />
+    );
+  };
+
+  // Laag 3 — Action-modal handler
+  const confirmAction = async () => {
+    if (!actionTarget) return;
+    setNoteDrafts((current) => ({
+      ...current,
+      [actionTarget.record.id]: actionNote,
+    }));
+    const target = actionTarget;
+    setActionTarget(null);
+    await persistReview(target.record, target.kind);
+  };
+
+  const actionMeta: Record<ActionKind, { title: string; cta: string; tone: 'primary' | 'neutral' }> = {
+    APPROVED:     { title: 'Bewijs goedkeuren',  cta: 'Bevestig goedkeuring', tone: 'primary' },
+    NEEDS_REVIEW: { title: 'Review aanvragen',   cta: 'Stuur naar review',    tone: 'neutral' },
+    REJECTED:     { title: 'Bewijs afkeuren',    cta: 'Bevestig afkeuring',   tone: 'neutral' },
+  };
+
+  // FlatList is de fundamentele, buitenste root-container.
+  // Header + stats + toolbar gaan via ListHeaderComponent (rendert 1x, niet per kaart).
+  // NOOIT in een ScrollView nesten — zou viewport-tracking breken en alle items in memory laden.
+  return (
+    <>
+      <FlatList
+        style={styles.container}
+        data={filteredRecords}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={renderRecord}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderListEmpty}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={5}
+        initialNumToRender={5}
+        windowSize={5}
+      />
+
+      {/* Laag 3 — Actie-modal: gefocuste afhandeling, behoudt context */}
+      {actionTarget ? (
+        <View style={styles.actionBackdrop}>
+          <View style={[styles.actionModal, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.actionModalHeader}>
+              <Text style={[styles.actionModalTitle, { color: theme.colors.textPrimary }]}>
+                {actionMeta[actionTarget.kind].title}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setActionTarget(null)}
+                style={styles.actionModalClose}
+                disabled={isSavingId === actionTarget.record.id}
+              >
+                <Text style={[styles.actionModalCloseText, { color: theme.colors.textSecondary }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.actionModalSubtitle, { color: theme.colors.textSecondary }]}>
+              {actionTarget.record.inspection_point_id ?? 'Bewijs'} · {actionTarget.record.project_id ?? 'project'}
+            </Text>
+            <Text style={styles.actionModalLabel}>NOTITIE (zichtbaar in dossier)</Text>
+            <TextInput
+              style={styles.actionModalInput}
+              multiline
+              value={actionNote}
+              onChangeText={setActionNote}
+              placeholder={
+                actionTarget.kind === 'REJECTED'
+                  ? "Waarom keur je dit af? Bijv. 'Foto onscherp, EXIF mist tijdstempel'."
+                  : actionTarget.kind === 'NEEDS_REVIEW'
+                    ? 'Welke aanvullende controle is nodig?'
+                    : 'Optionele toelichting bij goedkeuring.'
+              }
+              placeholderTextColor={theme.colors.textSecondary}
+            />
+            <View style={styles.actionModalActions}>
+              <SecondaryButton
+                title="Annuleer"
+                onPress={() => setActionTarget(null)}
+                disabled={isSavingId === actionTarget.record.id}
+              />
+              <PrimaryButton
+                label={actionMeta[actionTarget.kind].cta}
+                size="md"
+                style={{ flex: 1 }}
+                onPress={() => void confirmAction()}
+                loading={isSavingId === actionTarget.record.id}
+                disabled={isSavingId === actionTarget.record.id}
+              />
+            </View>
+          </View>
+        </View>
+      ) : null}
+    </>
   );
 }
 
@@ -816,5 +910,230 @@ const createStyles = (
       textAlign: 'center',
       lineHeight: 20,
       maxWidth: 520,
+    },
+    // v2 — premium compacte layout
+    listHeader: {
+      paddingBottom: 4,
+    },
+    statInline: {
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 10,
+      backgroundColor: 'rgba(120,90,70,0.04)',
+      marginBottom: 12,
+    },
+    statInlineText: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      letterSpacing: 0.2,
+    },
+    statInlineNum: {
+      fontSize: 15,
+      fontWeight: '800',
+      color: theme.colors.textPrimary,
+    },
+    toolbarRow: {
+      flexDirection: isWide ? 'row' : 'column',
+      gap: 10,
+      alignItems: isWide ? 'center' : 'stretch',
+      marginBottom: 12,
+    },
+    searchInputV2: {
+      flex: isWide ? 1 : undefined,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(120,90,70,0.15)',
+      backgroundColor: 'rgba(250,245,240,0.5)',
+      color: theme.colors.textPrimary,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 13,
+    },
+    filterRowInline: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+    },
+    filterChipV2: {
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: 'rgba(120,90,70,0.15)',
+      backgroundColor: 'transparent',
+    },
+    filterChipV2Active: {
+      borderColor: theme.colors.textPrimary,
+      backgroundColor: theme.colors.textPrimary,
+    },
+    filterChipV2Text: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: theme.colors.textSecondary,
+      letterSpacing: 0.2,
+    },
+    filterChipV2TextActive: {
+      color: theme.colors.background,
+    },
+    evidenceCardCompact: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(120,90,70,0.12)',
+      backgroundColor: theme.colors.surface,
+      marginBottom: 8,
+      overflow: 'hidden',
+    },
+    evidenceRowCompact: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      padding: 14,
+      // 5-Card Rule: gefixeerde hoogte 110px zodat er exact 5 cards in een
+      // 800-900px viewport passen (na aftrek van ListHeader ≤20%).
+      height: 110,
+    },
+    evidenceThumb: {
+      width: 60,
+      height: 60,
+      borderRadius: 8,
+      backgroundColor: theme.colors.surfaceAlt,
+    },
+    evidenceThumbEmpty: {
+      borderWidth: 1,
+      borderColor: 'rgba(120,90,70,0.12)',
+    },
+    evidenceInfo: {
+      flex: 1,
+      gap: 2,
+      minWidth: 0,
+    },
+    evidenceId: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: theme.colors.textPrimary,
+      letterSpacing: -0.2,
+    },
+    evidenceMeta: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+    },
+    detailBtn: {
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 8,
+      backgroundColor: 'rgba(120,90,70,0.08)',
+    },
+    detailBtnText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: theme.colors.textPrimary,
+    },
+    evidenceExpand: {
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(120,90,70,0.08)',
+      padding: 16,
+      gap: 12,
+      backgroundColor: 'rgba(250,245,240,0.35)',
+    },
+    detailGridCompact: {
+      gap: 4,
+    },
+    detailTextMuted: {
+      color: theme.colors.textSecondary,
+      fontSize: 12,
+      lineHeight: 16,
+    },
+    auditRowCompact: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+    },
+    actionRowCompact: {
+      flexDirection: 'row',
+      gap: 8,
+      flexWrap: 'wrap',
+    },
+    devInfoBox: {
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(43,43,43,0.12)',
+      backgroundColor: 'rgba(43,43,43,0.04)',
+      padding: 10,
+      gap: 3,
+    },
+    devInfoLabel: {
+      fontSize: 9,
+      fontWeight: '700',
+      letterSpacing: 2,
+      color: theme.colors.textSecondary,
+      marginBottom: 2,
+      textTransform: 'uppercase' as const,
+    },
+    // Laag 3 — actie-modal
+    actionBackdrop: {
+      position: Platform.OS === 'web' ? ('fixed' as any) : 'absolute',
+      top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(43,43,43,0.4)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+      zIndex: 80,
+    },
+    actionModal: {
+      width: '100%',
+      maxWidth: 460,
+      borderRadius: 18,
+      padding: 24,
+      gap: 10,
+      shadowColor: '#2B2B2B',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.18,
+      shadowRadius: 28,
+      elevation: 10,
+    },
+    actionModalHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    actionModalTitle: {
+      fontSize: 20,
+      fontWeight: '700',
+      letterSpacing: -0.3,
+    },
+    actionModalClose: {
+      width: 30, height: 30, borderRadius: 15,
+      backgroundColor: 'rgba(43,43,43,0.08)',
+      alignItems: 'center', justifyContent: 'center',
+    },
+    actionModalCloseText: { fontSize: 13 },
+    actionModalSubtitle: {
+      fontSize: 12,
+      marginBottom: 6,
+    },
+    actionModalLabel: {
+      fontSize: 10,
+      fontWeight: '700',
+      letterSpacing: 2,
+      color: theme.colors.textSecondary,
+      marginTop: 4,
+      marginBottom: 4,
+    },
+    actionModalInput: {
+      minHeight: 96,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: 'rgba(120,90,70,0.18)',
+      backgroundColor: 'rgba(244,236,221,0.4)',
+      color: theme.colors.textPrimary,
+      padding: 12,
+      textAlignVertical: 'top' as const,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    actionModalActions: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 14,
     },
   });

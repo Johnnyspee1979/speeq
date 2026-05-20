@@ -43,6 +43,8 @@ import {
   syncProjectDeliveryStateToCloud,
 } from '../services/sync';
 import { useTheme } from '../theme/ThemeProvider';
+import { PageHeader } from '../components/ui/PageHeader';
+import { AdminOnly } from '../components/ui/AdminOnly';
 
 interface ConsumentenDossierSchermProps {
   projectId?: string;
@@ -287,6 +289,9 @@ export default function ConsumentenDossierScherm({
 
   return (
     <View style={styles.container}>
+      {/* Two-Font System — verplichte serif italic header, max 1 CTA */}
+      <PageHeader title="Consumentendossier" />
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -296,16 +301,17 @@ export default function ConsumentenDossierScherm({
           <View style={styles.iconHalo}>
             <FileText color={theme.colors.accent} size={32} />
           </View>
-          <Text style={styles.title}>Consumentendossier</Text>
           <Text style={styles.subtitle}>Project: {projectName}</Text>
           <Text style={styles.description}>
             Genereer hier het opleverdossier conform art. 7:757a BW en NPR 8092,
             met as-built informatie, materiaal- en installatiespecificaties,
             gebruiksfuncties, handleidingen, onderhoud en garanties voor de koper.
           </Text>
-          <Text style={styles.legalNote}>
-            Backend route: {consumerDossierUrl}
-          </Text>
+          <AdminOnly>
+            <Text style={styles.legalNote}>
+              Backend route: {consumerDossierUrl}
+            </Text>
+          </AdminOnly>
         </View>
 
         <WkbCompliancePanel

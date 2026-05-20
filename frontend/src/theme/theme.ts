@@ -34,26 +34,28 @@ export const darkTheme: Theme = {
   },
 };
 
-// Light Govtech theme — SpeeQ brand
-//   - Achtergrond: bijna-wit met subtiele blauw-grijze zweem (overheidssfeer)
-//   - Primary text: SpeeQ donkerblauw uit het logo (#1B3A5C)
-//   - Accent: SpeeQ groen uit het logo (#7CB94B) — koppelt merk aan "akkoord"
-//     status, want dezelfde groene tint wordt gebruikt voor PASSED-bewijs.
-//   - Borders: ultra-subtiel grijs voor de "Dutch Govtech" rust
+// Light Calm Design theme — SpeeQ premium
+//   - Achtergrond: warm cream (#FBF6EE) — geen puur wit, geen techno-blauw
+//   - Primary text: antraciet (#2B2B2B) — geen puur zwart
+//   - Accent: bosgroen (#1F4D3A) voor succes/approved
+//   - Borders: warm beige (#EADBC7)
+//   - Danger/accent: terracotta (#F88363) — warm, niet schreeuwerig
+// Volgt `designTokens.colors` 1-op-1 zodat bestaande schermen (die via
+// `theme.colors.X` werken) automatisch het Warm Minimal palet adopteren.
 export const lightTheme: Theme = {
   name: 'light',
   colors: {
-    background:    '#F8FAFC',              // Bijna-wit met blauwzweem
-    surface:       '#FFFFFF',              // Cards / panels
-    surfaceAlt:    '#F1F5F9',              // Muted achtergrond (sidebar header etc.)
-    textPrimary:   '#1B3A5C',              // SpeeQ donkerblauw (logo)
-    textSecondary: '#64748B',              // Slate muted
-    border:        'rgba(15,23,42,0.08)',  // Ultra-subtiel border
-    accent:        '#7CB94B',              // SpeeQ groen (logo) — = success
-    accentMuted:   '#EAF5DC',              // Lichte groene tint voor backgrounds/badges
-    success:       '#7CB94B',              // Zelfde groen — accent IS success
-    warning:       '#D97706',              // Amber
-    danger:        '#DC2626',              // Red
-    chip:          '#1B3A5C',              // Logo navy voor chips
+    background:    '#FBF6EE',              // designTokens.colors.background
+    surface:       '#F3EDE2',              // = backgroundAlt — cards staan iets dieper dan root
+    surfaceAlt:    '#EADBC7',              // designTokens.colors.surface — tactiele beige
+    textPrimary:   '#2B2B2B',              // designTokens.colors.textPrimary
+    textSecondary: '#2F2A25',              // designTokens.colors.textSecondary (espresso)
+    border:        '#C9B099',              // designTokens.colors.borderWarm
+    accent:        '#1F4D3A',              // statusSuccess (bosgroen)
+    accentMuted:   'rgba(31,77,58,0.10)',  // Soft forest tint
+    success:       '#1F4D3A',
+    warning:       '#9A6C1C',              // Rustige amber
+    danger:        '#F88363',              // statusWarning (terracotta)
+    chip:          '#2B2B2B',
   },
 };

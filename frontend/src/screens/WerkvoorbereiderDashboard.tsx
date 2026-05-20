@@ -13,6 +13,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Animated,
+  FlatList,
   Image,
   Modal,
   ScrollView,
@@ -57,6 +58,8 @@ import { ProjectProgressBlock } from '../components/ProgressChart';
 import { evidenceToCsv, downloadCsv, makeExportFilename, type ExportEvidenceRow } from '../services/ExportService';
 import NotificatiePanel from '../components/NotificatiePanel';
 import EvidenceComments from '../components/EvidenceComments';
+import { DiagnoseSidePanel } from '../components/ui/DiagnoseSidePanel';
+import { DossierActionModal } from '../components/ui/DossierActionModal';
 import { shareViaWhatsApp } from '../services/ShareService';
 import {
   getProjectComments,
@@ -771,7 +774,7 @@ export default function WerkvoorbereiderDashboard({
         style={st.scroll}
         contentContainerStyle={[st.content, { padding: (['kaart', 'tekening', 'stickers', 'taken'] as WvTab[]).includes(activeTab) ? 0 : isDesktop ? 28 : 16, maxWidth: (['kaart', 'tekening', 'stickers', 'taken'] as WvTab[]).includes(activeTab) ? undefined : 1000, alignSelf: (['kaart', 'tekening', 'stickers', 'taken'] as WvTab[]).includes(activeTab) ? undefined : 'center', width: '100%' }]}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={activeTab !== 'kaart'}
+        scrollEnabled={activeTab !== 'kaart' && activeTab !== 'bewijs'}
       >
 
         {/* ── Header ── */}
@@ -779,7 +782,22 @@ export default function WerkvoorbereiderDashboard({
           <View style={st.headerTop}>
             <TenantBrandMark size="md" showName={false} theme={theme} />
             <View style={{ flex: 1 }}>
-              <Text style={[st.projectTitle, { color: theme.colors.textPrimary }]} numberOfLines={1}>
+              {/* Two-Font System — Bold + Italic Playfair via theme.typography */}
+              <Text
+                style={[
+                  st.projectTitle,
+                  {
+                    color: theme.colors.textPrimary,
+                    fontFamily: 'Georgia, "Playfair Display", serif',
+                    fontWeight: '700',
+                    fontStyle: 'italic',
+                    fontSize: 28,
+                    lineHeight: 34,
+                    letterSpacing: -0.5,
+                  },
+                ]}
+                numberOfLines={1}
+              >
                 {projectName}
               </Text>
               <Text style={[st.projectRole, { color: theme.colors.textSecondary }]}>
@@ -1829,6 +1847,37 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
   const [editPointId, setEditPointId] = useState('');
   const [editStatus, setEditStatus] = useState<string>('');
 
+  // Laag 2 — Diagnose zijpaneel state. Standaard verborgen, schuift in op klik.
+  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceRow | null>(null);
+
+  // Laag 3 — taakgerichte actie-modal. Isoleert beoordeling van de lijst.
+  const [actionTarget, setActionTarget] = useState<EvidenceRow | null>(null);
+
+  // Adapter: map EvidenceRow → DiagnoseSidePanel shape.
+  const sidePanelItem = useMemo(() => {
+    if (!selectedEvidence) return null;
+    const bucket = toBucket(selectedEvidence.ai_status);
+    const status: 'success' | 'warning' | 'neutral' =
+      bucket === 'akkoord' ? 'success' : bucket === 'review' || bucket === 'afgekeurd' ? 'warning' : 'neutral';
+    const statusLabel =
+      bucket === 'akkoord' ? 'Goedgekeurd'
+      : bucket === 'review' ? 'Review nodig'
+      : bucket === 'afgekeurd' ? 'Afgekeurd'
+      : 'Openstaand';
+    const gps =
+      selectedEvidence.gps_lat != null && selectedEvidence.gps_lng != null
+        ? `${selectedEvidence.gps_lat.toFixed(5)}, ${selectedEvidence.gps_lng.toFixed(5)}`
+        : null;
+    return {
+      status,
+      statusLabel,
+      aiReason: selectedEvidence.ai_notes ?? null,
+      timestamp: selectedEvidence.timestamp ? fmtDate(selectedEvidence.timestamp) : null,
+      gps,
+      uploadedBy: selectedEvidence.user_id ?? null,
+    };
+  }, [selectedEvidence]);
+
   // Advanced search filter
   const displayed = useMemo(() => {
     if (!searchQuery && !dateFrom && !dateTo) return evidence;
@@ -1918,8 +1967,10 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
     },
   ], selectedIds.size > 0);
 
-  return (
-    <View style={{ gap: 12 }}>
+  // ListHeaderComponent — alle UI bovenaan de bewijslijst.
+  // Gerendered ÉÉN keer door FlatList, niet per evidence-item.
+  const renderListHeader = () => (
+    <View style={{ gap: 12, marginBottom: 12 }}>
       {/* Bewijs header: CSV export + batch selectie snelkoppelingen */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <TouchableOpacity
@@ -2072,42 +2123,50 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
           })}
         </View>
       </ScrollView>
+    </View>
+  );
 
-      {loading ? (
-        <View style={tabSt.centered}><ActivityIndicator color={theme.colors.accent} /></View>
-      ) : displayed.length === 0 ? (
-        <View style={tabSt.emptyBox}>
-          <Text style={{ fontSize: 40 }}>{hasActiveSearch ? '🔍' : '📭'}</Text>
-          <Text style={[tabSt.emptyTitle, { color: theme.colors.textPrimary }]}>
-            {hasActiveSearch ? 'Geen resultaten' : filter === 'alle' ? 'Nog geen bewijsstukken' : `Geen ${filter} items`}
-          </Text>
-          <Text style={[tabSt.emptyBody, { color: theme.colors.textSecondary }]}>
-            {hasActiveSearch
-              ? 'Pas je zoekterm of datum aan.'
-              : filter === 'alle'
-                ? 'Vaklieden uploaden foto\'s via de app. Ze verschijnen hier zodra ze binnenkomen.'
-                : 'Alle foto\'s in deze categorie zijn verwerkt.'}
-          </Text>
-        </View>
-      ) : (
-        <View style={{ gap: 8 }}>
-          {displayed.map(item => {
-            const bucket   = toBucket(item.ai_status);
-            const cfg      = bucketConfig(bucket);
-            const uri      = item.media_uri ?? item.photo_uri ?? null;
-            const isOpen   = expandedId === item.id;
-            const stale    = isStale(item.timestamp, item.ai_status);
+  // ListEmptyComponent — loading- of empty-state binnen FlatList rendering.
+  const renderListEmpty = () => {
+    if (loading) {
+      return <View style={tabSt.centered}><ActivityIndicator color={theme.colors.accent} /></View>;
+    }
+    return (
+      <View style={tabSt.emptyBox}>
+        <Text style={{ fontSize: 40 }}>{hasActiveSearch ? '🔍' : '📭'}</Text>
+        <Text style={[tabSt.emptyTitle, { color: theme.colors.textPrimary }]}>
+          {hasActiveSearch ? 'Geen resultaten' : filter === 'alle' ? 'Nog geen bewijsstukken' : `Geen ${filter} items`}
+        </Text>
+        <Text style={[tabSt.emptyBody, { color: theme.colors.textSecondary }]}>
+          {hasActiveSearch
+            ? 'Pas je zoekterm of datum aan.'
+            : filter === 'alle'
+              ? 'Vaklieden uploaden foto\'s via de app. Ze verschijnen hier zodra ze binnenkomen.'
+              : 'Alle foto\'s in deze categorie zijn verwerkt.'}
+        </Text>
+      </View>
+    );
+  };
 
-            const isSelected = selectedIds.has(item.id);
+  // renderEvidenceCard — één evidence-item. Closure-state (expandedId,
+  // selectedIds, editingId, …) zit in BewijsTab-scope, dus geen extra props nodig.
+  const renderEvidenceCard = ({ item }: { item: EvidenceRow }) => {
+    const bucket   = toBucket(item.ai_status);
+    const cfg      = bucketConfig(bucket);
+    const uri      = item.media_uri ?? item.photo_uri ?? null;
+    const isOpen   = expandedId === item.id;
+    const stale    = isStale(item.timestamp, item.ai_status);
 
-            return (
-              <View
-                key={item.id}
-                style={[tabSt.evidenceCard, {
-                  backgroundColor: isSelected ? theme.colors.accent + '08' : theme.colors.surface,
-                  borderColor: isSelected ? theme.colors.accent : isOpen ? theme.colors.accent : stale ? '#ef4444' : bucket === 'review' ? '#d97706' : theme.colors.border,
-                }]}
-              >
+    const isSelected = selectedIds.has(item.id);
+
+    return (
+      <View
+        style={[tabSt.evidenceCard, {
+          marginBottom: 8,
+          backgroundColor: isSelected ? theme.colors.accent + '08' : theme.colors.surface,
+          borderColor: isSelected ? theme.colors.accent : isOpen ? theme.colors.accent : stale ? '#ef4444' : bucket === 'review' ? '#d97706' : theme.colors.border,
+        }]}
+      >
                 {/* Collapsed rij */}
                 <TouchableOpacity
                   style={tabSt.evidenceRow}
@@ -2219,6 +2278,32 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                     activeOpacity={0.8}
                   >
                     <Text style={{ color: '#25D366', fontSize: 12, fontWeight: '800' }}>📱</Text>
+                  </TouchableOpacity>
+                  {/* Diagnose zijpaneel — Laag 2 Progressive Disclosure */}
+                  <TouchableOpacity
+                    style={[tabSt.rejectBtn, {
+                      borderColor: theme.colors.border,
+                      backgroundColor: 'transparent',
+                    }]}
+                    onPress={() => setSelectedEvidence(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontSize: 12, color: theme.colors.textPrimary, fontWeight: '700' }}>
+                      🔍 Diagnose
+                    </Text>
+                  </TouchableOpacity>
+                  {/* Beoordeling-modal — Laag 3 Progressive Disclosure */}
+                  <TouchableOpacity
+                    style={[tabSt.rejectBtn, {
+                      borderColor: theme.colors.border,
+                      backgroundColor: 'transparent',
+                    }]}
+                    onPress={() => setActionTarget(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontSize: 12, color: theme.colors.textPrimary, fontWeight: '700' }}>
+                      🔨 Beoordelen
+                    </Text>
                   </TouchableOpacity>
                   {/* Opmerkingen toggle */}
                   <TouchableOpacity
@@ -2493,10 +2578,53 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                   </View>
                 )}
               </View>
-            );
-          })}
-        </View>
-      )}
+    );
+  };
+
+  // FlatList als root van de bewijs-tab. De outer ScrollView in de host heeft
+  // `scrollEnabled={false}` voor bewijs, zodat FlatList z'n eigen viewport-
+  // tracking krijgt en grote Wkb-dossiers virtualized rendert.
+  return (
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={loading ? [] : displayed}
+        keyExtractor={(item) => item.id}
+        renderItem={renderEvidenceCard}
+        ListHeaderComponent={renderListHeader}
+        ListEmptyComponent={renderListEmpty}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+        // Verplichte performance-props voor grote Wkb-dossiers
+        initialNumToRender={5}
+        maxToRenderPerBatch={5}
+        windowSize={5}
+        removeClippedSubviews={true}
+      />
+
+      {/* Laag 2 — Diagnose zijpaneel. Absolute overlay, behoudt lijstcontext. */}
+      <DiagnoseSidePanel
+        evidenceItem={sidePanelItem}
+        onClose={() => setSelectedEvidence(null)}
+      />
+
+      {/* Laag 3 — Actie-modal voor taakgerichte beoordeling */}
+      <DossierActionModal
+        visible={actionTarget !== null}
+        evidenceItem={
+          actionTarget
+            ? { id: actionTarget.id, title: actionTarget.inspection_point_id ?? 'bewijsstuk' }
+            : null
+        }
+        onClose={() => setActionTarget(null)}
+        onApprove={(id) => {
+          onApprove(id);
+          setActionTarget(null);
+        }}
+        onReject={(id) => {
+          onReject(id);
+          setActionTarget(null);
+        }}
+      />
     </View>
   );
 }
