@@ -1163,7 +1163,7 @@ const welcomeSt = StyleSheet.create({
   heroRow:     { flexDirection: 'row', alignItems: 'center', gap: 24 },
   heroLogo:    { width: 140, height: 140 },
   eyebrow:     { fontSize: 11, fontWeight: '700', letterSpacing: 2.5, textTransform: 'uppercase' },
-  heroTitle:   { fontSize: 30, fontWeight: '900', letterSpacing: -0.6, marginTop: 4, marginBottom: 6 },
+  heroTitle:   { fontSize: 36, fontFamily: 'Georgia, "Playfair Display", serif', fontStyle: 'italic', fontWeight: '500', letterSpacing: -1, marginTop: 4, marginBottom: 6 },
   heroSub:     { fontSize: 14, lineHeight: 22, maxWidth: 560 },
 });
 

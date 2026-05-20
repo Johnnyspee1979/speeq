@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
+import { SecondaryButton } from '../components/ui/SecondaryButton';
 import { useTenantBranding } from '../hooks/useTenantBranding';
 import {
   getBranding,
@@ -134,11 +135,14 @@ export default function TenantBrandingScreen({ onBack }: Props) {
     >
       <View style={[s.header, { borderColor: theme.colors.border }]}>
         {onBack && (
-          <TouchableOpacity onPress={onBack} style={s.backBtn} activeOpacity={0.7}>
-            <Text style={{ color: theme.colors.accent, fontSize: 14, fontWeight: '700' }}>← Terug</Text>
-          </TouchableOpacity>
+          <SecondaryButton
+            title="← Terug"
+            onPress={onBack}
+            style={{ alignSelf: 'flex-start', marginBottom: 12 }}
+          />
         )}
-        <Text style={[s.title, { color: theme.colors.textPrimary }]}>🎨 Bedrijfsbranding</Text>
+        <Text style={[s.eyebrow, { color: theme.colors.textSecondary }]}>BRANDING</Text>
+        <Text style={[s.title, { color: theme.colors.textPrimary }]}>Bedrijfsbranding</Text>
         <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
           Pas het logo, de bedrijfsnaam en de accentkleur aan. Dit vervangt SpeeQ in de tool en in alle
           PDF-exports — zodat het er uitziet als jouw tool.
@@ -298,7 +302,22 @@ const s = StyleSheet.create({
   content: { padding: 20, maxWidth: 720, alignSelf: 'center', width: '100%', gap: 14, paddingBottom: 60 },
   header: { paddingBottom: 16, borderBottomWidth: 1, marginBottom: 6 },
   backBtn: { alignSelf: 'flex-start', paddingVertical: 4, marginBottom: 8 },
-  title: { fontSize: 22, fontWeight: '900', marginBottom: 4 },
+  title: {
+    fontSize: 36,
+    fontFamily: 'Georgia, "Playfair Display", serif',
+    fontStyle: 'italic',
+    fontWeight: '500',
+    letterSpacing: -1,
+    marginBottom: 6,
+    marginTop: 2,
+  },
+  eyebrow: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
   subtitle: { fontSize: 13, lineHeight: 20 },
   card: { borderWidth: 1, borderRadius: 14, padding: 18, gap: 10 },
   sectionTitle: { fontSize: 16, fontWeight: '800' },

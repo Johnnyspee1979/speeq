@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -25,6 +26,9 @@ import { wkbTaskTemplates } from '../data/WkbTemplates';
 import { useTheme } from '../theme/ThemeProvider';
 import { useWkbAuth } from '../hooks/useWkbAuth';
 import { getBrandingSync } from '../services/TenantBrandingService';
+import { tokens } from '../theme/designTokens';
+import { SecondaryButton } from '../components/ui/SecondaryButton';
+import { StatusPill } from '../components/ui/StatusPill';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -416,9 +420,9 @@ export default function TeamBeheerScreen() {
         {/* ── Header ── */}
         <View style={styles.pageHeader}>
           <Text style={styles.eyebrow}>TEAMBEHEER</Text>
-          <Text style={styles.pageTitle}>Team & Bevoegdheden</Text>
+          <Text style={styles.pageTitleSerif}>Team</Text>
           <Text style={styles.pageSubtitle}>
-            Beheer teamleden, rollen en toegangsrechten.
+            Beheer wie er voor je werkt — uitnodigen, rollen, toegang.
           </Text>
         </View>
 
@@ -473,13 +477,29 @@ export default function TeamBeheerScreen() {
           />
         ) : (
           <>
+            {/* ── Top bar: telling + primaire CTA ── */}
+            <View style={styles.topBar}>
+              <Text style={styles.countLabel}>
+                <Text style={styles.countNumber}>{members.length}</Text>{' '}
+                {members.length === 1 ? 'teamlid' : 'teamleden'}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.primaryCta}
+                onPress={() => setShowAddForm(true)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.primaryCtaText}>+ Nieuw teamlid</Text>
+              </TouchableOpacity>
+            </View>
+
             {/* ── Teamleden lijst ── */}
             {members.map((member) => (
               <View
                 key={member.id}
                 style={[
                   styles.memberCard,
-                  { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                  { backgroundColor: theme.colors.surface },
                 ]}
               >
                 {/* Links: info */}
@@ -505,15 +525,11 @@ export default function TeamBeheerScreen() {
                           { backgroundColor: member.isOnline ? theme.colors.success : theme.colors.border },
                         ]}
                       />
-                      {/* Invite status badge */}
+                      {/* Laag 1 — Status, scanbaar binnen 2 seconden */}
                       {member.inviteToken && !member.inviteAcceptedAt ? (
-                        <View style={styles.inviteBadge}>
-                          <Text style={styles.inviteBadgeText}>⏳ uitgenodigd</Text>
-                        </View>
+                        <StatusPill status="warning" label="uitgenodigd" />
                       ) : member.inviteAcceptedAt ? (
-                        <View style={[styles.inviteBadge, styles.inviteBadgeActive]}>
-                          <Text style={[styles.inviteBadgeText, { color: '#059669' }]}>✓ actief</Text>
-                        </View>
+                        <StatusPill status="success" label="actief" />
                       ) : null}
                     </View>
                     {member.email ? (
@@ -521,9 +537,13 @@ export default function TeamBeheerScreen() {
                         {member.email}
                       </Text>
                     ) : null}
-                    <Text style={[styles.memberJob, { color: theme.colors.accent }]}>
-                      {JOB_LABELS[member.jobType] ?? member.jobType}
-                    </Text>
+                    {/* Rol-visualisatie via Calm Design StatusPill */}
+                    <View style={{ marginTop: 4, flexDirection: 'row' }}>
+                      <StatusPill
+                        status="neutral"
+                        label={JOB_LABELS[member.jobType] ?? member.jobType}
+                      />
+                    </View>
                     <View style={styles.disciplineChips}>
                       {member.disciplines.map((d) => (
                         <View
@@ -674,12 +694,11 @@ export default function TeamBeheerScreen() {
                       </TouchableOpacity>
                     </View>
 
-                    <TouchableOpacity
-                      style={styles.qrCloseBtn}
+                    <SecondaryButton
+                      title="Sluiten"
                       onPress={() => setQrMemberId(null)}
-                    >
-                      <Text style={[styles.qrCloseBtnText, { color: theme.colors.textSecondary }]}>Sluiten ✕</Text>
-                    </TouchableOpacity>
+                      style={{ alignSelf: 'center', marginTop: 4 }}
+                    />
                   </View>
                 ) : null}
 
@@ -877,16 +896,34 @@ export default function TeamBeheerScreen() {
           </>
         )}
 
-        {/* ── Nieuw lid toevoegen ── */}
+        {/* ── Nieuw lid toevoegen (sheet/modal) ── */}
         {showAddForm ? (
-          <View
-            style={[
-              styles.addForm,
-              { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
-            ]}
-          >
-            <Text style={[styles.addFormTitle, { color: theme.colors.textPrimary }]}>
-              Nieuw teamlid
+          <View style={styles.sheetBackdrop}>
+            <ScrollView
+              style={styles.sheetScroll}
+              contentContainerStyle={styles.sheetScrollContent}
+              showsVerticalScrollIndicator={false}
+            >
+            <View
+              style={[
+                styles.sheetCard,
+                { backgroundColor: theme.colors.surface },
+              ]}
+            >
+            <View style={styles.sheetHeader}>
+              <Text style={[styles.sheetTitle, { color: theme.colors.textPrimary }]}>
+                Nieuw teamlid
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowAddForm(false)}
+                style={styles.sheetCloseBtn}
+                disabled={adding}
+              >
+                <Text style={[styles.sheetCloseText, { color: theme.colors.textSecondary }]}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={[styles.sheetSubtitle, { color: theme.colors.textSecondary }]}>
+              Vul de basis in — disciplines volgen automatisch uit het profiel.
             </Text>
 
             <TextInput
@@ -1036,7 +1073,12 @@ export default function TeamBeheerScreen() {
               </>
             ) : null}
 
-            <View style={styles.formActions}>
+            <View style={styles.sheetActions}>
+              <SecondaryButton
+                title="Annuleer"
+                onPress={() => setShowAddForm(false)}
+                disabled={adding}
+              />
               <TouchableOpacity
                 style={[
                   styles.saveBtn,
@@ -1049,33 +1091,14 @@ export default function TeamBeheerScreen() {
                 {adding ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.saveBtnText}>💬 Aanmaken & uitnodigen</Text>
+                  <Text style={styles.saveBtnText}>Aanmaken & uitnodigen</Text>
                 )}
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.cancelBtn, { borderColor: theme.colors.border }]}
-                onPress={() => setShowAddForm(false)}
-                disabled={adding}
-              >
-                <Text style={[styles.cancelBtnText, { color: theme.colors.textSecondary }]}>
-                  Annuleer
-                </Text>
-              </TouchableOpacity>
             </View>
+            </View>
+            </ScrollView>
           </View>
-        ) : (
-          !loading && (
-            <TouchableOpacity
-              style={[styles.addBtn, { borderColor: theme.colors.accent }]}
-              onPress={() => setShowAddForm(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.addBtnText, { color: theme.colors.accent }]}>
-                + Vakman toevoegen
-              </Text>
-            </TouchableOpacity>
-          )
-        )}
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -1124,17 +1147,124 @@ const createStyles = (
       letterSpacing: -0.8,
       marginBottom: 4,
     },
-    pageSubtitle: { fontSize: 14, color: theme.colors.textSecondary },
+    pageTitleSerif: {
+      fontSize: 40,
+      fontStyle: 'italic',
+      fontFamily: tokens.fontSerif,
+      fontWeight: '500',
+      color: theme.colors.textPrimary,
+      letterSpacing: -1,
+      marginBottom: 6,
+      marginTop: 2,
+    },
+    pageSubtitle: { fontSize: 14, color: theme.colors.textSecondary, lineHeight: 20 },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16,
+      flexWrap: 'wrap',
+      gap: 12,
+    },
+    countLabel: {
+      fontSize: 13,
+      color: theme.colors.textSecondary,
+      letterSpacing: 0.3,
+    },
+    countNumber: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: theme.colors.textPrimary,
+    },
+    primaryCta: {
+      paddingHorizontal: 18,
+      paddingVertical: 11,
+      borderRadius: 999,
+      backgroundColor: theme.colors.textPrimary,
+    },
+    primaryCtaText: {
+      color: theme.colors.background,
+      fontSize: 13,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+    sheetBackdrop: {
+      position: Platform.OS === 'web' ? ('fixed' as any) : 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(40,30,20,0.4)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
+      zIndex: 50,
+    },
+    sheetScroll: {
+      width: '100%',
+      maxWidth: 560,
+      maxHeight: '90%',
+    },
+    sheetScrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+    },
+    sheetCard: {
+      borderRadius: 18,
+      padding: 24,
+      gap: 12,
+      shadowColor: '#7a5a3f',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.18,
+      shadowRadius: 24,
+      elevation: 8,
+    },
+    sheetHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    sheetTitle: {
+      fontSize: 22,
+      fontWeight: '700',
+      letterSpacing: -0.4,
+    },
+    sheetCloseBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: 'rgba(120,90,70,0.08)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sheetCloseText: { fontSize: 14 },
+    sheetSubtitle: {
+      fontSize: 13,
+      marginBottom: 8,
+      lineHeight: 18,
+    },
+    sheetActions: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 16,
+    },
 
     // Member card
     memberCard: {
-      borderRadius: 16,
+      borderRadius: 14,
       borderWidth: 1,
-      padding: 16,
+      borderColor: tokens.borderWarm,
+      padding: 18,
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 12,
+      gap: 14,
       alignItems: 'flex-start',
+      marginBottom: 10,
+      shadowColor: '#7a5a3f',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.04,
+      shadowRadius: 6,
+      elevation: 1,
     },
     memberLeft: {
       flex: 1,

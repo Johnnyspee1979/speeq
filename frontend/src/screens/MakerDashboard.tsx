@@ -39,6 +39,7 @@ function buildTenantLink(slugOrId: string): string {
   return `${origin}/?t=${encodeURIComponent(slugOrId)}`;
 }
 import { useTheme } from '../theme/ThemeProvider';
+import { OrganizationSwitcherModal } from '../components/ui/OrganizationSwitcherModal';
 import {
   signInMaker,
   signOutMaker,
@@ -63,6 +64,11 @@ export default function MakerDashboard() {
   const [editing, setEditing] = useState<Tenant | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null);
+
+  // Organisatie-switcher: tenant_id wordt UITSLUITEND als lokale state beheerd
+  // (NOOIT in JWT custom claims) — RLS valideert elke API-call op de backend.
+  const [orgModalOpen, setOrgModalOpen] = useState(false);
+  const [activeTenantId, setActiveTenantId] = useState<string | null>(null);
 
   const flash = useCallback((tone: 'ok' | 'err', text: string) => {
     setMsg({ tone, text });
@@ -168,7 +174,7 @@ export default function MakerDashboard() {
           resizeMode="contain"
         />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[s.title, { color: theme.colors.textPrimary }]}>Maker-paneel</Text>
+          <Text style={[s.title, { color: theme.colors.textPrimary }]}>Maker</Text>
           <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
             {tenants.length} van {TENANT_LIMIT} klanten · nog {slotsLeft} plek{slotsLeft !== 1 ? 'ken' : ''} vrij
           </Text>
@@ -179,7 +185,14 @@ export default function MakerDashboard() {
           activeOpacity={0.85}
           disabled={slotsLeft === 0}
         >
-          <Text style={s.primaryBtnText}>➕ Klant toevoegen</Text>
+          <Text style={s.primaryBtnText}>+ Nieuwe klant</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.ghostBtn, { borderColor: theme.colors.border }]}
+          onPress={() => setOrgModalOpen(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={[s.ghostBtnText, { color: theme.colors.textSecondary }]}>Open als klant</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[s.ghostBtn, { borderColor: theme.colors.border }]}
@@ -265,6 +278,18 @@ export default function MakerDashboard() {
         Tip: zet de eerste klant op met een test-Supabase project. Zodra dat goed werkt,
         is het verschil tussen 1 en 40 klanten alleen nog data — geen code.
       </Text>
+
+      {/* Organisatie-switcher modal — voedt activeTenantId aan TenantProvider */}
+      <OrganizationSwitcherModal
+        visible={orgModalOpen}
+        currentTenantId={activeTenantId}
+        onClose={() => setOrgModalOpen(false)}
+        onSelectTenant={(tenantId) => {
+          setActiveTenantId(tenantId);
+          // tenant_id blijft puur in React-state — geen JWT-claim injectie.
+          // TenantProvider haalt branding live op zodra de gebruiker is ingelogd.
+        }}
+      />
     </ScrollView>
   );
 }
@@ -290,7 +315,7 @@ function LoginView({
           style={{ width: 72, height: 72, alignSelf: 'center', marginBottom: 12 }}
           resizeMode="contain"
         />
-        <Text style={[s.title, { color: theme.colors.textPrimary, marginBottom: 4, textAlign: 'center' }]}>Maker-paneel</Text>
+        <Text style={[s.title, { color: theme.colors.textPrimary, marginBottom: 4, textAlign: 'center' }]}>Maker</Text>
         <Text style={[s.subtitle, { color: theme.colors.textSecondary, marginBottom: 18, textAlign: 'center' }]}>
           Toegang alleen voor Johnny (eigenaar).
         </Text>
@@ -570,7 +595,13 @@ const s = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   listContent: { padding: 24, maxWidth: 1180, alignSelf: 'center', width: '100%', gap: 16, paddingBottom: 60 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
-  title: { fontSize: 24, fontWeight: '900' },
+  title: {
+    fontSize: 36,
+    fontFamily: 'Georgia, "Playfair Display", serif',
+    fontStyle: 'italic',
+    fontWeight: '500',
+    letterSpacing: -1,
+  },
   subtitle: { fontSize: 13, lineHeight: 18, marginTop: 4 },
   primaryBtn: { borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
   primaryBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },

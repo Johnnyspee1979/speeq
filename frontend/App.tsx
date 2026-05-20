@@ -44,7 +44,9 @@ import {
 import { subscribeToRejections } from './src/services/VakmanFeedbackService';
 import { useNotificationRouting } from './src/hooks/useNotificationRouting';
 import { useWkbAuth } from './src/hooks/useWkbAuth';
-import { ThemeProvider, useTheme } from './src/theme/ThemeProvider';
+import { useTheme } from './src/theme/ThemeProvider';
+import { TenantProvider } from './src/providers/TenantProvider';
+import { useActiveTenantId } from './src/hooks/useActiveTenantId';
 import type { CaptureTask } from './src/types/CaptureTask';
 import { findNenCaptureTaskByInspectionPointId } from './src/constants/NenStandards';
 import { wkbTaskTemplates } from './src/data/WkbTemplates';
@@ -911,6 +913,14 @@ function isMakerRoute(): boolean {
   }
 }
 
+// Bridge: callt de active-tenant hook en wrapt children in TenantProvider →
+// async fetch op tenant_features + realtime UPDATE-listener → ThemeProvider
+// hertekent de hele app instant zodra de KEYUSER kleuren aanpast.
+function TenantAwareTheme({ children }: { children: React.ReactNode }) {
+  const activeTenantId = useActiveTenantId();
+  return <TenantProvider activeTenantId={activeTenantId}>{children}</TenantProvider>;
+}
+
 export default function App() {
   // Maker-route checken vóór alle providers — direct render, geen tenant-init.
   const makerMode = isMakerRoute();
@@ -918,18 +928,18 @@ export default function App() {
   if (makerMode) {
     return (
       <LanguageProvider>
-        <ThemeProvider>
+        <TenantAwareTheme>
           <AppErrorBoundary>
             <MakerDashboard />
           </AppErrorBoundary>
-        </ThemeProvider>
+        </TenantAwareTheme>
       </LanguageProvider>
     );
   }
 
   return (
     <LanguageProvider>
-      <ThemeProvider>
+      <TenantAwareTheme>
         <ProjectProvider>
           <AppErrorBoundary>
             <PublicGate>
@@ -939,7 +949,7 @@ export default function App() {
             </PublicGate>
           </AppErrorBoundary>
         </ProjectProvider>
-      </ThemeProvider>
+      </TenantAwareTheme>
     </LanguageProvider>
   );
 }

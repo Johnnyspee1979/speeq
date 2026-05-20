@@ -429,11 +429,14 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       color: theme.colors.accent,
     },
     projectTitle: {
-      fontSize: 22,
-      fontWeight: '900',
+      fontSize: 34,
+      fontFamily: 'Georgia, "Playfair Display", serif',
+      fontStyle: 'italic',
+      fontWeight: '500',
       color: theme.colors.textPrimary,
-      letterSpacing: -0.5,
-      marginTop: 2,
+      letterSpacing: -0.8,
+      marginTop: 4,
+      marginBottom: 4,
     },
     projectMeta: {
       fontSize: 13,
