@@ -5,8 +5,13 @@
 
 import { Platform } from 'react-native';
 
+// Side-effect: injecteer Google Fonts <link> in document.head op web.
+// Expo's web export negeert frontend/web/index.html, dus statische link-tags
+// daar bereiken productie niet — dit module-level effect omzeilt dat.
+import './injectGoogleFonts';
+
 // Two-Font System families. Web gebruikt de Google Fonts namen (geladen via
-// web/index.html <link>); native blijft de expo-font alias gebruiken die later
+// injectGoogleFonts.ts); native blijft de expo-font alias gebruiken die later
 // via useFonts() kan worden geregistreerd.
 const HEADLINE_FAMILY = Platform.OS === 'web'
   ? '"Playfair Display", Georgia, serif'
