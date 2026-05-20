@@ -53,6 +53,7 @@ import {
 } from '../services/BorgingsDossierService';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeProvider';
+import { tokens } from '../theme/designTokens';
 import EvidenceMapView from '../components/EvidenceMapView';
 import { ProjectProgressBlock } from '../components/ProgressChart';
 import { evidenceToCsv, downloadCsv, makeExportFilename, type ExportEvidenceRow } from '../services/ExportService';
@@ -778,7 +779,7 @@ export default function WerkvoorbereiderDashboard({
       >
 
         {/* ── Header ── */}
-        <View style={[st.headerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <View style={[st.headerCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
           <View style={st.headerTop}>
             <TenantBrandMark size="md" showName={false} theme={theme} />
             <View style={{ flex: 1 }}>
@@ -808,9 +809,9 @@ export default function WerkvoorbereiderDashboard({
             <NotificatiePanel projectId={projectId} theme={theme} />
 
             {/* LIVE pill */}
-            <View style={[st.livePill, { backgroundColor: isLive ? 'rgba(5,150,105,0.12)' : theme.colors.border }]}>
-              <View style={[st.liveDot, { backgroundColor: isLive ? '#059669' : theme.colors.textSecondary }]} />
-              <Text style={[st.liveText, { color: isLive ? '#059669' : theme.colors.textSecondary }]}>
+            <View style={[st.livePill, { backgroundColor: isLive ? 'rgba(5,150,105,0.12)' : theme.colors.borderWarm }]}>
+              <View style={[st.liveDot, { backgroundColor: isLive ? theme.colors.statusSuccess : theme.colors.textSecondary }]} />
+              <Text style={[st.liveText, { color: isLive ? theme.colors.statusSuccess : theme.colors.textSecondary }]}>
                 {isLive ? `${t('vak.live')}${lastUpdate ? `  ·  ${lastUpdate}` : ''}` : t('vak.connecting')}
               </Text>
             </View>
@@ -824,16 +825,16 @@ export default function WerkvoorbereiderDashboard({
               style={[st.zipBtn, { backgroundColor: 'rgba(37,99,235,0.1)', borderColor: 'rgba(37,99,235,0.35)' }]}
               activeOpacity={0.7}
             >
-              <Text style={[st.zipBtnText, { color: '#2563eb' }]}>{t('header.mail')}</Text>
+              <Text style={[st.zipBtnText, { color: theme.colors.textPrimary }]}>{t('header.mail')}</Text>
             </TouchableOpacity>
 
             {/* ✍️ Ondertekenen knop */}
             <TouchableOpacity
               onPress={() => { setEmailModal(true); setEmailMsg(null); }}
-              style={[st.zipBtn, { backgroundColor: (sigPL || sigOG) ? 'rgba(5,150,105,0.1)' : theme.colors.surface, borderColor: (sigPL || sigOG) ? 'rgba(5,150,105,0.4)' : theme.colors.border }]}
+              style={[st.zipBtn, { backgroundColor: (sigPL || sigOG) ? 'rgba(5,150,105,0.1)' : theme.colors.surface, borderColor: (sigPL || sigOG) ? 'rgba(5,150,105,0.4)' : theme.colors.borderWarm }]}
               activeOpacity={0.7}
             >
-              <Text style={[st.zipBtnText, { color: (sigPL || sigOG) ? '#059669' : theme.colors.textSecondary }]}>
+              <Text style={[st.zipBtnText, { color: (sigPL || sigOG) ? theme.colors.statusSuccess : theme.colors.textSecondary }]}>
                 {(sigPL || sigOG) ? t('header.signed') : t('header.sign')}
               </Text>
             </TouchableOpacity>
@@ -844,12 +845,12 @@ export default function WerkvoorbereiderDashboard({
               disabled={isDossierLocked || !dossier}
               style={[st.zipBtn, {
                 backgroundColor: isDossierLocked ? 'rgba(120,120,120,0.15)' : 'rgba(220,38,38,0.1)',
-                borderColor: isDossierLocked ? theme.colors.border : 'rgba(220,38,38,0.4)',
+                borderColor: isDossierLocked ? theme.colors.borderWarm : 'rgba(220,38,38,0.4)',
                 opacity: dossier ? 1 : 0.5,
               }]}
               activeOpacity={0.7}
             >
-              <Text style={[st.zipBtnText, { color: isDossierLocked ? theme.colors.textSecondary : '#dc2626' }]}>
+              <Text style={[st.zipBtnText, { color: isDossierLocked ? theme.colors.textSecondary : theme.colors.statusWarning }]}>
                 {isDossierLocked ? '🔒 Afgesloten' : '🔒 Afsluiten'}
               </Text>
             </TouchableOpacity>
@@ -860,7 +861,7 @@ export default function WerkvoorbereiderDashboard({
               style={[st.zipBtn, { backgroundColor: 'rgba(124,58,237,0.1)', borderColor: 'rgba(124,58,237,0.35)' }]}
               activeOpacity={0.7}
             >
-              <Text style={[st.zipBtnText, { color: '#7c3aed' }]}>{t('header.rapport')}</Text>
+              <Text style={[st.zipBtnText, { color: theme.colors.textPrimary }]}>{t('header.rapport')}</Text>
             </TouchableOpacity>
 
             {/* ZIP download knop */}
@@ -907,11 +908,11 @@ export default function WerkvoorbereiderDashboard({
                 }}
                 style={[st.zipBtn, {
                   backgroundColor: linkedFolder ? 'rgba(5,150,105,0.1)' : theme.colors.surface,
-                  borderColor: linkedFolder ? 'rgba(5,150,105,0.4)' : theme.colors.border,
+                  borderColor: linkedFolder ? 'rgba(5,150,105,0.4)' : theme.colors.borderWarm,
                 }]}
                 activeOpacity={0.7}
               >
-                <Text style={[st.zipBtnText, { color: linkedFolder ? '#059669' : theme.colors.textSecondary }]}>
+                <Text style={[st.zipBtnText, { color: linkedFolder ? theme.colors.statusSuccess : theme.colors.textSecondary }]}>
                   {folderSyncing ? '⏳' : linkedFolder ? `📁 ${linkedFolder.slice(0, 12)}` : '📁 PC-map'}
                 </Text>
               </TouchableOpacity>
@@ -968,11 +969,11 @@ export default function WerkvoorbereiderDashboard({
                 }}
                 style={[st.zipBtn, {
                   backgroundColor: oneDriveAccount ? 'rgba(0,120,212,0.1)' : theme.colors.surface,
-                  borderColor:     oneDriveAccount ? 'rgba(0,120,212,0.4)' : theme.colors.border,
+                  borderColor:     oneDriveAccount ? 'rgba(0,120,212,0.4)' : theme.colors.borderWarm,
                 }]}
                 activeOpacity={0.7}
               >
-                <Text style={[st.zipBtnText, { color: oneDriveAccount ? '#0078D4' : theme.colors.textSecondary }]}>
+                <Text style={[st.zipBtnText, { color: oneDriveAccount ? theme.colors.textPrimary : theme.colors.textSecondary }]}>
                   {oneDriveSyncing ? '⏳' : oneDriveAccount ? `☁️ OneDrive` : '☁️ OneDrive'}
                 </Text>
               </TouchableOpacity>
@@ -980,7 +981,7 @@ export default function WerkvoorbereiderDashboard({
               // Niet geconfigureerd → setup knop
               <TouchableOpacity
                 onPress={() => setOneDriveMsg('setup')}
-                style={[st.zipBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, opacity: 0.6 }]}
+                style={[st.zipBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm, opacity: 0.6 }]}
                 activeOpacity={0.7}
               >
                 <Text style={[st.zipBtnText, { color: theme.colors.textSecondary }]}>☁️ OneDrive</Text>
@@ -998,13 +999,13 @@ export default function WerkvoorbereiderDashboard({
           </View>
 
           {/* Stats strip */}
-          <View style={[st.statsStrip, { borderTopColor: theme.colors.border }]}>
+          <View style={[st.statsStrip, { borderTopColor: theme.colors.borderWarm }]}>
             {[
               { label: t('dash.total'),    value: metrics.total,    color: theme.colors.textPrimary },
               { label: t('dash.today'),    value: metrics.vandaag,  color: theme.colors.accent },
-              { label: t('dash.approved'), value: metrics.akkoord,  color: '#059669' },
+              { label: t('dash.approved'), value: metrics.akkoord,  color: theme.colors.statusSuccess },
               { label: t('dash.review'),   value: metrics.review,   color: metrics.review > 0 ? '#d97706' : theme.colors.textSecondary },
-              { label: t('dash.rejected'), value: metrics.afgekeurd,color: metrics.afgekeurd > 0 ? '#ef4444' : theme.colors.textSecondary },
+              { label: t('dash.rejected'), value: metrics.afgekeurd,color: metrics.afgekeurd > 0 ? theme.colors.statusWarning : theme.colors.textSecondary },
             ].map(s => (
               <View key={s.label} style={st.statItem}>
                 <Text style={[st.statNum, { color: s.color }]}>{s.value}</Text>
@@ -1023,17 +1024,17 @@ export default function WerkvoorbereiderDashboard({
         )}
         {zipProgress?.phase === 'klaar' && (
           <View style={[st.zipBanner, { backgroundColor: 'rgba(5,150,105,0.1)', borderColor: 'rgba(5,150,105,0.3)' }]}>
-            <Text style={[st.zipBannerText, { color: '#059669' }]}>{zipProgress.message}</Text>
+            <Text style={[st.zipBannerText, { color: theme.colors.statusSuccess }]}>{zipProgress.message}</Text>
             <TouchableOpacity onPress={() => setZipProgress(null)}>
-              <Text style={{ color: '#059669', fontWeight: '700', fontSize: 14 }}>✕</Text>
+              <Text style={{ color: theme.colors.statusSuccess, fontWeight: '700', fontSize: 14 }}>✕</Text>
             </TouchableOpacity>
           </View>
         )}
         {zipProgress?.phase === 'fout' && (
           <View style={[st.zipBanner, { backgroundColor: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.3)' }]}>
-            <Text style={[st.zipBannerText, { color: '#ef4444' }]}>❌ {zipProgress.message}</Text>
+            <Text style={[st.zipBannerText, { color: theme.colors.statusWarning }]}>❌ {zipProgress.message}</Text>
             <TouchableOpacity onPress={() => setZipProgress(null)}>
-              <Text style={{ color: '#ef4444', fontWeight: '700', fontSize: 14 }}>✕</Text>
+              <Text style={{ color: theme.colors.statusWarning, fontWeight: '700', fontSize: 14 }}>✕</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -1041,7 +1042,7 @@ export default function WerkvoorbereiderDashboard({
         {/* OneDrive banner + setup modal */}
         {oneDriveMsg === 'setup' && (
           <View style={[st.zipBanner, { backgroundColor: 'rgba(0,120,212,0.08)', borderColor: 'rgba(0,120,212,0.3)', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }]}>
-            <Text style={{ color: '#0078D4', fontWeight: '800', fontSize: 13 }}>☁️ OneDrive instellen — 3 stappen</Text>
+            <Text style={{ color: theme.colors.textPrimary, fontWeight: '800', fontSize: 13 }}>☁️ OneDrive instellen — 3 stappen</Text>
             <Text style={{ color: theme.colors.textPrimary, fontSize: 12 }}>
               {'1. Ga naar portal.azure.com → App registrations → New registration\n'}
               {'2. Naam: "SpeeQ" · Redirect URI: ' + window.location.origin + '\n'}
@@ -1049,7 +1050,7 @@ export default function WerkvoorbereiderDashboard({
             </Text>
             <TouchableOpacity
               onPress={() => { window.open('https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade', '_blank'); }}
-              style={{ backgroundColor: '#0078D4', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+              style={{ backgroundColor: theme.colors.textPrimary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
             >
               <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>Open Azure Portal →</Text>
             </TouchableOpacity>
@@ -1064,7 +1065,7 @@ export default function WerkvoorbereiderDashboard({
             borderColor:     oneDriveMsg.startsWith('✅') ? 'rgba(0,120,212,0.3)'  : 'rgba(0,120,212,0.15)',
           }]}>
             {oneDriveSyncing && <ActivityIndicator size="small" color="#0078D4" />}
-            <Text style={[st.zipBannerText, { color: oneDriveMsg.startsWith('⚠️') ? '#d97706' : '#0078D4' }]}>{oneDriveMsg}</Text>
+            <Text style={[st.zipBannerText, { color: oneDriveMsg.startsWith('⚠️') ? '#d97706' : theme.colors.textPrimary }]}>{oneDriveMsg}</Text>
             {!oneDriveSyncing && (
               <TouchableOpacity onPress={() => setOneDriveMsg(null)}>
                 <Text style={{ color: theme.colors.textSecondary, fontWeight: '700', fontSize: 14 }}>✕</Text>
@@ -1081,11 +1082,11 @@ export default function WerkvoorbereiderDashboard({
                               theme.colors.surface,
             borderColor: folderSyncMsg.startsWith('✅') ? 'rgba(5,150,105,0.25)' :
                          folderSyncMsg.startsWith('⚠️') ? 'rgba(217,119,6,0.25)' :
-                         theme.colors.border,
+                         theme.colors.borderWarm,
           }]}>
             {folderSyncing && <ActivityIndicator size="small" color={theme.colors.accent} />}
             <Text style={[st.zipBannerText, {
-              color: folderSyncMsg.startsWith('✅') ? '#059669' :
+              color: folderSyncMsg.startsWith('✅') ? theme.colors.statusSuccess :
                      folderSyncMsg.startsWith('⚠️') ? '#d97706' :
                      theme.colors.textPrimary,
             }]}>{folderSyncMsg}</Text>
@@ -1101,7 +1102,7 @@ export default function WerkvoorbereiderDashboard({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={[st.tabRow, { borderBottomColor: theme.colors.border }]}
+          style={[st.tabRow, { borderBottomColor: theme.colors.borderWarm }]}
           contentContainerStyle={{ flexDirection: 'row' }}
         >
           {TABS.map(tab => (
@@ -1240,7 +1241,7 @@ export default function WerkvoorbereiderDashboard({
                   paddingVertical: 8,
                   borderRadius: 8,
                   borderWidth: 1,
-                  borderColor: theme.colors.border,
+                  borderColor: theme.colors.borderWarm,
                 }}
               >
                 <Text style={{ color: theme.colors.textPrimary, fontWeight: '600' }}>🔄 Ververs</Text>
@@ -1261,7 +1262,7 @@ export default function WerkvoorbereiderDashboard({
                   backgroundColor: theme.colors.surface,
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: theme.colors.border,
+                  borderColor: theme.colors.borderWarm,
                   alignItems: 'center',
                 }}
               >
@@ -1285,7 +1286,7 @@ export default function WerkvoorbereiderDashboard({
                       backgroundColor: theme.colors.surface,
                       borderRadius: 12,
                       borderWidth: 1,
-                      borderColor: theme.colors.border,
+                      borderColor: theme.colors.borderWarm,
                     }}
                   >
                     <Image
@@ -1341,7 +1342,7 @@ export default function WerkvoorbereiderDashboard({
                             paddingVertical: 8,
                             borderRadius: 8,
                             borderWidth: 1,
-                            borderColor: theme.colors.border,
+                            borderColor: theme.colors.borderWarm,
                           }}
                         >
                           <Text style={{ color: theme.colors.textPrimary, fontWeight: '600' }}>🔍 Origineel</Text>
@@ -1360,7 +1361,7 @@ export default function WerkvoorbereiderDashboard({
                             borderColor: '#fca5a5',
                           }}
                         >
-                          <Text style={{ color: '#dc2626', fontWeight: '600' }}>🗑️</Text>
+                          <Text style={{ color: theme.colors.statusWarning, fontWeight: '600' }}>🗑️</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -1409,7 +1410,7 @@ export default function WerkvoorbereiderDashboard({
       >
         <View style={[emailSt.modalRoot, { backgroundColor: theme.colors.background }]}>
           {/* Header */}
-          <View style={[emailSt.modalHeader, { borderBottomColor: theme.colors.border }]}>
+          <View style={[emailSt.modalHeader, { borderBottomColor: theme.colors.borderWarm }]}>
             <Text style={[emailSt.modalTitle, { color: theme.colors.textPrimary }]}>
               📧 Dossier ondertekenen & mailen
             </Text>
@@ -1421,10 +1422,10 @@ export default function WerkvoorbereiderDashboard({
           <ScrollView style={emailSt.modalScroll} contentContainerStyle={emailSt.modalContent} showsVerticalScrollIndicator={false}>
 
             {/* Handtekening projectleider */}
-            <View style={[emailSt.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={[emailSt.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
               <Text style={[emailSt.sectionTitle, { color: theme.colors.textSecondary }]}>HANDTEKENING PROJECTLEIDER</Text>
               <TextInput
-                style={[emailSt.nameInput, { borderColor: theme.colors.border, color: theme.colors.textPrimary, backgroundColor: theme.colors.background }]}
+                style={[emailSt.nameInput, { borderColor: theme.colors.borderWarm, color: theme.colors.textPrimary, backgroundColor: theme.colors.background }]}
                 value={sigPLNaam}
                 onChangeText={setSigPLNaam}
                 placeholder="Naam projectleider"
@@ -1434,7 +1435,7 @@ export default function WerkvoorbereiderDashboard({
                 <View>
                   <Image source={{ uri: sigPL }} style={emailSt.sigPreview} resizeMode="contain" />
                   <TouchableOpacity onPress={() => setSigPL(null)} style={emailSt.clearSigBtn}>
-                    <Text style={[emailSt.clearSigText, { color: '#ef4444' }]}>Handtekening wissen</Text>
+                    <Text style={[emailSt.clearSigText, { color: theme.colors.statusWarning }]}>Handtekening wissen</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -1448,10 +1449,10 @@ export default function WerkvoorbereiderDashboard({
             </View>
 
             {/* Handtekening opdrachtgever */}
-            <View style={[emailSt.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={[emailSt.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
               <Text style={[emailSt.sectionTitle, { color: theme.colors.textSecondary }]}>HANDTEKENING OPDRACHTGEVER</Text>
               <TextInput
-                style={[emailSt.nameInput, { borderColor: theme.colors.border, color: theme.colors.textPrimary, backgroundColor: theme.colors.background }]}
+                style={[emailSt.nameInput, { borderColor: theme.colors.borderWarm, color: theme.colors.textPrimary, backgroundColor: theme.colors.background }]}
                 value={sigOGNaam}
                 onChangeText={setSigOGNaam}
                 placeholder="Naam opdrachtgever"
@@ -1461,7 +1462,7 @@ export default function WerkvoorbereiderDashboard({
                 <View>
                   <Image source={{ uri: sigOG }} style={emailSt.sigPreview} resizeMode="contain" />
                   <TouchableOpacity onPress={() => setSigOG(null)} style={emailSt.clearSigBtn}>
-                    <Text style={[emailSt.clearSigText, { color: '#ef4444' }]}>Handtekening wissen</Text>
+                    <Text style={[emailSt.clearSigText, { color: theme.colors.statusWarning }]}>Handtekening wissen</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -1475,7 +1476,7 @@ export default function WerkvoorbereiderDashboard({
             </View>
 
             {/* Acties: PDF of Mailen */}
-            <View style={[emailSt.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+            <View style={[emailSt.section, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
               <Text style={[emailSt.sectionTitle, { color: theme.colors.textSecondary }]}>EXPORTEREN</Text>
 
               {/* PDF downloaden */}
@@ -1505,7 +1506,7 @@ export default function WerkvoorbereiderDashboard({
               {/* E-mail verzenden */}
               <Text style={[emailSt.fieldLabel, { color: theme.colors.textSecondary }]}>E-MAILADRES ONTVANGER</Text>
               <TextInput
-                style={[emailSt.emailInput, { borderColor: theme.colors.border, color: theme.colors.textPrimary, backgroundColor: theme.colors.background }]}
+                style={[emailSt.emailInput, { borderColor: theme.colors.borderWarm, color: theme.colors.textPrimary, backgroundColor: theme.colors.background }]}
                 value={emailAddress}
                 onChangeText={setEmailAddress}
                 placeholder="opdrachtgever@bedrijf.nl"
@@ -1537,8 +1538,8 @@ export default function WerkvoorbereiderDashboard({
                                theme.colors.accent + '30',
                 }]}>
                   <Text style={[emailSt.msgText, {
-                    color: emailMsg.startsWith('✅') ? '#059669' :
-                           emailMsg.startsWith('❌') ? '#ef4444' :
+                    color: emailMsg.startsWith('✅') ? theme.colors.statusSuccess :
+                           emailMsg.startsWith('❌') ? theme.colors.statusWarning :
                            theme.colors.accent,
                   }]}>{emailMsg}</Text>
                 </View>
@@ -1557,7 +1558,7 @@ export default function WerkvoorbereiderDashboard({
         onRequestClose={() => !lockLoading && setLockConfirmModal(false)}
       >
         <View style={lockSt.backdrop}>
-          <View style={[lockSt.dialog, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[lockSt.dialog, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
             <Text style={[lockSt.title, { color: theme.colors.textPrimary }]}>
               🔒 Dossier afsluiten?
             </Text>
@@ -1568,8 +1569,8 @@ export default function WerkvoorbereiderDashboard({
             </Text>
 
             <View style={[lockSt.warnBox, { backgroundColor: 'rgba(220,38,38,0.08)', borderColor: 'rgba(220,38,38,0.35)' }]}>
-              <Text style={[lockSt.warnTitle, { color: '#dc2626' }]}>⚠️ Onomkeerbaar</Text>
-              <Text style={[lockSt.warnBody, { color: '#b91c1c' }]}>
+              <Text style={[lockSt.warnTitle, { color: theme.colors.statusWarning }]}>⚠️ Onomkeerbaar</Text>
+              <Text style={[lockSt.warnBody, { color: theme.colors.statusWarning }]}>
                 • Alle bewijzen worden read-only.{'\n'}
                 • Foto's, opmerkingen en statussen kunnen niet meer gewijzigd worden.{'\n'}
                 • Deze actie kan niet ongedaan gemaakt worden.
@@ -1591,7 +1592,7 @@ export default function WerkvoorbereiderDashboard({
                 backgroundColor: lockMsg.startsWith('✅') ? 'rgba(5,150,105,0.1)' : 'rgba(239,68,68,0.08)',
                 borderColor:     lockMsg.startsWith('✅') ? 'rgba(5,150,105,0.3)' : 'rgba(239,68,68,0.25)',
               }]}>
-                <Text style={[lockSt.msgText, { color: lockMsg.startsWith('✅') ? '#059669' : '#ef4444' }]}>{lockMsg}</Text>
+                <Text style={[lockSt.msgText, { color: lockMsg.startsWith('✅') ? theme.colors.statusSuccess : theme.colors.statusWarning }]}>{lockMsg}</Text>
               </View>
             ) : null}
 
@@ -1599,7 +1600,7 @@ export default function WerkvoorbereiderDashboard({
               <TouchableOpacity
                 onPress={() => setLockConfirmModal(false)}
                 disabled={lockLoading}
-                style={[lockSt.btn, lockSt.btnGhost, { borderColor: theme.colors.border }]}
+                style={[lockSt.btn, lockSt.btnGhost, { borderColor: theme.colors.borderWarm }]}
                 activeOpacity={0.7}
               >
                 <Text style={[lockSt.btnText, { color: theme.colors.textSecondary }]}>Annuleren</Text>
@@ -1749,14 +1750,14 @@ function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview,
           <Text style={[tabSt.sectionTitle, { color: theme.colors.textSecondary, marginTop: 8 }]}>
             VAKMENSEN — UPLOADS
           </Text>
-          <View style={[tabSt.vakmanCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <View style={[tabSt.vakmanCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
             {vakmanStats.map((v, i) => {
               const pct = v.total > 0 ? Math.round((v.akkoord / v.total) * 100) : 0;
               const maxTotal = vakmanStats[0].total;
               const barW = maxTotal > 0 ? (v.total / maxTotal) * 100 : 0;
               return (
-                <View key={v.userId} style={[tabSt.vakmanRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.colors.border }]}>
-                  <View style={[tabSt.vakmanRank, { backgroundColor: i === 0 ? theme.colors.accent + '20' : theme.colors.border + '40' }]}>
+                <View key={v.userId} style={[tabSt.vakmanRow, i > 0 && { borderTopWidth: 1, borderTopColor: theme.colors.borderWarm }]}>
+                  <View style={[tabSt.vakmanRank, { backgroundColor: i === 0 ? theme.colors.accent + '20' : theme.colors.borderWarm + '40' }]}>
                     <Text style={{ fontSize: 11, fontWeight: '900', color: i === 0 ? theme.colors.accent : theme.colors.textSecondary }}>
                       {i + 1}
                     </Text>
@@ -1770,15 +1771,15 @@ function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview,
                         {v.total} foto{v.total !== 1 ? "'s" : ''}{v.vandaag > 0 ? ` · ${v.vandaag} vandaag` : ''}
                       </Text>
                     </View>
-                    <View style={[tabSt.vakmanBar, { backgroundColor: theme.colors.border }]}>
+                    <View style={[tabSt.vakmanBar, { backgroundColor: theme.colors.borderWarm }]}>
                       <View style={[tabSt.vakmanBarFill, { width: `${barW}%` as `${number}%`, backgroundColor: theme.colors.accent + '50' }]} />
                       <View style={[tabSt.vakmanBarFill, {
                         position: 'absolute', left: 0,
                         width: `${(v.akkoord / (vakmanStats[0].total || 1)) * 100}%` as `${number}%`,
-                        backgroundColor: '#059669',
+                        backgroundColor: theme.colors.statusSuccess,
                       }]} />
                     </View>
-                    <Text style={{ fontSize: 10, color: pct >= 80 ? '#059669' : pct >= 40 ? '#d97706' : theme.colors.textSecondary, fontWeight: '700' }}>
+                    <Text style={{ fontSize: 10, color: pct >= 80 ? theme.colors.statusSuccess : pct >= 40 ? '#d97706' : theme.colors.textSecondary, fontWeight: '700' }}>
                       {pct}% akkoord
                     </Text>
                   </View>
@@ -1794,10 +1795,10 @@ function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview,
 
 function bucketConfig(bucket: string) {
   switch (bucket) {
-    case 'akkoord':   return { bg: 'rgba(5,150,105,0.1)',   text: '#065f46', icon: '✓' };
+    case 'akkoord':   return { bg: 'rgba(5,150,105,0.1)',   text: tokens.forest, icon: '✓' };
     case 'review':    return { bg: 'rgba(245,158,11,0.12)', text: '#92400e', icon: '⚠' };
-    case 'afgekeurd': return { bg: 'rgba(239,68,68,0.1)',   text: '#991b1b', icon: '✗' };
-    default:          return { bg: 'rgba(148,163,184,0.1)', text: '#64748b', icon: '○' };
+    case 'afgekeurd': return { bg: 'rgba(239,68,68,0.1)',   text: tokens.terracotta, icon: '✗' };
+    default:          return { bg: 'rgba(148,163,184,0.1)', text: tokens.inkSoft, icon: '○' };
   }
 }
 
@@ -1978,7 +1979,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
           style={[tabSt.filterChip, { backgroundColor: 'rgba(5,150,105,0.1)', borderColor: 'rgba(5,150,105,0.3)' }]}
           activeOpacity={0.8}
         >
-          <Text style={{ color: '#059669', fontSize: 12, fontWeight: '800' }}>📊 CSV exporteren</Text>
+          <Text style={{ color: theme.colors.statusSuccess, fontSize: 12, fontWeight: '800' }}>📊 CSV exporteren</Text>
         </TouchableOpacity>
         {reviewCount > 0 && selectedIds.size === 0 && (
           <TouchableOpacity
@@ -1998,7 +1999,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
 
       {/* Batch actie balk */}
       {selectedIds.size > 0 && (
-        <View style={[tabSt.batchBar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <View style={[tabSt.batchBar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
           <View style={{ flex: 1 }}>
             <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: '700' }}>
               {selectedIds.size} foto{selectedIds.size !== 1 ? "'s" : ''} geselecteerd
@@ -2016,12 +2017,12 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
             <Text style={tabSt.approveBtnText}>✓ Alles goedkeuren</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[tabSt.rejectBtn, { borderColor: '#ef4444', opacity: batchBusy ? 0.5 : 1 }]}
+            style={[tabSt.rejectBtn, { borderColor: theme.colors.statusWarning, opacity: batchBusy ? 0.5 : 1 }]}
             onPress={handleBulkReject}
             disabled={batchBusy}
             activeOpacity={0.8}
           >
-            <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>✗ Alles afkeuren</Text>
+            <Text style={[tabSt.rejectBtnText, { color: theme.colors.statusWarning }]}>✗ Alles afkeuren</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={clearSelection} style={{ padding: 6 }}>
             <Text style={{ color: theme.colors.textSecondary, fontWeight: '700' }}>✕</Text>
@@ -2035,7 +2036,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
           onPress={() => setShowSearch(v => !v)}
           style={[tabSt.filterChip, {
             backgroundColor: (showSearch || hasActiveSearch) ? theme.colors.accent + '15' : theme.colors.surface,
-            borderColor: hasActiveSearch ? theme.colors.accent : theme.colors.border,
+            borderColor: hasActiveSearch ? theme.colors.accent : theme.colors.borderWarm,
           }]}
           activeOpacity={0.8}
         >
@@ -2045,7 +2046,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
         </TouchableOpacity>
         {hasActiveSearch && (
           <TouchableOpacity onPress={clearSearch} style={{ padding: 4 }}>
-            <Text style={{ fontSize: 12, color: '#ef4444', fontWeight: '700' }}>✕ Wissen</Text>
+            <Text style={{ fontSize: 12, color: theme.colors.statusWarning, fontWeight: '700' }}>✕ Wissen</Text>
           </TouchableOpacity>
         )}
         {hasActiveSearch && (
@@ -2057,9 +2058,9 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
 
       {/* Zoekpaneel */}
       {showSearch && (
-        <View style={[tabSt.searchPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+        <View style={[tabSt.searchPanel, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
           <TextInput
-            style={[tabSt.searchInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.background, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
+            style={[tabSt.searchInput, { color: theme.colors.textPrimary, borderColor: theme.colors.borderWarm, backgroundColor: theme.colors.background, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Borgingspunt, notitie of AI-bevinding..."
@@ -2070,7 +2071,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
             <View style={{ flex: 1, minWidth: 120 }}>
               <Text style={{ fontSize: 10, fontWeight: '800', color: theme.colors.textSecondary, marginBottom: 4, letterSpacing: 1 }}>DATUM VAN</Text>
               <TextInput
-                style={[tabSt.searchInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.background, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
+                style={[tabSt.searchInput, { color: theme.colors.textPrimary, borderColor: theme.colors.borderWarm, backgroundColor: theme.colors.background, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
                 value={dateFrom}
                 onChangeText={setDateFrom}
                 placeholder="2026-05-01"
@@ -2080,7 +2081,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
             <View style={{ flex: 1, minWidth: 120 }}>
               <Text style={{ fontSize: 10, fontWeight: '800', color: theme.colors.textSecondary, marginBottom: 4, letterSpacing: 1 }}>DATUM TOT</Text>
               <TextInput
-                style={[tabSt.searchInput, { color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.background, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
+                style={[tabSt.searchInput, { color: theme.colors.textPrimary, borderColor: theme.colors.borderWarm, backgroundColor: theme.colors.background, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
                 value={dateTo}
                 onChangeText={setDateTo}
                 placeholder="2026-05-31"
@@ -2106,7 +2107,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                 key={f.id}
                 style={[
                   tabSt.filterChip,
-                  { backgroundColor: isActive ? theme.colors.accent : theme.colors.surface, borderColor: isActive ? theme.colors.accent : theme.colors.border },
+                  { backgroundColor: isActive ? theme.colors.accent : theme.colors.surface, borderColor: isActive ? theme.colors.accent : theme.colors.borderWarm },
                 ]}
                 onPress={() => setFilter(f.id)}
               >
@@ -2164,7 +2165,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
         style={[tabSt.evidenceCard, {
           marginBottom: 8,
           backgroundColor: isSelected ? theme.colors.accent + '08' : theme.colors.surface,
-          borderColor: isSelected ? theme.colors.accent : isOpen ? theme.colors.accent : stale ? '#ef4444' : bucket === 'review' ? '#d97706' : theme.colors.border,
+          borderColor: isSelected ? theme.colors.accent : isOpen ? theme.colors.accent : stale ? theme.colors.statusWarning : bucket === 'review' ? '#d97706' : theme.colors.borderWarm,
         }]}
       >
                 {/* Collapsed rij */}
@@ -2176,7 +2177,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                   {/* Selectie checkbox */}
                   <TouchableOpacity
                     style={[tabSt.checkBox, {
-                      borderColor: isSelected ? theme.colors.accent : theme.colors.border,
+                      borderColor: isSelected ? theme.colors.accent : theme.colors.borderWarm,
                       backgroundColor: isSelected ? theme.colors.accent : 'transparent',
                       width: 20, height: 20, borderRadius: 5, flexShrink: 0,
                     }]}
@@ -2189,11 +2190,11 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                   <View style={{ position: 'relative', flexShrink: 0 }}>
                     {uri
                       ? <Image source={{ uri }} style={tabSt.thumb} resizeMode="cover" />
-                      : <View style={[tabSt.thumbEmpty, { backgroundColor: theme.colors.border }]}><Text style={{ fontSize: 20 }}>📷</Text></View>
+                      : <View style={[tabSt.thumbEmpty, { backgroundColor: theme.colors.borderWarm }]}><Text style={{ fontSize: 20 }}>📷</Text></View>
                     }
                     {/* Sync dot */}
                     <View style={[tabSt.syncDot, {
-                      backgroundColor: item.sync_status === 'SYNCED' ? '#059669' : item.sync_status === 'FAILED' ? '#ef4444' : '#d97706',
+                      backgroundColor: item.sync_status === 'SYNCED' ? theme.colors.statusSuccess : item.sync_status === 'FAILED' ? theme.colors.statusWarning : '#d97706',
                       borderColor: isDark ? '#111' : '#fff',
                     }]} />
                   </View>
@@ -2238,7 +2239,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                     })()}
                     {stale && (
                       <View style={[tabSt.statusBadge, { backgroundColor: 'rgba(239,68,68,0.12)' }]}>
-                        <Text style={[tabSt.statusBadgeText, { color: '#ef4444' }]}>⏰ 24u+</Text>
+                        <Text style={[tabSt.statusBadgeText, { color: theme.colors.statusWarning }]}>⏰ 24u+</Text>
                       </View>
                     )}
                     <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>{isOpen ? '▲' : '▼'}</Text>
@@ -2246,7 +2247,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                 </TouchableOpacity>
 
                 {/* Approve / Reject knoppen (altijd zichtbaar) */}
-                <View style={[tabSt.actionRow, { borderTopColor: theme.colors.border }]}>
+                <View style={[tabSt.actionRow, { borderTopColor: theme.colors.borderWarm }]}>
                   <TouchableOpacity
                     style={[tabSt.approveBtn, { opacity: bucket === 'akkoord' ? 0.45 : 1 }]}
                     onPress={() => onApprove(item.id)}
@@ -2256,12 +2257,12 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                     <Text style={tabSt.approveBtnText}>✓ Goed</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[tabSt.rejectBtn, { opacity: bucket === 'afgekeurd' ? 0.45 : 1, borderColor: theme.colors.border }]}
+                    style={[tabSt.rejectBtn, { opacity: bucket === 'afgekeurd' ? 0.45 : 1, borderColor: theme.colors.borderWarm }]}
                     onPress={() => onReject(item.id)}
                     disabled={bucket === 'afgekeurd'}
                     activeOpacity={0.8}
                   >
-                    <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>✗ Afkeur</Text>
+                    <Text style={[tabSt.rejectBtnText, { color: theme.colors.statusWarning }]}>✗ Afkeur</Text>
                   </TouchableOpacity>
                   {/* WhatsApp delen */}
                   <TouchableOpacity
@@ -2282,7 +2283,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                   {/* Diagnose zijpaneel — Laag 2 Progressive Disclosure */}
                   <TouchableOpacity
                     style={[tabSt.rejectBtn, {
-                      borderColor: theme.colors.border,
+                      borderColor: theme.colors.borderWarm,
                       backgroundColor: 'transparent',
                     }]}
                     onPress={() => setSelectedEvidence(item)}
@@ -2295,7 +2296,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                   {/* Beoordeling-modal — Laag 3 Progressive Disclosure */}
                   <TouchableOpacity
                     style={[tabSt.rejectBtn, {
-                      borderColor: theme.colors.border,
+                      borderColor: theme.colors.borderWarm,
                       backgroundColor: 'transparent',
                     }]}
                     onPress={() => setActionTarget(item)}
@@ -2308,7 +2309,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                   {/* Opmerkingen toggle */}
                   <TouchableOpacity
                     style={[tabSt.rejectBtn, {
-                      borderColor: commentsOpenId === item.id ? theme.colors.accent + '60' : theme.colors.border,
+                      borderColor: commentsOpenId === item.id ? theme.colors.accent + '60' : theme.colors.borderWarm,
                       backgroundColor: commentsOpenId === item.id ? theme.colors.accent + '10' : 'transparent',
                     }]}
                     onPress={() => {
@@ -2324,7 +2325,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                   {/* Bewerken — keyuser / projectleider / WV */}
                   <TouchableOpacity
                     style={[tabSt.rejectBtn, {
-                      borderColor: editingId === item.id ? theme.colors.accent + '60' : theme.colors.border,
+                      borderColor: editingId === item.id ? theme.colors.accent + '60' : theme.colors.borderWarm,
                       backgroundColor: editingId === item.id ? theme.colors.accent + '10' : 'transparent',
                     }]}
                     onPress={() => {
@@ -2354,7 +2355,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
 
                 {/* Uitgebreid */}
                 {isOpen && (
-                  <View style={[tabSt.expanded, { borderTopColor: theme.colors.border }]}>
+                  <View style={[tabSt.expanded, { borderTopColor: theme.colors.borderWarm }]}>
                     {uri && <Image source={{ uri }} style={tabSt.thumbLarge} resizeMode="contain" />}
                     <View style={{ gap: 6, marginTop: 10 }}>
                       {item.ai_notes ? (
@@ -2388,7 +2389,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                         <input
                           value={editPointId}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditPointId(e.target.value)}
-                          style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.colors.border}`, background: theme.colors.surface, color: theme.colors.textPrimary, fontSize: 13, outline: 'none', marginBottom: 8 }}
+                          style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.colors.borderWarm}`, background: theme.colors.surface, color: theme.colors.textPrimary, fontSize: 13, outline: 'none', marginBottom: 8 }}
                         />
                         {/* Feedback notitie */}
                         <Text style={[tabSt.editLabel, { color: theme.colors.textSecondary }]}>WV feedback / notitie</Text>
@@ -2397,7 +2398,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                           value={editFieldNote}
                           onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditFieldNote(e.target.value)}
                           rows={3}
-                          style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.colors.border}`, background: theme.colors.surface, color: theme.colors.textPrimary, fontSize: 13, resize: 'vertical', outline: 'none', marginBottom: 8, fontFamily: 'inherit' }}
+                          style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.colors.borderWarm}`, background: theme.colors.surface, color: theme.colors.textPrimary, fontSize: 13, resize: 'vertical', outline: 'none', marginBottom: 8, fontFamily: 'inherit' }}
                         />
                         {/* Status */}
                         <Text style={[tabSt.editLabel, { color: theme.colors.textSecondary }]}>Status</Text>
@@ -2408,7 +2409,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                               onPress={() => setEditStatus(s)}
                               style={[tabSt.statusChip, {
                                 backgroundColor: editStatus === s ? theme.colors.accent : theme.colors.surface,
-                                borderColor: editStatus === s ? theme.colors.accent : theme.colors.border,
+                                borderColor: editStatus === s ? theme.colors.accent : theme.colors.borderWarm,
                               }]}
                             >
                               <Text style={{ fontSize: 11, fontWeight: '700', color: editStatus === s ? '#fff' : theme.colors.textSecondary }}>
@@ -2432,7 +2433,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                             <Text style={tabSt.approveBtnText}>Opslaan</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
-                            style={[tabSt.rejectBtn, { flex: 1, borderColor: theme.colors.border }]}
+                            style={[tabSt.rejectBtn, { flex: 1, borderColor: theme.colors.borderWarm }]}
                             onPress={() => setEditingId(null)}
                           >
                             <Text style={[tabSt.rejectBtnText, { color: theme.colors.textSecondary }]}>Annuleren</Text>
@@ -2468,7 +2469,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                           {locked ? (
                             <View style={{ flexDirection: 'row', gap: 8 }}>
                               <View style={[tabSt.approveBtn, { flex: 1, backgroundColor: 'rgba(15,118,110,0.15)' }]}>
-                                <Text style={[tabSt.approveBtnText, { color: '#0f766e' }]}>🔒 Vergrendeld</Text>
+                                <Text style={[tabSt.approveBtnText, { color: theme.colors.statusSuccess }]}>🔒 Vergrendeld</Text>
                               </View>
                             </View>
                           ) : reviewRejectId === item.id ? (
@@ -2480,11 +2481,11 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReviewRejectNote(e.target.value)}
                                 rows={2}
                                 placeholder="Bijv. 'Foto is onscherp, EXIF mist tijdstempel'"
-                                style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.colors.border}`, background: theme.colors.surface, color: theme.colors.textPrimary, fontSize: 13, resize: 'vertical', outline: 'none', marginBottom: 8, fontFamily: 'inherit' }}
+                                style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: `1px solid ${theme.colors.borderWarm}`, background: theme.colors.surface, color: theme.colors.textPrimary, fontSize: 13, resize: 'vertical', outline: 'none', marginBottom: 8, fontFamily: 'inherit' }}
                               />
                               <View style={{ flexDirection: 'row', gap: 8 }}>
                                 <TouchableOpacity
-                                  style={[tabSt.rejectBtn, { flex: 1, opacity: busy || !reviewRejectNote.trim() ? 0.5 : 1, borderColor: '#ef4444' }]}
+                                  style={[tabSt.rejectBtn, { flex: 1, opacity: busy || !reviewRejectNote.trim() ? 0.5 : 1, borderColor: theme.colors.statusWarning }]}
                                   disabled={busy || !reviewRejectNote.trim()}
                                   onPress={async () => {
                                     setReviewBusyId(item.id);
@@ -2495,10 +2496,10 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                                   }}
                                   activeOpacity={0.8}
                                 >
-                                  <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>✗ Bevestig afkeuring</Text>
+                                  <Text style={[tabSt.rejectBtnText, { color: theme.colors.statusWarning }]}>✗ Bevestig afkeuring</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                  style={[tabSt.rejectBtn, { flex: 1, borderColor: theme.colors.border }]}
+                                  style={[tabSt.rejectBtn, { flex: 1, borderColor: theme.colors.borderWarm }]}
                                   onPress={() => { setReviewRejectId(null); setReviewRejectNote(''); }}
                                   activeOpacity={0.8}
                                 >
@@ -2524,17 +2525,17 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                               )}
                               {(isPending || isApproved) && (
                                 <TouchableOpacity
-                                  style={[tabSt.rejectBtn, { flex: 1, minWidth: 110, borderColor: '#ef4444', opacity: busy ? 0.5 : 1 }]}
+                                  style={[tabSt.rejectBtn, { flex: 1, minWidth: 110, borderColor: theme.colors.statusWarning, opacity: busy ? 0.5 : 1 }]}
                                   disabled={busy}
                                   onPress={() => { setReviewRejectId(item.id); setReviewRejectNote(''); }}
                                   activeOpacity={0.8}
                                 >
-                                  <Text style={[tabSt.rejectBtnText, { color: '#ef4444' }]}>❌ Afkeuren</Text>
+                                  <Text style={[tabSt.rejectBtnText, { color: theme.colors.statusWarning }]}>❌ Afkeuren</Text>
                                 </TouchableOpacity>
                               )}
                               {isApproved && (
                                 <TouchableOpacity
-                                  style={[tabSt.approveBtn, { flex: 1, minWidth: 110, backgroundColor: '#0f766e', opacity: busy ? 0.5 : 1 }]}
+                                  style={[tabSt.approveBtn, { flex: 1, minWidth: 110, backgroundColor: theme.colors.statusSuccess, opacity: busy ? 0.5 : 1 }]}
                                   disabled={busy}
                                   onPress={async () => {
                                     setReviewBusyId(item.id);
@@ -2650,20 +2651,20 @@ function ChecklistTab({ checklist, newTask, setNewTask, onToggle, onRemove, onAd
   return (
     <View style={{ gap: 16 }}>
       {/* Voortgang */}
-      <View style={[tabSt.checkHeader, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+      <View style={[tabSt.checkHeader, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <Text style={{ color: theme.colors.textPrimary, fontWeight: '800', fontSize: 15 }}>
             Dagelijkse controlelijst
           </Text>
-          <Text style={{ color: allDone ? '#059669' : theme.colors.textSecondary, fontWeight: '700', fontSize: 13 }}>
+          <Text style={{ color: allDone ? theme.colors.statusSuccess : theme.colors.textSecondary, fontWeight: '700', fontSize: 13 }}>
             {done}/{checklist.length} gedaan {allDone ? '🎉' : ''}
           </Text>
         </View>
-        <View style={[tabSt.progressBg, { backgroundColor: theme.colors.border }]}>
-          <View style={[tabSt.progressFill, { width: `${pct}%` as `${number}%`, backgroundColor: allDone ? '#059669' : theme.colors.accent }]} />
+        <View style={[tabSt.progressBg, { backgroundColor: theme.colors.borderWarm }]}>
+          <View style={[tabSt.progressFill, { width: `${pct}%` as `${number}%`, backgroundColor: allDone ? theme.colors.statusSuccess : theme.colors.accent }]} />
         </View>
         {allDone && (
-          <Text style={{ color: '#059669', fontSize: 12, fontWeight: '700', marginTop: 8, textAlign: 'center' }}>
+          <Text style={{ color: theme.colors.statusSuccess, fontSize: 12, fontWeight: '700', marginTop: 8, textAlign: 'center' }}>
             ✓ Alle controlepunten afgevinkt — goed werk!
           </Text>
         )}
@@ -2676,11 +2677,11 @@ function ChecklistTab({ checklist, newTask, setNewTask, onToggle, onRemove, onAd
             key={item.id}
             style={[tabSt.checkItem, {
               backgroundColor: item.done ? 'rgba(5,150,105,0.08)' : theme.colors.surface,
-              borderColor: item.done ? 'rgba(5,150,105,0.25)' : theme.colors.border,
+              borderColor: item.done ? 'rgba(5,150,105,0.25)' : theme.colors.borderWarm,
             }]}
           >
             <TouchableOpacity
-              style={[tabSt.checkBox, { borderColor: item.done ? '#059669' : theme.colors.border, backgroundColor: item.done ? '#059669' : 'transparent' }]}
+              style={[tabSt.checkBox, { borderColor: item.done ? theme.colors.statusSuccess : theme.colors.borderWarm, backgroundColor: item.done ? theme.colors.statusSuccess : 'transparent' }]}
               onPress={() => onToggle(item.id)}
               activeOpacity={0.7}
             >
@@ -2702,7 +2703,7 @@ function ChecklistTab({ checklist, newTask, setNewTask, onToggle, onRemove, onAd
       {/* Toevoegen */}
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <TextInput
-          style={[tabSt.taskInput, { flex: 1, color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
+          style={[tabSt.taskInput, { flex: 1, color: theme.colors.textPrimary, borderColor: theme.colors.borderWarm, backgroundColor: theme.colors.surface, outlineStyle: 'none' } as ReturnType<typeof StyleSheet.create>[string]]}
           value={newTask}
           onChangeText={setNewTask}
           placeholder="Nieuwe taak toevoegen..."
@@ -2711,7 +2712,7 @@ function ChecklistTab({ checklist, newTask, setNewTask, onToggle, onRemove, onAd
           returnKeyType="done"
         />
         <TouchableOpacity
-          style={[tabSt.addTaskBtn, { backgroundColor: newTask.trim() ? theme.colors.accent : theme.colors.border }]}
+          style={[tabSt.addTaskBtn, { backgroundColor: newTask.trim() ? theme.colors.accent : theme.colors.borderWarm }]}
           onPress={onAdd}
           disabled={!newTask.trim()}
         >
@@ -2721,7 +2722,7 @@ function ChecklistTab({ checklist, newTask, setNewTask, onToggle, onRemove, onAd
 
       {/* Reset */}
       <TouchableOpacity
-        style={[tabSt.resetBtn, { borderColor: theme.colors.border }]}
+        style={[tabSt.resetBtn, { borderColor: theme.colors.borderWarm }]}
         onPress={onReset}
       >
         <Text style={{ color: theme.colors.textSecondary, fontSize: 12, fontWeight: '600' }}>
@@ -2821,7 +2822,7 @@ const tabSt = StyleSheet.create({
 
   actionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 10, paddingVertical: 8, borderTopWidth: 1 },
   approveBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, backgroundColor: 'rgba(5,150,105,0.12)' },
-  approveBtnText: { color: '#059669', fontWeight: '800', fontSize: 13 },
+  approveBtnText: { color: tokens.forest, fontWeight: '800', fontSize: 13 },
   rejectBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, borderWidth: 1 },
   rejectBtnText: { fontWeight: '800', fontSize: 13 },
 
@@ -2872,7 +2873,7 @@ const emailSt = StyleSheet.create({
   },
   sigPreview: {
     width: '100%', height: 100, borderRadius: 8,
-    backgroundColor: '#fafafa', borderWidth: 1, borderColor: '#e5e5e5',
+    backgroundColor: tokens.cream, borderWidth: 1, borderColor: '#e5e5e5',
   },
   clearSigBtn: { alignSelf: 'flex-end', paddingVertical: 4 },
   clearSigText: { fontSize: 12, fontWeight: '700' },
@@ -2889,7 +2890,7 @@ const emailSt = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   actionBtnPrimary: {
-    backgroundColor: '#A40D2F', borderColor: '#A40D2F',
+    backgroundColor: tokens.terracotta, borderColor: tokens.terracotta,
   },
   actionBtnText: { fontSize: 14, fontWeight: '800' },
   msgBanner: {
@@ -2928,6 +2929,6 @@ const lockSt = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   btnGhost: { borderWidth: 1, backgroundColor: 'transparent' },
-  btnDanger: { backgroundColor: '#dc2626' },
+  btnDanger: { backgroundColor: tokens.terracotta },
   btnText: { fontSize: 14, fontWeight: '800' },
 });
