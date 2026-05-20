@@ -14,6 +14,7 @@ import {
   Alert,
   Image,
   Platform,
+  FlatList,
   ScrollView,
   StyleSheet,
   Text,
@@ -408,15 +409,484 @@ export default function TeamBeheerScreen() {
     [getInviteUrl]
   );
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Render member card (extracted for FlatList virtualization) ──────────
+  // function-declaration so hoisting keeps it visible in the JSX below.
+  function renderMember({ item: member }: { item: TeamMember }) {
+    return (
+      <View
+        key={member.id}
+        style={[
+          styles.memberCard,
+          { backgroundColor: theme.colors.surface },
+        ]}
+      >
+        {/* Links: info */}
+        <View style={styles.memberLeft}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarText}>
+              {member.displayName
+                .split(' ')
+                .map((n) => n[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2)}
+            </Text>
+          </View>
+          <View style={styles.memberInfo}>
+            <View style={styles.memberNameRow}>
+              <Text style={[styles.memberName, { color: theme.colors.textPrimary }]}>
+                {member.displayName}
+              </Text>
+              <View
+                style={[
+                  styles.onlineDot,
+                  { backgroundColor: member.isOnline ? theme.colors.success : theme.colors.border },
+                ]}
+              />
+              {/* Laag 1 — Status, scanbaar binnen 2 seconden */}
+              {member.inviteToken && !member.inviteAcceptedAt ? (
+                <StatusPill status="warning" label="uitgenodigd" />
+              ) : member.inviteAcceptedAt ? (
+                <StatusPill status="success" label="actief" />
+              ) : null}
+            </View>
+            {member.email ? (
+              <Text style={[styles.memberEmail, { color: theme.colors.textSecondary }]}>
+                {member.email}
+              </Text>
+            ) : null}
+            {/* Rol-visualisatie via Calm Design StatusPill */}
+            <View style={{ marginTop: 4, flexDirection: 'row' }}>
+              <StatusPill
+                status="neutral"
+                label={JOB_LABELS[member.jobType] ?? member.jobType}
+              />
+            </View>
+            <View style={styles.disciplineChips}>
+              {member.disciplines.map((d) => (
+                <View
+                  key={d}
+                  style={[
+                    styles.discChip,
+                    {
+                      backgroundColor: isDark
+                        ? 'rgba(255,255,255,0.05)'
+                        : 'rgba(0,0,0,0.06)',
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.discChipText, { color: theme.colors.textSecondary }]}>
+                    {DISCIPLINE_LABELS[d] ?? d}
+                  </Text>
+                </View>
+              ))}
+              {member.extraTaskIds.length > 0 ? (
+                <View
+                  style={[
+                    styles.discChip,
+                    {
+                      backgroundColor: 'rgba(164,13,47,0.1)',
+                      borderColor: 'rgba(164,13,47,0.3)',
+                    },
+                  ]}
+                >
+                  <Text style={[styles.discChipText, { color: theme.colors.accent }]}>
+                    +{member.extraTaskIds.length} extra
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+        </View>
+
+        {/* Rechts: acties */}
+        <View style={styles.memberActions}>
+          <TouchableOpacity
+            style={[
+              styles.inviteBtn,
+              {
+                backgroundColor: qrMemberId === member.id
+                  ? theme.colors.accent
+                  : 'rgba(164,13,47,0.1)',
+                borderColor: theme.colors.accent,
+              },
+            ]}
+            onPress={() => setQrMemberId(qrMemberId === member.id ? null : member.id)}
+          >
+            <Text style={[styles.inviteBtnText, { color: qrMemberId === member.id ? '#fff' : theme.colors.accent }]}>
+              📲 Uitnodigen
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionChip, { borderColor: theme.colors.accent }]}
+            onPress={() => {
+              setQrMemberId(null);
+              setEditingId(editingId === member.id ? null : member.id);
+            }}
+          >
+            <Text style={styles.actionChipText}>✏️</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── QR uitnodigingspanel ── */}
+        {qrMemberId === member.id ? (
+          <View
+            style={[
+              styles.qrPanel,
+              { borderTopColor: theme.colors.border, backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' },
+            ]}
+          >
+            <Text style={[styles.qrTitle, { color: theme.colors.textPrimary }]}>
+              📲 Uitnodigingslink voor {member.displayName}
+            </Text>
+
+            {/* Disciplines */}
+            <View style={styles.qrChipsRow}>
+              {member.disciplines.map((d) => (
+                <View key={d} style={[styles.qrChip, { backgroundColor: 'rgba(164,13,47,0.1)', borderColor: theme.colors.accent + '44' }]}>
+                  <Text style={[styles.qrChipText, { color: theme.colors.accent }]}>{DISCIPLINE_LABELS[d] ?? d}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Toegewezen projecten */}
+            {member.projectIds.length > 0 ? (
+              <View style={styles.qrChipsRow}>
+                {member.projectIds.map((pid) => {
+                  const proj = availableProjects.find((p) => p.id === pid);
+                  return (
+                    <View key={pid} style={[styles.qrChip, { backgroundColor: 'rgba(8,145,178,0.1)', borderColor: '#0891b244' }]}>
+                      <Text style={[styles.qrChipText, { color: '#0891b2' }]}>📁 {proj?.name ?? pid}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={[styles.qrHint, { color: theme.colors.textSecondary }]}>
+                ⚠️ Nog geen project toegewezen — klik ✏️ om een project te koppelen.
+              </Text>
+            )}
+
+            {/* QR code */}
+            <View style={styles.qrImageWrap}>
+              <Image
+                source={{
+                  uri: `https://api.qrserver.com/v1/create-qr-code/?size=280x280&color=A40D2F&bgcolor=FFFFFF&margin=12&data=${encodeURIComponent(getInviteUrl(member))}`,
+                }}
+                style={styles.qrImage}
+                resizeMode="contain"
+              />
+            </View>
+
+            {/* URL tekst */}
+            <Text
+              style={[styles.qrUrlText, { color: theme.colors.textSecondary, borderColor: theme.colors.border }]}
+              numberOfLines={2}
+              selectable
+            >
+              {getInviteUrl(member)}
+            </Text>
+
+            {/* Actieknoppen */}
+            <View style={styles.qrActions}>
+              <TouchableOpacity
+                style={[styles.qrActionBtn, { backgroundColor: '#25D366' }]}
+                onPress={() => shareInviteWhatsApp(member)}
+              >
+                <Text style={styles.qrActionBtnText}>💬 WhatsApp</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.qrActionBtn, { backgroundColor: copiedId === member.id ? '#059669' : theme.colors.accent }]}
+                onPress={() => copyInviteLink(member)}
+              >
+                <Text style={styles.qrActionBtnText}>
+                  {copiedId === member.id ? '✓ Gekopieerd!' : '🔗 Link kopiëren'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.qrActionBtn, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }]}
+                onPress={() => shareNative(member)}
+              >
+                <Text style={[styles.qrActionBtnText, { color: theme.colors.textPrimary }]}>📤 Delen</Text>
+              </TouchableOpacity>
+            </View>
+
+            <SecondaryButton
+              title="Sluiten"
+              onPress={() => setQrMemberId(null)}
+              style={{ alignSelf: 'center', marginTop: 4 }}
+            />
+          </View>
+        ) : null}
+
+        {/* ── Edit panel ── */}
+        {editingId === member.id ? (
+          <View
+            style={[
+              styles.editPanel,
+              {
+                borderTopColor: theme.colors.border,
+                backgroundColor: isDark
+                  ? 'rgba(255,255,255,0.02)'
+                  : 'rgba(0,0,0,0.03)',
+              },
+            ]}
+          >
+            {/* Disciplines */}
+            <Text style={[styles.editLabel, { color: theme.colors.textSecondary }]}>
+              DISCIPLINES
+            </Text>
+            <View style={styles.editChipsRow}>
+              {ALL_DISCIPLINES.map((d) => {
+                const active = member.disciplines.includes(d);
+                return (
+                  <TouchableOpacity
+                    key={d}
+                    style={[
+                      styles.editChip,
+                      {
+                        borderColor: active
+                          ? theme.colors.accent
+                          : theme.colors.border,
+                      },
+                      active && { backgroundColor: 'rgba(164,13,47,0.1)' },
+                    ]}
+                    onPress={() => toggleDiscipline(member.id, d)}
+                  >
+                    <Text
+                      style={[
+                        styles.editChipText,
+                        {
+                          color: active
+                            ? theme.colors.accent
+                            : theme.colors.textSecondary,
+                        },
+                      ]}
+                    >
+                      {active ? '✓ ' : ''}
+                      {DISCIPLINE_LABELS[d]}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Extra taken */}
+            {availableExtraTasks.length > 0 ? (
+              <>
+                <Text
+                  style={[
+                    styles.editLabel,
+                    { color: theme.colors.textSecondary, marginTop: 14 },
+                  ]}
+                >
+                  EXTRA TAKEN TOEWIJZEN
+                </Text>
+                <Text style={[styles.editHint, { color: theme.colors.textSecondary }]}>
+                  Taken buiten de standaard discipline van deze vakman
+                </Text>
+                <View style={styles.editChipsRow}>
+                  {availableExtraTasks.slice(0, 20).map((t) => {
+                    const active = member.extraTaskIds.includes(t.id);
+                    return (
+                      <TouchableOpacity
+                        key={t.id}
+                        style={[
+                          styles.editChip,
+                          {
+                            borderColor: active
+                              ? '#059669'
+                              : theme.colors.border,
+                          },
+                          active && { backgroundColor: 'rgba(5,150,105,0.08)' },
+                        ]}
+                        onPress={() => toggleExtraTask(member.id, t.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.editChipText,
+                            {
+                              color: active
+                                ? '#059669'
+                                : theme.colors.textSecondary,
+                            },
+                          ]}
+                        >
+                          {active ? '✓ ' : ''}
+                          {t.title}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
+
+            {/* Project-toewijzing voor WERKVOORBEREIDER, VAKMAN en VOORMAN */}
+            {(member.jobType === 'WERKVOORBEREIDER' || member.jobType === 'VAKMAN' || member.jobType === 'VOORMAN') && availableProjects.length > 0 ? (
+              <>
+                <Text
+                  style={[
+                    styles.editLabel,
+                    { color: theme.colors.textSecondary, marginTop: 14 },
+                  ]}
+                >
+                  TOEGEWEZEN PROJECTEN
+                </Text>
+                <Text style={[styles.editHint, { color: theme.colors.textSecondary }]}>
+                  Kies welke projecten deze persoon kan zien
+                </Text>
+                <View style={styles.editChipsRow}>
+                  {availableProjects.map((project) => {
+                    const currentIds = editProjectIds[member.id] ?? member.projectIds;
+                    const selected = currentIds.includes(project.id);
+                    return (
+                      <TouchableOpacity
+                        key={project.id}
+                        style={[
+                          styles.editChip,
+                          {
+                            borderColor: selected ? '#0891b2' : theme.colors.border,
+                          },
+                          selected && { backgroundColor: 'rgba(8,145,178,0.1)' },
+                        ]}
+                        onPress={() => {
+                          setEditProjectIds((prev) => {
+                            const current = prev[member.id] ?? member.projectIds;
+                            return {
+                              ...prev,
+                              [member.id]: selected
+                                ? current.filter((id) => id !== project.id)
+                                : [...current, project.id],
+                            };
+                          });
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.editChipText,
+                            { color: selected ? '#0891b2' : theme.colors.textSecondary },
+                          ]}
+                        >
+                          {selected ? '✓ ' : ''}
+                          {project.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
+
+            <TouchableOpacity
+              style={[
+                styles.saveBtn,
+                { backgroundColor: theme.colors.accent },
+                savingId === member.id && { opacity: 0.6 },
+              ]}
+              onPress={() => void handleSaveMember(member)}
+              disabled={savingId === member.id}
+            >
+              {savingId === member.id ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveBtnText}>Opslaan</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
+      </View>
+    );
+  }
+
+  // ── Render header (page header + tab switcher), shared across branches ──
+  const renderHeader = () => (
+    <>
+          {/* ── Header ── */}
+          <View style={styles.pageHeader}>
+            <Text style={styles.eyebrow}>TEAMBEHEER</Text>
+            <Text style={styles.pageTitleSerif}>Team</Text>
+            <Text style={styles.pageSubtitle}>
+              Beheer wie er voor je werkt — uitnodigen, rollen, toegang.
+            </Text>
+          </View>
+
+          {/* ── Tab switcher ── */}
+          <View style={[bvdSt.tabBar, { borderBottomColor: theme.colors.border, marginBottom: 20 }]}>
+            {([
+              { id: 'team' as TeamTab,          label: '👥 Team',           desc: 'Leden toevoegen & disciplines' },
+              { id: 'bevoegdheden' as TeamTab,  label: '🔑 Bevoegdheden',   desc: 'Rollen & toegangsrechten' },
+            ] as { id: TeamTab; label: string; desc: string }[]).map(tab => (
+              <TouchableOpacity
+                key={tab.id}
+                style={[bvdSt.tabBtn, activeTab === tab.id && bvdSt.tabBtnActive]}
+                onPress={() => setActiveTab(tab.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={[bvdSt.tabBtnLabel, { color: activeTab === tab.id ? theme.colors.accent : theme.colors.textSecondary }]}>
+                  {tab.label}
+                </Text>
+                {activeTab === tab.id && <View style={[bvdSt.tabUnderline, { backgroundColor: theme.colors.accent }]} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+    </>
+  );
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      {activeTab === 'team' && !loading && !loadError ? (
+        <FlatList<TeamMember>
+          data={members}
+          keyExtractor={(item) => item.id}
+          renderItem={renderMember}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          removeClippedSubviews={true}
+          ListHeaderComponent={
+            <>
+              {renderHeader()}
+          {/* ── Top bar: telling + primaire CTA ── */}
+          <View style={styles.topBar}>
+            <Text style={styles.countLabel}>
+              <Text style={styles.countNumber}>{members.length}</Text>{' '}
+              {members.length === 1 ? 'teamlid' : 'teamleden'}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.primaryCta}
+              onPress={() => setShowAddForm(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryCtaText}>+ Nieuw teamlid</Text>
+            </TouchableOpacity>
+          </View>
+            </>
+          }
+          ListEmptyComponent={
+            <>
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>👷</Text>
+            <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
+              Nog geen teamleden
+            </Text>
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
+              Voeg een vakman toe om een uitnodigingslink aan te maken.
+            </Text>
+          </View>
+            </>
+          }
+        />
+      ) : (
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         {/* ── Header ── */}
         <View style={styles.pageHeader}>
           <Text style={styles.eyebrow}>TEAMBEHEER</Text>
@@ -446,660 +916,241 @@ export default function TeamBeheerScreen() {
           ))}
         </View>
 
-        {/* ── Laden / fout / inhoud ── */}
-        {loading ? (
-          <View style={styles.centered}>
-            <ActivityIndicator size="large" color={theme.colors.accent} />
-            <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
-              Team laden…
-            </Text>
-          </View>
-        ) : loadError ? (
-          <View style={styles.centered}>
-            <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>
-              ⚠️ {loadError}
+          {loading ? (
+            <View style={styles.centered}>
+              <ActivityIndicator size="large" color={theme.colors.accent} />
+              <Text style={[styles.loadingText, { color: theme.colors.textSecondary }]}>
+                Team laden…
+              </Text>
+            </View>
+          ) : loadError ? (
+            <View style={styles.centered}>
+              <Text style={[styles.errorText, { color: theme.colors.textSecondary }]}>
+                ⚠️ {loadError}
+              </Text>
+              <TouchableOpacity
+                style={[styles.saveBtn, { backgroundColor: theme.colors.accent, marginTop: 12 }]}
+                onPress={() => void loadMembers()}
+              >
+                <Text style={styles.saveBtnText}>Opnieuw proberen</Text>
+              </TouchableOpacity>
+            </View>
+          ) : activeTab === 'bevoegdheden' ? (
+            <BevoegdhedenBord
+              members={members}
+              viewerRole={user?.role ?? 'ONDERAANNEMER'}
+              theme={theme}
+              onRoleChanged={(id, newRole) => {
+                setMembers(prev => prev.map(m => m.id === id ? { ...m, role: newRole } : m));
+              }}
+            />
+          ) : null}
+        </ScrollView>
+      )}
+
+      {/* ── Nieuw lid toevoegen (sheet/modal) ── */}
+      {showAddForm ? (
+        <View style={styles.sheetBackdrop}>
+          <ScrollView
+            style={styles.sheetScroll}
+            contentContainerStyle={styles.sheetScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+          <View
+            style={[
+              styles.sheetCard,
+              { backgroundColor: theme.colors.surface },
+            ]}
+          >
+          <View style={styles.sheetHeader}>
+            <Text style={[styles.sheetTitle, { color: theme.colors.textPrimary }]}>
+              Nieuw teamlid
             </Text>
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: theme.colors.accent, marginTop: 12 }]}
-              onPress={() => void loadMembers()}
+              onPress={() => setShowAddForm(false)}
+              style={styles.sheetCloseBtn}
+              disabled={adding}
             >
-              <Text style={styles.saveBtnText}>Opnieuw proberen</Text>
+              <Text style={[styles.sheetCloseText, { color: theme.colors.textSecondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
-        ) : activeTab === 'bevoegdheden' ? (
-          <BevoegdhedenBord
-            members={members}
-            viewerRole={user?.role ?? 'ONDERAANNEMER'}
-            theme={theme}
-            onRoleChanged={(id, newRole) => {
-              setMembers(prev => prev.map(m => m.id === id ? { ...m, role: newRole } : m));
-            }}
+          <Text style={[styles.sheetSubtitle, { color: theme.colors.textSecondary }]}>
+            Vul de basis in — disciplines volgen automatisch uit het profiel.
+          </Text>
+
+          <TextInput
+            style={[
+              styles.input,
+              {
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.border,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+              },
+            ]}
+            value={newName}
+            onChangeText={setNewName}
+            placeholder="Naam *"
+            placeholderTextColor={theme.colors.textSecondary}
+            autoCapitalize="words"
           />
-        ) : (
-          <>
-            {/* ── Top bar: telling + primaire CTA ── */}
-            <View style={styles.topBar}>
-              <Text style={styles.countLabel}>
-                <Text style={styles.countNumber}>{members.length}</Text>{' '}
-                {members.length === 1 ? 'teamlid' : 'teamleden'}
-              </Text>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.border,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+              },
+            ]}
+            value={newEmail}
+            onChangeText={setNewEmail}
+            placeholder="Email (optioneel)"
+            placeholderTextColor={theme.colors.textSecondary}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <TextInput
+            style={[
+              styles.input,
+              {
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.border,
+                backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
+              },
+            ]}
+            value={newPhone}
+            onChangeText={setNewPhone}
+            placeholder="Telefoon (optioneel)"
+            placeholderTextColor={theme.colors.textSecondary}
+            keyboardType="phone-pad"
+          />
 
+          <Text
+            style={[
+              styles.editLabel,
+              { color: theme.colors.textSecondary, marginTop: 12, marginBottom: 8 },
+            ]}
+          >
+            PROFIEL
+          </Text>
+          <View style={styles.editChipsRow}>
+            {ALL_JOB_TYPES.map((jt) => (
               <TouchableOpacity
-                style={styles.primaryCta}
-                onPress={() => setShowAddForm(true)}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.primaryCtaText}>+ Nieuw teamlid</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* ── Teamleden lijst ── */}
-            {members.map((member) => (
-              <View
-                key={member.id}
+                key={jt}
                 style={[
-                  styles.memberCard,
-                  { backgroundColor: theme.colors.surface },
+                  styles.editChip,
+                  {
+                    borderColor:
+                      newJobType === jt ? theme.colors.accent : theme.colors.border,
+                  },
+                  newJobType === jt && { backgroundColor: 'rgba(164,13,47,0.1)' },
                 ]}
+                onPress={() => setNewJobType(jt)}
               >
-                {/* Links: info */}
-                <View style={styles.memberLeft}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarText}>
-                      {member.displayName
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .toUpperCase()
-                        .slice(0, 2)}
-                    </Text>
-                  </View>
-                  <View style={styles.memberInfo}>
-                    <View style={styles.memberNameRow}>
-                      <Text style={[styles.memberName, { color: theme.colors.textPrimary }]}>
-                        {member.displayName}
-                      </Text>
-                      <View
-                        style={[
-                          styles.onlineDot,
-                          { backgroundColor: member.isOnline ? theme.colors.success : theme.colors.border },
-                        ]}
-                      />
-                      {/* Laag 1 — Status, scanbaar binnen 2 seconden */}
-                      {member.inviteToken && !member.inviteAcceptedAt ? (
-                        <StatusPill status="warning" label="uitgenodigd" />
-                      ) : member.inviteAcceptedAt ? (
-                        <StatusPill status="success" label="actief" />
-                      ) : null}
-                    </View>
-                    {member.email ? (
-                      <Text style={[styles.memberEmail, { color: theme.colors.textSecondary }]}>
-                        {member.email}
-                      </Text>
-                    ) : null}
-                    {/* Rol-visualisatie via Calm Design StatusPill */}
-                    <View style={{ marginTop: 4, flexDirection: 'row' }}>
-                      <StatusPill
-                        status="neutral"
-                        label={JOB_LABELS[member.jobType] ?? member.jobType}
-                      />
-                    </View>
-                    <View style={styles.disciplineChips}>
-                      {member.disciplines.map((d) => (
-                        <View
-                          key={d}
-                          style={[
-                            styles.discChip,
-                            {
-                              backgroundColor: isDark
-                                ? 'rgba(255,255,255,0.05)'
-                                : 'rgba(0,0,0,0.06)',
-                              borderColor: theme.colors.border,
-                            },
-                          ]}
-                        >
-                          <Text style={[styles.discChipText, { color: theme.colors.textSecondary }]}>
-                            {DISCIPLINE_LABELS[d] ?? d}
-                          </Text>
-                        </View>
-                      ))}
-                      {member.extraTaskIds.length > 0 ? (
-                        <View
-                          style={[
-                            styles.discChip,
-                            {
-                              backgroundColor: 'rgba(164,13,47,0.1)',
-                              borderColor: 'rgba(164,13,47,0.3)',
-                            },
-                          ]}
-                        >
-                          <Text style={[styles.discChipText, { color: theme.colors.accent }]}>
-                            +{member.extraTaskIds.length} extra
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  </View>
-                </View>
-
-                {/* Rechts: acties */}
-                <View style={styles.memberActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.inviteBtn,
-                      {
-                        backgroundColor: qrMemberId === member.id
-                          ? theme.colors.accent
-                          : 'rgba(164,13,47,0.1)',
-                        borderColor: theme.colors.accent,
-                      },
-                    ]}
-                    onPress={() => setQrMemberId(qrMemberId === member.id ? null : member.id)}
-                  >
-                    <Text style={[styles.inviteBtnText, { color: qrMemberId === member.id ? '#fff' : theme.colors.accent }]}>
-                      📲 Uitnodigen
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.actionChip, { borderColor: theme.colors.accent }]}
-                    onPress={() => {
-                      setQrMemberId(null);
-                      setEditingId(editingId === member.id ? null : member.id);
-                    }}
-                  >
-                    <Text style={styles.actionChipText}>✏️</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* ── QR uitnodigingspanel ── */}
-                {qrMemberId === member.id ? (
-                  <View
-                    style={[
-                      styles.qrPanel,
-                      { borderTopColor: theme.colors.border, backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)' },
-                    ]}
-                  >
-                    <Text style={[styles.qrTitle, { color: theme.colors.textPrimary }]}>
-                      📲 Uitnodigingslink voor {member.displayName}
-                    </Text>
-
-                    {/* Disciplines */}
-                    <View style={styles.qrChipsRow}>
-                      {member.disciplines.map((d) => (
-                        <View key={d} style={[styles.qrChip, { backgroundColor: 'rgba(164,13,47,0.1)', borderColor: theme.colors.accent + '44' }]}>
-                          <Text style={[styles.qrChipText, { color: theme.colors.accent }]}>{DISCIPLINE_LABELS[d] ?? d}</Text>
-                        </View>
-                      ))}
-                    </View>
-
-                    {/* Toegewezen projecten */}
-                    {member.projectIds.length > 0 ? (
-                      <View style={styles.qrChipsRow}>
-                        {member.projectIds.map((pid) => {
-                          const proj = availableProjects.find((p) => p.id === pid);
-                          return (
-                            <View key={pid} style={[styles.qrChip, { backgroundColor: 'rgba(8,145,178,0.1)', borderColor: '#0891b244' }]}>
-                              <Text style={[styles.qrChipText, { color: '#0891b2' }]}>📁 {proj?.name ?? pid}</Text>
-                            </View>
-                          );
-                        })}
-                      </View>
-                    ) : (
-                      <Text style={[styles.qrHint, { color: theme.colors.textSecondary }]}>
-                        ⚠️ Nog geen project toegewezen — klik ✏️ om een project te koppelen.
-                      </Text>
-                    )}
-
-                    {/* QR code */}
-                    <View style={styles.qrImageWrap}>
-                      <Image
-                        source={{
-                          uri: `https://api.qrserver.com/v1/create-qr-code/?size=280x280&color=A40D2F&bgcolor=FFFFFF&margin=12&data=${encodeURIComponent(getInviteUrl(member))}`,
-                        }}
-                        style={styles.qrImage}
-                        resizeMode="contain"
-                      />
-                    </View>
-
-                    {/* URL tekst */}
-                    <Text
-                      style={[styles.qrUrlText, { color: theme.colors.textSecondary, borderColor: theme.colors.border }]}
-                      numberOfLines={2}
-                      selectable
-                    >
-                      {getInviteUrl(member)}
-                    </Text>
-
-                    {/* Actieknoppen */}
-                    <View style={styles.qrActions}>
-                      <TouchableOpacity
-                        style={[styles.qrActionBtn, { backgroundColor: '#25D366' }]}
-                        onPress={() => shareInviteWhatsApp(member)}
-                      >
-                        <Text style={styles.qrActionBtnText}>💬 WhatsApp</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.qrActionBtn, { backgroundColor: copiedId === member.id ? '#059669' : theme.colors.accent }]}
-                        onPress={() => copyInviteLink(member)}
-                      >
-                        <Text style={styles.qrActionBtnText}>
-                          {copiedId === member.id ? '✓ Gekopieerd!' : '🔗 Link kopiëren'}
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.qrActionBtn, { backgroundColor: theme.colors.surface, borderWidth: 1, borderColor: theme.colors.border }]}
-                        onPress={() => shareNative(member)}
-                      >
-                        <Text style={[styles.qrActionBtnText, { color: theme.colors.textPrimary }]}>📤 Delen</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    <SecondaryButton
-                      title="Sluiten"
-                      onPress={() => setQrMemberId(null)}
-                      style={{ alignSelf: 'center', marginTop: 4 }}
-                    />
-                  </View>
-                ) : null}
-
-                {/* ── Edit panel ── */}
-                {editingId === member.id ? (
-                  <View
-                    style={[
-                      styles.editPanel,
-                      {
-                        borderTopColor: theme.colors.border,
-                        backgroundColor: isDark
-                          ? 'rgba(255,255,255,0.02)'
-                          : 'rgba(0,0,0,0.03)',
-                      },
-                    ]}
-                  >
-                    {/* Disciplines */}
-                    <Text style={[styles.editLabel, { color: theme.colors.textSecondary }]}>
-                      DISCIPLINES
-                    </Text>
-                    <View style={styles.editChipsRow}>
-                      {ALL_DISCIPLINES.map((d) => {
-                        const active = member.disciplines.includes(d);
-                        return (
-                          <TouchableOpacity
-                            key={d}
-                            style={[
-                              styles.editChip,
-                              {
-                                borderColor: active
-                                  ? theme.colors.accent
-                                  : theme.colors.border,
-                              },
-                              active && { backgroundColor: 'rgba(164,13,47,0.1)' },
-                            ]}
-                            onPress={() => toggleDiscipline(member.id, d)}
-                          >
-                            <Text
-                              style={[
-                                styles.editChipText,
-                                {
-                                  color: active
-                                    ? theme.colors.accent
-                                    : theme.colors.textSecondary,
-                                },
-                              ]}
-                            >
-                              {active ? '✓ ' : ''}
-                              {DISCIPLINE_LABELS[d]}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-
-                    {/* Extra taken */}
-                    {availableExtraTasks.length > 0 ? (
-                      <>
-                        <Text
-                          style={[
-                            styles.editLabel,
-                            { color: theme.colors.textSecondary, marginTop: 14 },
-                          ]}
-                        >
-                          EXTRA TAKEN TOEWIJZEN
-                        </Text>
-                        <Text style={[styles.editHint, { color: theme.colors.textSecondary }]}>
-                          Taken buiten de standaard discipline van deze vakman
-                        </Text>
-                        <View style={styles.editChipsRow}>
-                          {availableExtraTasks.slice(0, 20).map((t) => {
-                            const active = member.extraTaskIds.includes(t.id);
-                            return (
-                              <TouchableOpacity
-                                key={t.id}
-                                style={[
-                                  styles.editChip,
-                                  {
-                                    borderColor: active
-                                      ? '#059669'
-                                      : theme.colors.border,
-                                  },
-                                  active && { backgroundColor: 'rgba(5,150,105,0.08)' },
-                                ]}
-                                onPress={() => toggleExtraTask(member.id, t.id)}
-                              >
-                                <Text
-                                  style={[
-                                    styles.editChipText,
-                                    {
-                                      color: active
-                                        ? '#059669'
-                                        : theme.colors.textSecondary,
-                                    },
-                                  ]}
-                                >
-                                  {active ? '✓ ' : ''}
-                                  {t.title}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                      </>
-                    ) : null}
-
-                    {/* Project-toewijzing voor WERKVOORBEREIDER, VAKMAN en VOORMAN */}
-                    {(member.jobType === 'WERKVOORBEREIDER' || member.jobType === 'VAKMAN' || member.jobType === 'VOORMAN') && availableProjects.length > 0 ? (
-                      <>
-                        <Text
-                          style={[
-                            styles.editLabel,
-                            { color: theme.colors.textSecondary, marginTop: 14 },
-                          ]}
-                        >
-                          TOEGEWEZEN PROJECTEN
-                        </Text>
-                        <Text style={[styles.editHint, { color: theme.colors.textSecondary }]}>
-                          Kies welke projecten deze persoon kan zien
-                        </Text>
-                        <View style={styles.editChipsRow}>
-                          {availableProjects.map((project) => {
-                            const currentIds = editProjectIds[member.id] ?? member.projectIds;
-                            const selected = currentIds.includes(project.id);
-                            return (
-                              <TouchableOpacity
-                                key={project.id}
-                                style={[
-                                  styles.editChip,
-                                  {
-                                    borderColor: selected ? '#0891b2' : theme.colors.border,
-                                  },
-                                  selected && { backgroundColor: 'rgba(8,145,178,0.1)' },
-                                ]}
-                                onPress={() => {
-                                  setEditProjectIds((prev) => {
-                                    const current = prev[member.id] ?? member.projectIds;
-                                    return {
-                                      ...prev,
-                                      [member.id]: selected
-                                        ? current.filter((id) => id !== project.id)
-                                        : [...current, project.id],
-                                    };
-                                  });
-                                }}
-                              >
-                                <Text
-                                  style={[
-                                    styles.editChipText,
-                                    { color: selected ? '#0891b2' : theme.colors.textSecondary },
-                                  ]}
-                                >
-                                  {selected ? '✓ ' : ''}
-                                  {project.name}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                      </>
-                    ) : null}
-
-                    <TouchableOpacity
-                      style={[
-                        styles.saveBtn,
-                        { backgroundColor: theme.colors.accent },
-                        savingId === member.id && { opacity: 0.6 },
-                      ]}
-                      onPress={() => void handleSaveMember(member)}
-                      disabled={savingId === member.id}
-                    >
-                      {savingId === member.id ? (
-                        <ActivityIndicator color="#fff" />
-                      ) : (
-                        <Text style={styles.saveBtnText}>Opslaan</Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                ) : null}
-              </View>
-            ))}
-
-            {/* ── Leeg team ── */}
-            {members.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyIcon}>👷</Text>
-                <Text style={[styles.emptyTitle, { color: theme.colors.textPrimary }]}>
-                  Nog geen teamleden
-                </Text>
-                <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-                  Voeg een vakman toe om een uitnodigingslink aan te maken.
-                </Text>
-              </View>
-            ) : null}
-          </>
-        )}
-
-        {/* ── Nieuw lid toevoegen (sheet/modal) ── */}
-        {showAddForm ? (
-          <View style={styles.sheetBackdrop}>
-            <ScrollView
-              style={styles.sheetScroll}
-              contentContainerStyle={styles.sheetScrollContent}
-              showsVerticalScrollIndicator={false}
-            >
-            <View
-              style={[
-                styles.sheetCard,
-                { backgroundColor: theme.colors.surface },
-              ]}
-            >
-            <View style={styles.sheetHeader}>
-              <Text style={[styles.sheetTitle, { color: theme.colors.textPrimary }]}>
-                Nieuw teamlid
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowAddForm(false)}
-                style={styles.sheetCloseBtn}
-                disabled={adding}
-              >
-                <Text style={[styles.sheetCloseText, { color: theme.colors.textSecondary }]}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={[styles.sheetSubtitle, { color: theme.colors.textSecondary }]}>
-              Vul de basis in — disciplines volgen automatisch uit het profiel.
-            </Text>
-
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.colors.textPrimary,
-                  borderColor: theme.colors.border,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
-                },
-              ]}
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Naam *"
-              placeholderTextColor={theme.colors.textSecondary}
-              autoCapitalize="words"
-            />
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.colors.textPrimary,
-                  borderColor: theme.colors.border,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
-                },
-              ]}
-              value={newEmail}
-              onChangeText={setNewEmail}
-              placeholder="Email (optioneel)"
-              placeholderTextColor={theme.colors.textSecondary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: theme.colors.textPrimary,
-                  borderColor: theme.colors.border,
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)',
-                },
-              ]}
-              value={newPhone}
-              onChangeText={setNewPhone}
-              placeholder="Telefoon (optioneel)"
-              placeholderTextColor={theme.colors.textSecondary}
-              keyboardType="phone-pad"
-            />
-
-            <Text
-              style={[
-                styles.editLabel,
-                { color: theme.colors.textSecondary, marginTop: 12, marginBottom: 8 },
-              ]}
-            >
-              PROFIEL
-            </Text>
-            <View style={styles.editChipsRow}>
-              {ALL_JOB_TYPES.map((jt) => (
-                <TouchableOpacity
-                  key={jt}
-                  style={[
-                    styles.editChip,
-                    {
-                      borderColor:
-                        newJobType === jt ? theme.colors.accent : theme.colors.border,
-                    },
-                    newJobType === jt && { backgroundColor: 'rgba(164,13,47,0.1)' },
-                  ]}
-                  onPress={() => setNewJobType(jt)}
-                >
-                  <Text
-                    style={[
-                      styles.editChipText,
-                      {
-                        color:
-                          newJobType === jt
-                            ? theme.colors.accent
-                            : theme.colors.textSecondary,
-                      },
-                    ]}
-                  >
-                    {JOB_LABELS[jt]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {newJobType !== 'VAKMAN' ? (
-              <View style={[styles.disciplinePreview, { borderColor: theme.colors.border }]}>
-                <Text style={[styles.editHint, { color: theme.colors.textSecondary }]}>
-                  Krijgt automatisch toegang tot:{' '}
-                  {JOB_DISCIPLINES[newJobType]
-                    .map((d) => DISCIPLINE_LABELS[d])
-                    .join(', ')}
-                </Text>
-              </View>
-            ) : null}
-
-            {(newJobType === 'WERKVOORBEREIDER' || newJobType === 'VAKMAN' || newJobType === 'VOORMAN') && availableProjects.length > 0 ? (
-              <>
                 <Text
                   style={[
-                    styles.editLabel,
-                    { color: theme.colors.textSecondary, marginTop: 4, marginBottom: 8 },
+                    styles.editChipText,
+                    {
+                      color:
+                        newJobType === jt
+                          ? theme.colors.accent
+                          : theme.colors.textSecondary,
+                    },
                   ]}
                 >
-                  TOEGEWEZEN PROJECTEN
+                  {JOB_LABELS[jt]}
                 </Text>
-                <Text style={[styles.editHint, { color: theme.colors.textSecondary }]}>
-                  Kies welke projecten deze persoon kan zien
-                </Text>
-                <View style={styles.editChipsRow}>
-                  {availableProjects.map((project) => {
-                    const selected = newProjectIds.includes(project.id);
-                    return (
-                      <TouchableOpacity
-                        key={project.id}
-                        style={[
-                          styles.editChip,
-                          {
-                            borderColor: selected ? '#0891b2' : theme.colors.border,
-                          },
-                          selected && { backgroundColor: 'rgba(8,145,178,0.1)' },
-                        ]}
-                        onPress={() => {
-                          setNewProjectIds((prev) =>
-                            selected
-                              ? prev.filter((id) => id !== project.id)
-                              : [...prev, project.id]
-                          );
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.editChipText,
-                            { color: selected ? '#0891b2' : theme.colors.textSecondary },
-                          ]}
-                        >
-                          {selected ? '✓ ' : ''}
-                          {project.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </>
-            ) : null}
-
-            <View style={styles.sheetActions}>
-              <SecondaryButton
-                title="Annuleer"
-                onPress={() => setShowAddForm(false)}
-                disabled={adding}
-              />
-              <TouchableOpacity
-                style={[
-                  styles.saveBtn,
-                  { backgroundColor: theme.colors.accent, flex: 1 },
-                  adding && { opacity: 0.6 },
-                ]}
-                onPress={() => void handleAddMember()}
-                disabled={adding}
-              >
-                {adding ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.saveBtnText}>Aanmaken & uitnodigen</Text>
-                )}
               </TouchableOpacity>
-            </View>
-            </View>
-            </ScrollView>
+            ))}
           </View>
-        ) : null}
-      </ScrollView>
+
+          {newJobType !== 'VAKMAN' ? (
+            <View style={[styles.disciplinePreview, { borderColor: theme.colors.border }]}>
+              <Text style={[styles.editHint, { color: theme.colors.textSecondary }]}>
+                Krijgt automatisch toegang tot:{' '}
+                {JOB_DISCIPLINES[newJobType]
+                  .map((d) => DISCIPLINE_LABELS[d])
+                  .join(', ')}
+              </Text>
+            </View>
+          ) : null}
+
+          {(newJobType === 'WERKVOORBEREIDER' || newJobType === 'VAKMAN' || newJobType === 'VOORMAN') && availableProjects.length > 0 ? (
+            <>
+              <Text
+                style={[
+                  styles.editLabel,
+                  { color: theme.colors.textSecondary, marginTop: 4, marginBottom: 8 },
+                ]}
+              >
+                TOEGEWEZEN PROJECTEN
+              </Text>
+              <Text style={[styles.editHint, { color: theme.colors.textSecondary }]}>
+                Kies welke projecten deze persoon kan zien
+              </Text>
+              <View style={styles.editChipsRow}>
+                {availableProjects.map((project) => {
+                  const selected = newProjectIds.includes(project.id);
+                  return (
+                    <TouchableOpacity
+                      key={project.id}
+                      style={[
+                        styles.editChip,
+                        {
+                          borderColor: selected ? '#0891b2' : theme.colors.border,
+                        },
+                        selected && { backgroundColor: 'rgba(8,145,178,0.1)' },
+                      ]}
+                      onPress={() => {
+                        setNewProjectIds((prev) =>
+                          selected
+                            ? prev.filter((id) => id !== project.id)
+                            : [...prev, project.id]
+                        );
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.editChipText,
+                          { color: selected ? '#0891b2' : theme.colors.textSecondary },
+                        ]}
+                      >
+                        {selected ? '✓ ' : ''}
+                        {project.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
+
+          <View style={styles.sheetActions}>
+            <SecondaryButton
+              title="Annuleer"
+              onPress={() => setShowAddForm(false)}
+              disabled={adding}
+            />
+            <TouchableOpacity
+              style={[
+                styles.saveBtn,
+                { backgroundColor: theme.colors.accent, flex: 1 },
+                adding && { opacity: 0.6 },
+              ]}
+              onPress={() => void handleAddMember()}
+              disabled={adding}
+            >
+              {adding ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveBtnText}>Aanmaken & uitnodigen</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+          </View>
+          </ScrollView>
+        </View>
+      ) : null}
     </View>
   );
 }
