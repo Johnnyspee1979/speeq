@@ -1,4 +1,5 @@
 export type WkbUserRole =
+  | 'KEYUSER'           // Klant-admin: beheert binnen één tenant projectleiders + features + branding
   | 'ONDERAANNEMER'
   | 'AANNEMER'
   | 'KWALITEITSBORGER'
