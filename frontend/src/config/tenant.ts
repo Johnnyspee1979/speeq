@@ -44,3 +44,23 @@ export const clearTenantConfig = async () => {
 
 /** Synchrone check — alleen betrouwbaar ná een eerdere getTenantConfig()-aanroep */
 export const hasTenantConfig = () => activeTenant !== null;
+
+/**
+ * Synchrone tenant-id lookup voor filtering. Leest:
+ * 1. In-memory cache (activeTenant.companyId) — gezet door setTenantConfig()
+ * 2. localStorage fallback (`wkb_active_tenant_id`) — gezet door slug-routing
+ *    in App.tsx vóór de eerste paint, zodat ProjectContext/Service direct
+ *    de juiste tenant filtert zonder async wait.
+ */
+export const getActiveTenantId = (): string | null => {
+  if (activeTenant?.companyId && activeTenant.companyId !== 'env') {
+    return activeTenant.companyId;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const v = window.localStorage.getItem('wkb_active_tenant_id');
+      if (v) return v;
+    } catch { /* private mode */ }
+  }
+  return null;
+};
