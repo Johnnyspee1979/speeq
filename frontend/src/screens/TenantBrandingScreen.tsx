@@ -6,7 +6,6 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Image,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,8 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
+import { PageHeader } from '../components/ui/PageHeader';
+import { PrimaryButton } from '../components/ui/PrimaryButton';
 import { SecondaryButton } from '../components/ui/SecondaryButton';
 import { useTenantBranding } from '../hooks/useTenantBranding';
 import {
@@ -133,16 +134,18 @@ export default function TenantBrandingScreen({ onBack }: Props) {
       style={{ flex: 1, backgroundColor: theme.colors.background }}
       contentContainerStyle={s.content}
     >
-      <View style={[s.header, { borderColor: theme.colors.border }]}>
-        {onBack && (
-          <SecondaryButton
-            title="← Terug"
-            onPress={onBack}
-            style={{ alignSelf: 'flex-start', marginBottom: 12 }}
-          />
-        )}
-        <Text style={[s.eyebrow, { color: theme.colors.textSecondary }]}>BRANDING</Text>
-        <Text style={[s.title, { color: theme.colors.textPrimary }]}>Bedrijfsbranding</Text>
+      {onBack && (
+        <SecondaryButton
+          title="← Terug"
+          onPress={onBack}
+          style={{ alignSelf: 'flex-start', marginBottom: 8 }}
+        />
+      )}
+
+      <PageHeader title="Bedrijfsbranding" />
+
+      <View style={[s.headerMeta, { borderBottomColor: theme.colors.borderWarm }]}>
+        <Text style={[s.eyebrow, { color: theme.colors.textMuted }]}>BRANDING</Text>
         <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
           Pas het logo, de bedrijfsnaam en de accentkleur aan. Dit vervangt SpeeQ in de tool en in alle
           PDF-exports — zodat het er uitziet als jouw tool.
@@ -154,12 +157,17 @@ export default function TenantBrandingScreen({ onBack }: Props) {
           style={[
             s.toast,
             {
-              backgroundColor: message.tone === 'ok' ? 'rgba(5,150,105,0.12)' : 'rgba(239,68,68,0.12)',
-              borderColor:     message.tone === 'ok' ? 'rgba(5,150,105,0.3)'  : 'rgba(239,68,68,0.3)',
+              backgroundColor: message.tone === 'ok'
+                ? theme.colors.statusSuccess
+                : theme.colors.statusWarning,
+              borderColor: theme.colors.borderWarm,
             },
           ]}
         >
-          <Text style={{ color: message.tone === 'ok' ? '#047857' : '#991b1b', fontWeight: '700' }}>
+          <Text style={{
+            color: message.tone === 'ok' ? theme.colors.background : theme.colors.textPrimary,
+            fontWeight: '700',
+          }}>
             {message.tone === 'ok' ? '✓ ' : '⚠ '}
             {message.text}
           </Text>
@@ -167,14 +175,14 @@ export default function TenantBrandingScreen({ onBack }: Props) {
       )}
 
       {/* ─── Logo ─────────────────────────────────────────────────────────── */}
-      <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+      <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
         <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Logo</Text>
         <Text style={[s.help, { color: theme.colors.textSecondary }]}>
           PNG, JPG of SVG. Vierkant werkt het beste. Max 2 MB.
         </Text>
 
         <View style={s.logoRow}>
-          <View style={[s.logoPreview, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
+          <View style={[s.logoPreview, { borderColor: theme.colors.borderWarm, backgroundColor: theme.colors.background }]}>
             {branding.logoUrl ? (
               <Image source={{ uri: branding.logoUrl }} style={s.logoImg} resizeMode="contain" />
             ) : (
@@ -182,18 +190,12 @@ export default function TenantBrandingScreen({ onBack }: Props) {
             )}
           </View>
           <View style={{ flex: 1, gap: 8 }}>
-            <TouchableOpacity
-              style={[s.primaryBtn, { backgroundColor: theme.colors.accent, opacity: busy === 'logo' ? 0.5 : 1 }]}
-              disabled={busy === 'logo'}
+            <PrimaryButton
+              label={branding.logoUrl ? 'Vervang logo' : 'Upload logo'}
+              loading={busy === 'logo'}
               onPress={handleLogoPick}
-              activeOpacity={0.85}
-            >
-              {busy === 'logo' ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={s.primaryBtnText}>{branding.logoUrl ? 'Vervang logo' : 'Upload logo'}</Text>
-              )}
-            </TouchableOpacity>
+              disabled={busy === 'logo'}
+            />
             {branding.logoUrl ? (
               <Text style={{ color: theme.colors.textSecondary, fontSize: 11 }} numberOfLines={1}>
                 {branding.logoUrl}
@@ -216,7 +218,7 @@ export default function TenantBrandingScreen({ onBack }: Props) {
       </View>
 
       {/* ─── Bedrijfsnaam ─────────────────────────────────────────────────── */}
-      <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+      <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
         <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Bedrijfsnaam</Text>
         <Text style={[s.help, { color: theme.colors.textSecondary }]}>
           Verschijnt naast het logo en in de PDF-cover en -footer.
@@ -225,24 +227,22 @@ export default function TenantBrandingScreen({ onBack }: Props) {
           value={name}
           onChangeText={setName}
           placeholder="Bijv. Bouwbedrijf Jansen BV"
-          placeholderTextColor={theme.colors.textSecondary + '99'}
+          placeholderTextColor={theme.colors.textMuted}
           style={[
             s.input,
-            { color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.background },
+            { color: theme.colors.textPrimary, borderColor: theme.colors.borderWarm, backgroundColor: theme.colors.background },
           ]}
         />
-        <TouchableOpacity
-          style={[s.primaryBtn, { backgroundColor: theme.colors.accent, opacity: busy === 'name' ? 0.5 : 1 }]}
-          disabled={busy === 'name'}
+        <PrimaryButton
+          label="Naam opslaan"
+          loading={busy === 'name'}
           onPress={handleSaveName}
-          activeOpacity={0.85}
-        >
-          {busy === 'name' ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryBtnText}>Naam opslaan</Text>}
-        </TouchableOpacity>
+          disabled={busy === 'name'}
+        />
       </View>
 
       {/* ─── Accentkleur ─────────────────────────────────────────────────── */}
-      <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+      <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
         <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Accentkleur (optioneel)</Text>
         <Text style={[s.help, { color: theme.colors.textSecondary }]}>
           Hex-code, bv. <Text style={{ fontFamily: 'Menlo' }}>#0ea5e9</Text>. Wordt gebruikt voor CTA's en PDF-titels.
@@ -252,8 +252,8 @@ export default function TenantBrandingScreen({ onBack }: Props) {
             style={[
               s.colorSwatch,
               {
-                backgroundColor: HEX_RE.test(color.trim()) ? (color.trim().startsWith('#') ? color.trim() : `#${color.trim()}`) : theme.colors.border,
-                borderColor: theme.colors.border,
+                backgroundColor: HEX_RE.test(color.trim()) ? (color.trim().startsWith('#') ? color.trim() : `#${color.trim()}`) : theme.colors.borderWarm,
+                borderColor: theme.colors.borderWarm,
               },
             ]}
           />
@@ -263,31 +263,31 @@ export default function TenantBrandingScreen({ onBack }: Props) {
             placeholder="#0ea5e9"
             autoCapitalize="characters"
             autoCorrect={false}
-            placeholderTextColor={theme.colors.textSecondary + '99'}
+            placeholderTextColor={theme.colors.textMuted}
             style={[
               s.input,
-              { flex: 1, marginBottom: 0, color: theme.colors.textPrimary, borderColor: theme.colors.border, backgroundColor: theme.colors.background },
+              { flex: 1, marginBottom: 0, color: theme.colors.textPrimary, borderColor: theme.colors.borderWarm, backgroundColor: theme.colors.background },
             ]}
           />
         </View>
-        <TouchableOpacity
-          style={[s.primaryBtn, { marginTop: 10, backgroundColor: theme.colors.accent, opacity: busy === 'color' ? 0.5 : 1 }]}
-          disabled={busy === 'color'}
-          onPress={handleSaveColor}
-          activeOpacity={0.85}
-        >
-          {busy === 'color' ? <ActivityIndicator color="#fff" /> : <Text style={s.primaryBtnText}>Kleur opslaan</Text>}
-        </TouchableOpacity>
+        <View style={{ marginTop: 10 }}>
+          <PrimaryButton
+            label="Kleur opslaan"
+            loading={busy === 'color'}
+            onPress={handleSaveColor}
+            disabled={busy === 'color'}
+          />
+        </View>
       </View>
 
       {/* ─── Reset ───────────────────────────────────────────────────────── */}
       <TouchableOpacity
-        style={[s.dangerBtn, { borderColor: '#ef4444', opacity: busy === 'reset' ? 0.5 : 1 }]}
+        style={[s.dangerBtn, { borderColor: theme.colors.statusWarning, opacity: busy === 'reset' ? 0.5 : 1 }]}
         disabled={busy === 'reset'}
         onPress={handleReset}
         activeOpacity={0.8}
       >
-        <Text style={{ color: '#ef4444', fontWeight: '800' }}>Reset alle branding</Text>
+        <Text style={{ color: theme.colors.statusWarning, fontWeight: '800' }}>Reset alle branding</Text>
       </TouchableOpacity>
 
       <Text style={[s.footnote, { color: theme.colors.textSecondary }]}>
@@ -300,17 +300,7 @@ export default function TenantBrandingScreen({ onBack }: Props) {
 
 const s = StyleSheet.create({
   content: { padding: 20, maxWidth: 720, alignSelf: 'center', width: '100%', gap: 14, paddingBottom: 60 },
-  header: { paddingBottom: 16, borderBottomWidth: 1, marginBottom: 6 },
-  backBtn: { alignSelf: 'flex-start', paddingVertical: 4, marginBottom: 8 },
-  title: {
-    fontSize: 36,
-    fontFamily: 'Georgia, "Playfair Display", serif',
-    fontStyle: 'italic',
-    fontWeight: '500',
-    letterSpacing: -1,
-    marginBottom: 6,
-    marginTop: 2,
-  },
+  headerMeta: { paddingBottom: 16, borderBottomWidth: 1, marginBottom: 6, marginTop: 8 },
   eyebrow: {
     fontSize: 10,
     fontWeight: '700',
@@ -325,10 +315,6 @@ const s = StyleSheet.create({
   input: {
     borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, marginBottom: 10,
   },
-  primaryBtn: {
-    borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center',
-  },
-  primaryBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
   dangerBtn: {
     borderWidth: 1.5, borderRadius: 10, paddingVertical: 12, alignItems: 'center', marginTop: 6,
   },
