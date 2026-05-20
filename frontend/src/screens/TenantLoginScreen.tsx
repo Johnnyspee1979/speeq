@@ -6,18 +6,20 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { initSupabase } from '../lib/supabase';
 import { setTenantConfig } from '../config/tenant';
 import { BACKEND_URL } from '../config/app';
+import { useTheme } from '../theme/ThemeProvider';
+import { PrimaryButton } from '../components/ui/PrimaryButton';
 
 interface Props {
   onLoginSuccess: () => void;
 }
 
 export default function TenantLoginScreen({ onLoginSuccess }: Props) {
+  const { theme } = useTheme();
   const [companyId, setCompanyId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -54,27 +56,74 @@ export default function TenantLoginScreen({ onLoginSuccess }: Props) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.outer}
+      style={[styles.outer, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.inner}>
-        {/* Logo / merk */}
+        {/* Logo + serif merk-titel */}
         <View style={styles.logoRow}>
-          <View style={styles.logoBadge}>
-            <Text style={styles.logoText}>W</Text>
+          <View style={[styles.logoBadge, { backgroundColor: theme.colors.textPrimary }]}>
+            <Text style={[styles.logoText, { color: theme.colors.background }]}>W</Text>
           </View>
-          <Text style={styles.appName}>WKB Snap & Sync</Text>
+          <Text
+            style={[
+              styles.appName,
+              {
+                fontFamily: theme.typography.headline.fontFamily,
+                fontWeight: theme.typography.headline.fontWeight,
+                fontStyle: theme.typography.headline.fontStyle,
+                color: theme.colors.textPrimary,
+              },
+            ]}
+          >
+            WKB Snap & Sync
+          </Text>
         </View>
-        <Text style={styles.tagline}>Voer je Bedrijfs-ID in om te verbinden</Text>
+        <Text
+          style={[
+            styles.tagline,
+            {
+              fontFamily: theme.typography.bodyData.fontFamily,
+              color: theme.colors.textSecondary,
+            },
+          ]}
+        >
+          Voer je Bedrijfs-ID in om te verbinden
+        </Text>
 
         {/* Card */}
-        <View style={styles.card}>
-          <Text style={styles.label}>Bedrijfs-ID</Text>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.borderWarm,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.label,
+              {
+                fontFamily: theme.typography.caption.fontFamily,
+                color: theme.colors.textMuted,
+              },
+            ]}
+          >
+            BEDRIJFS-ID
+          </Text>
           <TextInput
             ref={inputRef}
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.colors.background,
+                color: theme.colors.textPrimary,
+                borderColor: theme.colors.borderWarm,
+              },
+            ]}
             placeholder="bijv. demo"
-            placeholderTextColor="#555"
+            placeholderTextColor={theme.colors.textMuted}
             value={companyId}
             onChangeText={(v) => { setCompanyId(v); setError(''); }}
             autoCapitalize="none"
@@ -85,29 +134,46 @@ export default function TenantLoginScreen({ onLoginSuccess }: Props) {
           />
 
           {error ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>⚠️  {error}</Text>
+            <View
+              style={[
+                styles.errorBox,
+                {
+                  backgroundColor: theme.colors.statusWarning,
+                  borderColor: theme.colors.borderWarm,
+                },
+              ]}
+            >
+              <Text style={[styles.errorText, { color: theme.colors.textPrimary }]}>
+                ⚠ {error}
+              </Text>
             </View>
           ) : null}
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+          <PrimaryButton
+            label="Verbinden →"
             onPress={handleLogin}
+            loading={loading}
             disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading
-              ? <ActivityIndicator color="#fff" />
-              : <Text style={styles.buttonText}>Verbinden →</Text>
-            }
-          </TouchableOpacity>
+          />
         </View>
 
-        <Text style={styles.footer}>
+        <Text
+          style={[
+            styles.footer,
+            {
+              fontFamily: theme.typography.caption.fontFamily,
+              color: theme.colors.textMuted,
+            },
+          ]}
+        >
           Geen licentie?{' '}
-          <Text style={styles.footerLink}>Neem contact op met Spee Solutions</Text>
+          <Text style={{ color: theme.colors.textSecondary, textDecorationLine: 'underline' }}>
+            Neem contact op met Spee Solutions
+          </Text>
         </Text>
       </View>
+
+      {loading ? <ActivityIndicator color={theme.colors.textPrimary} style={{ marginTop: 12 }} /> : null}
     </KeyboardAvoidingView>
   );
 }
@@ -115,15 +181,15 @@ export default function TenantLoginScreen({ onLoginSuccess }: Props) {
 const styles = StyleSheet.create({
   outer: {
     flex: 1,
-    backgroundColor: '#0B0F19',
   },
   inner: {
     flex: 1,
     justifyContent: 'center',
     padding: 28,
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
-
-  // Logo
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -135,94 +201,55 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: '#A40D2F',
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoText: {
-    color: '#fff',
     fontSize: 22,
     fontWeight: '900',
   },
   appName: {
-    color: '#fff',
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 28,
     letterSpacing: -0.5,
   },
   tagline: {
-    color: '#6B7280',
     fontSize: 14,
     textAlign: 'center',
     marginBottom: 36,
   },
-
-  // Card
   card: {
-    backgroundColor: '#161B2C',
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
-    borderColor: '#1F2937',
     marginBottom: 24,
+    flexDirection: 'column',
+    gap: 16,
   },
   label: {
-    color: '#9CA3AF',
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
     textTransform: 'uppercase',
-    marginBottom: 8,
   },
   input: {
-    backgroundColor: '#0B0F19',
-    color: '#F9FAFB',
     padding: 14,
     borderRadius: 10,
-    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#374151',
     fontSize: 16,
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     letterSpacing: 1,
   },
   errorBox: {
-    backgroundColor: '#7F1D1D22',
     borderRadius: 8,
     padding: 12,
-    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#EF444440',
   },
   errorText: {
-    color: '#FCA5A5',
     fontSize: 13,
     lineHeight: 18,
+    fontWeight: '700',
   },
-  button: {
-    backgroundColor: '#A40D2F',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 15,
-    letterSpacing: 0.3,
-  },
-
-  // Footer
   footer: {
-    color: '#4B5563',
     fontSize: 13,
     textAlign: 'center',
-  },
-  footerLink: {
-    color: '#6B7280',
-    textDecorationLine: 'underline',
   },
 });
