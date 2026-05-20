@@ -18,10 +18,11 @@ import {
   StyleSheet,
   Switch,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
+import { PageHeader } from '../components/ui/PageHeader';
+import { SecondaryButton } from '../components/ui/SecondaryButton';
 import { useWkbAuth } from '../hooks/useWkbAuth';
 import {
   FEATURE_KEYS,
@@ -100,13 +101,18 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        {onBack ? (
-          <TouchableOpacity onPress={onBack} style={styles.backBtn}>
-            <Text style={styles.backTxt}>← Terug</Text>
-          </TouchableOpacity>
-        ) : null}
-        <Text style={styles.title}>🛠️ Modules</Text>
+      {onBack ? (
+        <SecondaryButton
+          title="← Terug"
+          onPress={onBack}
+          style={{ alignSelf: 'flex-start', marginBottom: 8 }}
+        />
+      ) : null}
+
+      <PageHeader title="Modules" />
+
+      <View style={styles.headerMeta}>
+        <Text style={styles.eyebrow}>MODULE CONFIGURATIE</Text>
         <Text style={styles.subtitle}>
           Zet onderdelen van SpeeQ aan of uit voor je bedrijf
           {tenantId ? ` (${tenantId})` : ''}.
@@ -123,13 +129,22 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
       {message ? (
         <View style={[
           styles.msg,
-          { backgroundColor: message.tone === 'ok' ? '#dcfce7' : '#fee2e2' },
+          {
+            backgroundColor: message.tone === 'ok'
+              ? theme.colors.statusSuccess
+              : theme.colors.statusWarning,
+            borderColor: theme.colors.borderWarm,
+          },
         ]}>
           <Text style={[
             styles.msgText,
-            { color: message.tone === 'ok' ? '#166534' : '#991b1b' },
+            {
+              color: message.tone === 'ok'
+                ? theme.colors.background
+                : theme.colors.textPrimary,
+            },
           ]}>
-            {message.tone === 'ok' ? '✅' : '⚠️'} {message.text}
+            {message.tone === 'ok' ? '✓' : '⚠'} {message.text}
           </Text>
         </View>
       ) : null}
@@ -162,8 +177,11 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
                       value={enabled}
                       onValueChange={v => handleToggle(key, v)}
                       disabled={!canWrite}
-                      trackColor={{ false: '#cbd5e1', true: theme.colors.accent }}
-                      thumbColor="#ffffff"
+                      trackColor={{
+                        false: theme.colors.borderWarm,
+                        true: theme.colors.statusSuccess,
+                      }}
+                      thumbColor={theme.colors.background}
                     />
                   )}
                 </View>
@@ -195,21 +213,19 @@ function createStyles(theme: any) {
       width: '100%',
       alignSelf: 'center',
     },
-    header: {
+    headerMeta: {
+      marginTop: 8,
       marginBottom: 24,
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.borderWarm,
     },
-    backBtn: {
-      marginBottom: 12,
-    },
-    backTxt: {
-      color: theme.colors.accent,
-      fontSize: 14,
-      fontWeight: '500',
-    },
-    title: {
-      fontSize: 28,
+    eyebrow: {
+      fontSize: 10,
       fontWeight: '700',
-      color: theme.colors.text,
+      letterSpacing: 3,
+      textTransform: 'uppercase',
+      color: theme.colors.textMuted,
       marginBottom: 6,
     },
     subtitle: {
@@ -219,16 +235,19 @@ function createStyles(theme: any) {
     readOnlyBanner: {
       marginTop: 12,
       padding: 12,
-      backgroundColor: '#fef3c7',
+      backgroundColor: theme.colors.surfaceAlt,
       borderRadius: 8,
+      borderWidth: 1,
+      borderColor: theme.colors.borderWarm,
     },
     readOnlyText: {
       fontSize: 13,
-      color: '#92400e',
+      color: theme.colors.textPrimary,
     },
     msg: {
       padding: 12,
       borderRadius: 8,
+      borderWidth: 1,
       marginBottom: 16,
     },
     msgText: {
@@ -247,7 +266,7 @@ function createStyles(theme: any) {
       backgroundColor: theme.colors.surface,
       borderRadius: 12,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderWarm,
       overflow: 'hidden',
     },
     row: {
@@ -255,7 +274,7 @@ function createStyles(theme: any) {
       alignItems: 'center',
       padding: 16,
       borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
+      borderBottomColor: theme.colors.borderWarm,
     },
     rowLeft: {
       flex: 1,
@@ -274,7 +293,7 @@ function createStyles(theme: any) {
     rowTitle: {
       fontSize: 16,
       fontWeight: '600',
-      color: theme.colors.text,
+      color: theme.colors.textPrimary,
       marginBottom: 4,
     },
     rowDesc: {
@@ -293,7 +312,7 @@ function createStyles(theme: any) {
       backgroundColor: theme.colors.surface,
       borderRadius: 8,
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: theme.colors.borderWarm,
     },
     footerText: {
       fontSize: 13,
