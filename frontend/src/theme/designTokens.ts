@@ -5,6 +5,17 @@
 
 import { Platform } from 'react-native';
 
+// Two-Font System families. Web gebruikt de Google Fonts namen (geladen via
+// web/index.html <link>); native blijft de expo-font alias gebruiken die later
+// via useFonts() kan worden geregistreerd.
+const HEADLINE_FAMILY = Platform.OS === 'web'
+  ? '"Playfair Display", Georgia, serif'
+  : 'Playfair-Italic';
+
+const INTER_FAMILY = Platform.OS === 'web'
+  ? '"Inter", system-ui, -apple-system, sans-serif'
+  : 'Inter';
+
 export const designTokens = {
   colors: {
     // Basis en Oppervlakten
@@ -30,26 +41,33 @@ export const designTokens = {
   },
 
   // Two-Font System implementatie
+  // Gewicht wordt via fontWeight gestuurd ipv via family-suffix, zodat één
+  // family-naam (Playfair Display / Inter) werkt over alle stijlen heen.
   typography: {
     headline: {
-      fontFamily: 'Playfair-Italic', // Verplicht Bold + Italic voor PageHeaders
+      fontFamily: HEADLINE_FAMILY,
       fontSize: 32,
       lineHeight: 40,
+      fontWeight: '700' as const,   // Bold
+      fontStyle: 'italic' as const, // Italic voor PageHeader titels
     },
     sectionTitle: {
-      fontFamily: 'Inter-SemiBold',
+      fontFamily: INTER_FAMILY,
       fontSize: 20,
       lineHeight: 28,
+      fontWeight: '600' as const,   // SemiBold
     },
     bodyData: {
-      fontFamily: 'Inter-Regular',   // Standaard voor tabellen en data
+      fontFamily: INTER_FAMILY,
       fontSize: 16,
       lineHeight: 24,
+      fontWeight: '400' as const,   // Regular
     },
     caption: {
-      fontFamily: 'Inter-Medium',
+      fontFamily: INTER_FAMILY,
       fontSize: 12,
       lineHeight: 16,
+      fontWeight: '500' as const,   // Medium
       color: '#575B5F',
     },
   },
