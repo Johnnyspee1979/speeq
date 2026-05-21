@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx expo export --platform web --output-dir dist",
+  "buildCommand": "npx expo export --platform web --output-dir dist && (cp -r web/landing dist/landing 2>/dev/null || true) && (cp -r web/privacy dist/privacy 2>/dev/null || true) && (cp web/reset.html dist/reset.html 2>/dev/null || true)",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
