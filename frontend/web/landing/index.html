@@ -201,106 +201,301 @@
       .nav-menu { display: none; }
     }
 
-    /* ─── Hero ─── */
+    /* ─── Hero — centered phone with floating evidence cards ─── */
     .hero {
-      padding-top: 80px;
-      padding-bottom: 96px;
-      min-height: 80vh;
+      position: relative;
+      padding: 96px 0 64px;
+      text-align: center;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 50% 20%, rgba(248, 131, 99, 0.10), transparent 70%),
+        radial-gradient(ellipse 40% 30% at 20% 40%, rgba(201, 176, 153, 0.18), transparent 70%),
+        radial-gradient(ellipse 40% 30% at 80% 50%, rgba(31, 77, 58, 0.06), transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .hero-content { position: relative; z-index: 2; }
+    .hero h1 {
+      max-width: 920px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+    .hero-sub {
+      max-width: 580px;
+      margin: 0 auto 40px;
+      font-size: 19px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+    .hero-cta-wrap {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 56px;
+    }
+    .btn-terracotta {
+      background: var(--terracotta);
+      color: var(--text-primary);
+      border: 1px solid var(--terracotta);
+      padding: 18px 36px;
+      font-size: 17px;
+      font-weight: 700;
+      box-shadow: 0 8px 24px -8px rgba(248, 131, 99, 0.4);
+    }
+    .btn-terracotta:hover { transform: translateY(-2px); opacity: 0.95; }
+    .hero-cta-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Phone mockup stage */
+    .phone-stage {
+      position: relative;
+      max-width: 900px;
+      margin: 0 auto;
+      height: 600px;
+    }
+    .phone {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+      width: 280px;
+      height: 580px;
+      background: var(--text-primary);
+      border-radius: 44px;
+      padding: 12px;
+      box-shadow:
+        0 40px 80px -30px rgba(43, 43, 43, 0.35),
+        0 0 0 1px rgba(43, 43, 43, 0.05);
+      z-index: 5;
+    }
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      background: var(--cream);
+      border-radius: 32px;
+      padding: 32px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .phone-notch {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90px;
+      height: 24px;
+      background: var(--text-primary);
+      border-radius: 14px;
+      z-index: 10;
+    }
+    .phone-status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-top: 8px;
+      padding: 0 4px;
+    }
+    .phone-title {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 700;
+      font-size: 22px;
+      color: var(--text-primary);
+      margin: 8px 0 4px;
+    }
+    .phone-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .phone-photo {
+      background: linear-gradient(135deg, var(--beige), var(--warmgrey));
+      border-radius: 14px;
+      flex: 1;
+      min-height: 180px;
+      position: relative;
+      border: 1px solid var(--border-warm);
       display: flex;
       align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      opacity: 0.6;
     }
-    .hero-grid {
+    .phone-pill {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      padding: 5px 11px;
+      background: var(--forest);
+      color: var(--cream);
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .phone-meta {
       display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 64px;
-      align-items: center;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 4px;
     }
-    .hero h1 br { display: block; }
-    .hero-ctas {
+    .phone-meta-item {
+      background: var(--oatmeal);
+      border: 1px solid var(--border-warm);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+    .phone-meta-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+    .phone-meta-value {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .phone-cta {
+      background: var(--text-primary);
+      color: var(--cream);
+      border-radius: 14px;
+      padding: 14px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* Floating evidence cards */
+    .evidence-card {
+      position: absolute;
+      background: var(--cream);
+      border: 1px solid var(--border-warm);
+      border-radius: 14px;
+      padding: 12px 14px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin: 32px 0 16px;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 12px 32px -12px rgba(43, 43, 43, 0.18);
+      width: 230px;
+      z-index: 3;
+      backdrop-filter: blur(8px);
+      animation: float 6s ease-in-out infinite;
+    }
+    .evidence-card.right { right: 0; }
+    .evidence-card.left { left: 0; }
+    .evidence-card.pos-1 { top: 60px; }
+    .evidence-card.pos-2 { top: 220px; animation-delay: 1.5s; }
+    .evidence-card.pos-3 { top: 380px; animation-delay: 3s; }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    .evidence-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--beige), var(--warmgrey));
+      border: 1px solid var(--border-warm);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      opacity: 0.7;
+    }
+    .evidence-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .evidence-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .evidence-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .evidence-status.success {
+      background: rgba(31, 77, 58, 0.1);
+      color: var(--forest);
+    }
+    .evidence-status.warning {
+      background: rgba(248, 131, 99, 0.12);
+      color: var(--terracotta);
+    }
+    .evidence-status.neutral {
+      background: var(--oatmeal);
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 900px) {
+      .phone-stage { height: 640px; }
+      .evidence-card { width: 200px; }
+      .evidence-card.right { right: -10px; }
+      .evidence-card.left { left: -10px; }
+    }
+    @media (max-width: 720px) {
+      .hero { padding-top: 64px; }
+      .phone-stage { height: auto; padding: 0 0 32px; }
+      .phone {
+        position: relative;
+        left: auto;
+        transform: none;
+        margin: 0 auto;
+      }
+      .evidence-card {
+        position: relative;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        width: 100%;
+        max-width: 320px;
+        margin: 12px auto 0;
+        animation: none;
+      }
+      .evidence-card.right + .evidence-card.right,
+      .evidence-card.left + .evidence-card.left { display: none; }
     }
     .hero-trust {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-muted);
-      margin-top: 16px;
+      margin-top: 8px;
     }
     .hero-trust span:not(:first-child)::before {
       content: '·';
       margin: 0 8px;
       color: var(--border-warm);
-    }
-    .hero-visual {
-      aspect-ratio: 4 / 5;
-      background: linear-gradient(135deg, var(--beige), var(--oatmeal));
-      border-radius: 24px;
-      border: 1px solid var(--border-warm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero-visual::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 30% 30%, rgba(201, 176, 153, 0.15), transparent 60%);
-      pointer-events: none;
-    }
-    .hero-visual-mock {
-      width: 70%;
-      background: var(--cream);
-      border-radius: 18px;
-      border: 1px solid var(--border-warm);
-      padding: 24px;
-      box-shadow: 0 20px 40px -20px rgba(43, 43, 43, 0.15);
-    }
-    .hero-visual-mock-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .hero-visual-mock-thumb {
-      width: 56px;
-      height: 56px;
-      border-radius: 10px;
-      background: var(--oatmeal);
-      border: 1px solid var(--border-warm);
-      flex-shrink: 0;
-    }
-    .hero-visual-mock-info {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .hero-visual-mock-info .line {
-      height: 8px;
-      background: var(--warmgrey);
-      border-radius: 4px;
-    }
-    .hero-visual-mock-info .line.short { width: 60%; }
-    .hero-visual-mock-pill {
-      display: inline-block;
-      padding: 4px 10px;
-      background: var(--forest);
-      color: var(--cream);
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    @media (max-width: 768px) {
-      .hero-grid {
-        grid-template-columns: 1fr;
-        gap: 48px;
-      }
-      .hero-visual { aspect-ratio: 1 / 1; max-width: 420px; margin: 0 auto; }
     }
 
     /* ─── Section: problem ─── */
@@ -688,46 +883,105 @@
   </div>
 </nav>
 
-<!-- ─── Sectie 2 — Hero ─── -->
+<!-- ─── Sectie 2 — Hero (centered phone + floating evidence cards) ─── -->
 <section class="hero">
-  <div class="container hero-grid">
-    <div>
-      <p class="eyebrow">Sinds 1 januari 2024 verplicht</p>
-      <h1>Wkb-bewijslast<br>in drie tikken.</h1>
-      <p class="lead">
-        Foto, GPS en weer worden automatisch vastgelegd op de bouwplaats.
-        De werkvoorbereider beoordeelt op kantoor. Aan einde project:
-        één klik, PDF voor de Wkb-borger.
-      </p>
-      <div class="hero-ctas">
-        <a href="#contact" class="btn btn-primary">Plan een demo van 20 minuten</a>
-        <a href="#hoe" class="btn btn-secondary">Bekijk hoe het werkt</a>
-      </div>
-      <p class="hero-trust">
-        <span>Eerste 6 maanden directe lijn naar Johnny</span>
-        <span>Workspace binnen 24 uur</span>
-        <span>30 dagen proef</span>
-      </p>
+  <div class="container hero-content">
+    <p class="eyebrow">Sinds 1 januari 2024 verplicht</p>
+    <h1>Wkb-bewijslast<br>in drie tikken.</h1>
+    <p class="hero-sub">
+      Foto, GPS en weer worden automatisch vastgelegd op de bouwplaats.
+      De werkvoorbereider beoordeelt op kantoor. Eén klik aan einde
+      project: PDF voor de Wkb-borger.
+    </p>
+    <div class="hero-cta-wrap">
+      <a href="#contact" class="btn btn-terracotta">Plan een demo van 20 minuten</a>
+      <p class="hero-cta-sub">Johnny belt persoonlijk binnen één werkdag</p>
     </div>
-    <div class="hero-visual">
-      <div class="hero-visual-mock">
-        <div class="hero-visual-mock-row">
-          <div class="hero-visual-mock-thumb"></div>
-          <div class="hero-visual-mock-info">
-            <div class="line"></div>
-            <div class="line short"></div>
-          </div>
+
+    <!-- Phone stage met zwevende evidence-cards -->
+    <div class="phone-stage">
+
+      <!-- Linker floating cards -->
+      <div class="evidence-card left pos-1">
+        <div class="evidence-thumb">🏗️</div>
+        <div class="evidence-info">
+          <div class="evidence-name">Fundering — west</div>
+          <span class="evidence-status success">✓ Akkoord</span>
         </div>
-        <div class="hero-visual-mock-row" style="margin-bottom: 8px;">
-          <div class="hero-visual-mock-thumb"></div>
-          <div class="hero-visual-mock-info">
-            <div class="line"></div>
-            <div class="line short"></div>
-          </div>
-        </div>
-        <span class="hero-visual-mock-pill">Goedgekeurd</span>
       </div>
+      <div class="evidence-card left pos-2">
+        <div class="evidence-thumb">🧱</div>
+        <div class="evidence-info">
+          <div class="evidence-name">Wapening kelder</div>
+          <span class="evidence-status warning">⚠ Controle</span>
+        </div>
+      </div>
+      <div class="evidence-card left pos-3">
+        <div class="evidence-thumb">📐</div>
+        <div class="evidence-info">
+          <div class="evidence-name">Maatvoering rij A</div>
+          <span class="evidence-status success">✓ Akkoord</span>
+        </div>
+      </div>
+
+      <!-- Phone in het midden -->
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div class="phone-status">
+            <span>9:41</span>
+            <span>SpeeQ</span>
+          </div>
+          <div class="phone-title">Controlemoment</div>
+          <div class="phone-subtitle">Vastleggen voor borgingsdossier</div>
+          <div class="phone-photo">
+            🏗
+            <span class="phone-pill">Akkoord</span>
+          </div>
+          <div class="phone-meta">
+            <div class="phone-meta-item">
+              <div class="phone-meta-label">GPS</div>
+              <div class="phone-meta-value">52.07° N</div>
+            </div>
+            <div class="phone-meta-item">
+              <div class="phone-meta-label">Weer</div>
+              <div class="phone-meta-value">11° bewolkt</div>
+            </div>
+          </div>
+          <div class="phone-cta">Toevoegen aan dossier</div>
+        </div>
+      </div>
+
+      <!-- Rechter floating cards -->
+      <div class="evidence-card right pos-1">
+        <div class="evidence-thumb">🪟</div>
+        <div class="evidence-info">
+          <div class="evidence-name">Kozijn voorgevel</div>
+          <span class="evidence-status success">✓ Akkoord</span>
+        </div>
+      </div>
+      <div class="evidence-card right pos-2">
+        <div class="evidence-thumb">💧</div>
+        <div class="evidence-info">
+          <div class="evidence-name">Dakdoorvoer 03</div>
+          <span class="evidence-status success">✓ Akkoord</span>
+        </div>
+      </div>
+      <div class="evidence-card right pos-3">
+        <div class="evidence-thumb">🔌</div>
+        <div class="evidence-info">
+          <div class="evidence-name">Meterkast</div>
+          <span class="evidence-status neutral">○ In review</span>
+        </div>
+      </div>
+
     </div>
+
+    <p class="hero-trust">
+      <span>Eerste 6 maanden directe lijn naar Johnny</span>
+      <span>Workspace binnen 24 uur</span>
+      <span>30 dagen proef</span>
+    </p>
   </div>
 </section>
 
