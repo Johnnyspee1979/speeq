@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#FBF6EE">
+  <meta name="description" content="SpeeQ — Wkb-bewijslast in drie tikken. Uw eigen database in Frankfurt, voor u alleen. Wkb-software voor mkb-aannemers, gemaakt door Spee Solutions.">
+
+  <title>SpeeQ — Wkb-bewijslast in drie tikken</title>
+
+  <!-- Open Graph (LinkedIn, WhatsApp, X) -->
+  <meta property="og:title" content="SpeeQ — Wkb-bewijslast in drie tikken">
+  <meta property="og:description" content="Foto, GPS, weer — automatisch vastgelegd. Werkvoorbereider beoordeelt op kantoor. Eén klik aan einde project: PDF voor de Wkb-borger.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://speeq-wkb-tool.vercel.app/landing">
+  <meta property="og:locale" content="nl_NL">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@400;500;600;700&display=swap">
+
+  <!-- Cookie-redirect voor terugkerende klanten -->
+  <script>
+    (function() {
+      if (typeof document !== 'undefined' && document.cookie.includes('wkb_returning=1')) {
+        window.location.replace('/');
+      }
+    })();
+  </script>
+
+  <style>
+    /* ─── Warm Minimal tokens ─── */
+    :root {
+      --cream: #FBF6EE;
+      --oatmeal: #F3EDE2;
+      --beige: #EADBC7;
+      --warmgrey: #D8D1C7;
+      --text-primary: #2B2B2B;
+      --text-secondary: #2F2A25;
+      --text-muted: #575B5F;
+      --forest: #1F4D3A;
+      --terracotta: #F88363;
+      --border-warm: #C9B099;
+
+      --font-serif: 'Playfair Display', Georgia, serif;
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+      --max-width: 1140px;
+      --pad-x: 24px;
+      --pad-section: 96px;
+    }
+
+    /* ─── Reset ─── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--font-sans);
+      font-size: 18px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background: var(--cream);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; cursor: pointer; }
+
+    /* ─── Containers ─── */
+    .container {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding-left: var(--pad-x);
+      padding-right: var(--pad-x);
+    }
+    section {
+      padding: var(--pad-section) 0;
+    }
+    .alt-bg { background: var(--oatmeal); }
+
+    /* ─── Typography ─── */
+    .eyebrow {
+      font-family: var(--font-sans);
+      font-weight: 500;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 0 0 16px;
+    }
+    h1, h2 {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-style: italic;
+      color: var(--text-primary);
+      margin: 0 0 24px;
+      letter-spacing: -0.01em;
+    }
+    h1 { font-size: clamp(40px, 6vw, 72px); line-height: 1.05; }
+    h2 { font-size: clamp(32px, 4.5vw, 48px); line-height: 1.1; }
+    h3 {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 22px;
+      line-height: 1.3;
+      margin: 0 0 12px;
+      color: var(--text-primary);
+    }
+    p { margin: 0 0 16px; color: var(--text-secondary); }
+    p.lead { font-size: 20px; line-height: 1.5; max-width: 540px; }
+
+    /* ─── Buttons ─── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary {
+      background: var(--text-primary);
+      color: var(--cream);
+      border: 1px solid var(--text-primary);
+    }
+    .btn-primary:hover { opacity: 0.92; }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-warm);
+    }
+    .btn-secondary:hover { background: var(--oatmeal); }
+    .btn-light {
+      background: var(--cream);
+      color: var(--text-primary);
+      border: 1px solid var(--cream);
+      padding: 18px 40px;
+      font-size: 18px;
+    }
+    .btn-light:hover { opacity: 0.95; }
+
+    /* ─── Nav ─── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(251, 246, 238, 0.95);
+      backdrop-filter: saturate(180%) blur(6px);
+      -webkit-backdrop-filter: saturate(180%) blur(6px);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease;
+    }
+    .nav.scrolled { border-bottom-color: var(--border-warm); }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 18px 24px;
+      max-width: var(--max-width);
+      margin: 0 auto;
+    }
+    .nav-logo {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-style: italic;
+      font-size: 28px;
+      color: var(--text-primary);
+    }
+    .nav-menu {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .nav-menu a {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: color 0.15s ease;
+    }
+    .nav-menu a:hover { color: var(--text-primary); }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .nav-customer {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .nav-customer:hover { color: var(--text-primary); }
+    @media (max-width: 768px) {
+      .nav-menu { display: none; }
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      padding-top: 80px;
+      padding-bottom: 96px;
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .hero h1 br { display: block; }
+    .hero-ctas {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: 32px 0 16px;
+    }
+    .hero-trust {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 16px;
+    }
+    .hero-trust span:not(:first-child)::before {
+      content: '·';
+      margin: 0 8px;
+      color: var(--border-warm);
+    }
+    .hero-visual {
+      aspect-ratio: 4 / 5;
+      background: linear-gradient(135deg, var(--beige), var(--oatmeal));
+      border-radius: 24px;
+      border: 1px solid var(--border-warm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-visual::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(201, 176, 153, 0.15), transparent 60%);
+      pointer-events: none;
+    }
+    .hero-visual-mock {
+      width: 70%;
+      background: var(--cream);
+      border-radius: 18px;
+      border: 1px solid var(--border-warm);
+      padding: 24px;
+      box-shadow: 0 20px 40px -20px rgba(43, 43, 43, 0.15);
+    }
+    .hero-visual-mock-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .hero-visual-mock-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 10px;
+      background: var(--oatmeal);
+      border: 1px solid var(--border-warm);
+      flex-shrink: 0;
+    }
+    .hero-visual-mock-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .hero-visual-mock-info .line {
+      height: 8px;
+      background: var(--warmgrey);
+      border-radius: 4px;
+    }
+    .hero-visual-mock-info .line.short { width: 60%; }
+    .hero-visual-mock-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      background: var(--forest);
+      color: var(--cream);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    @media (max-width: 768px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+      .hero-visual { aspect-ratio: 1 / 1; max-width: 420px; margin: 0 auto; }
+    }
+
+    /* ─── Section: problem ─── */
+    .narrow {
+      max-width: 720px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .narrow p { font-size: 18px; line-height: 1.7; text-align: left; }
+    .narrow .eyebrow { text-align: left; }
+    .narrow h2 { text-align: left; }
+
+    /* ─── 3 steps ─── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      margin-top: 56px;
+    }
+    .step {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .step-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--forest);
+      color: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-style: italic;
+      font-size: 22px;
+    }
+    .step p { font-size: 16px; line-height: 1.6; color: var(--text-secondary); }
+    @media (max-width: 768px) {
+      .steps { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    /* ─── Difference (vault) ─── */
+    .vault-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: center;
+    }
+    .vault-quote {
+      border-left: 3px solid var(--forest);
+      padding: 8px 0 8px 20px;
+      font-style: italic;
+      color: var(--text-secondary);
+      margin: 24px 0 0;
+    }
+    .vault-visual {
+      background: var(--cream);
+      border: 1px solid var(--border-warm);
+      border-radius: 20px;
+      padding: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    .vault-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 24px;
+      border-radius: 16px;
+      background: var(--oatmeal);
+      border: 1px solid var(--border-warm);
+    }
+    .vault-card.is-them { opacity: 0.85; }
+    .vault-card.is-us {
+      background: var(--cream);
+      border: 2px solid var(--forest);
+    }
+    .vault-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      background: var(--text-primary);
+      color: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 700;
+    }
+    .vault-card.is-us .vault-icon {
+      background: var(--forest);
+    }
+    .vault-label {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .vault-title {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 700;
+      font-size: 18px;
+      text-align: center;
+      color: var(--text-primary);
+    }
+    @media (max-width: 768px) {
+      .vault-grid { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    /* ─── Pricing ─── */
+    .pricing {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 1fr;
+      gap: 24px;
+      margin-top: 56px;
+      align-items: stretch;
+    }
+    .pkg {
+      background: var(--beige);
+      border: 1px solid var(--border-warm);
+      border-radius: 18px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+    }
+    .pkg.is-featured {
+      background: var(--cream);
+      border: 2px solid var(--forest);
+      transform: translateY(-12px);
+    }
+    .pkg-badge {
+      position: absolute;
+      top: -14px;
+      right: 24px;
+      background: var(--terracotta);
+      color: var(--text-primary);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .pkg-label {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .pkg-price {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 1;
+      color: var(--text-primary);
+    }
+    .pkg-period { font-size: 14px; color: var(--text-muted); margin-top: -4px; }
+    .pkg-bullets { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+    .pkg-bullets li {
+      font-size: 15px;
+      color: var(--text-secondary);
+      padding-left: 24px;
+      position: relative;
+    }
+    .pkg-bullets li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--forest);
+      font-weight: 700;
+    }
+    .founder-strip {
+      margin-top: 40px;
+      padding: 24px 32px;
+      background: var(--warmgrey);
+      border: 1px solid var(--border-warm);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .founder-strip-label {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--terracotta);
+    }
+    .founder-strip-text {
+      flex: 1;
+      font-size: 15px;
+      color: var(--text-primary);
+    }
+    .founder-strip-text strong { color: var(--terracotta); }
+    @media (max-width: 768px) {
+      .pricing { grid-template-columns: 1fr; gap: 16px; }
+      .pkg.is-featured { transform: none; }
+    }
+
+    /* ─── Maker section ─── */
+    .maker-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 48px;
+      align-items: center;
+    }
+    .maker-portrait {
+      aspect-ratio: 1 / 1;
+      background: linear-gradient(135deg, var(--beige), var(--warmgrey));
+      border-radius: 20px;
+      border: 1px solid var(--border-warm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 700;
+      font-size: 96px;
+      color: var(--text-primary);
+      opacity: 0.4;
+    }
+    .maker-signature {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 500;
+      font-size: 20px;
+      color: var(--text-secondary);
+      margin-top: 24px;
+    }
+    @media (max-width: 768px) {
+      .maker-grid { grid-template-columns: 1fr; }
+      .maker-portrait { max-width: 320px; }
+    }
+
+    /* ─── FAQ ─── */
+    .faq {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--border-warm);
+      padding: 20px 0;
+    }
+    .faq-item summary {
+      list-style: none;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 18px;
+      color: var(--text-primary);
+      padding-right: 40px;
+      position: relative;
+      transition: color 0.15s ease;
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after {
+      content: '+';
+      position: absolute;
+      right: 0;
+      top: -2px;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 28px;
+      color: var(--border-warm);
+      transition: transform 0.2s ease;
+    }
+    .faq-item[open] summary::after {
+      content: '−';
+      color: var(--forest);
+    }
+    .faq-item summary:hover { color: var(--forest); }
+    .faq-item p {
+      margin: 16px 0 0;
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+
+    /* ─── Final CTA ─── */
+    .final-cta {
+      background: var(--forest);
+      color: var(--cream);
+      text-align: center;
+    }
+    .final-cta h2 {
+      color: var(--cream);
+      font-size: clamp(36px, 5vw, 56px);
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .final-cta p {
+      color: rgba(251, 246, 238, 0.9);
+      max-width: 600px;
+      margin: 0 auto 32px;
+      font-size: 18px;
+    }
+    .final-cta-direct {
+      margin-top: 24px;
+      font-size: 15px;
+      color: rgba(251, 246, 238, 0.7);
+    }
+    .final-cta-direct a {
+      color: var(--cream);
+      border-bottom: 1px solid rgba(251, 246, 238, 0.3);
+    }
+
+    /* ─── Footer ─── */
+    .footer {
+      background: var(--warmgrey);
+      padding: 64px 0 32px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 48px;
+      margin-bottom: 48px;
+    }
+    .footer h4 {
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 0 0 16px;
+    }
+    .footer p, .footer a, .footer li {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .footer ul { list-style: none; padding: 0; margin: 0; }
+    .footer li { margin-bottom: 8px; }
+    .footer a:hover { color: var(--text-primary); }
+    .footer-brand-name {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-weight: 700;
+      font-size: 24px;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+    .footer-bottom {
+      border-top: 1px solid var(--border-warm);
+      padding-top: 24px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    @media (max-width: 768px) {
+      .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Nav ─── -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">SpeeQ</a>
+    <ul class="nav-menu">
+      <li><a href="#hoe">Hoe werkt het</a></li>
+      <li><a href="#anders">Het verschil</a></li>
+      <li><a href="#prijzen">Prijzen</a></li>
+      <li><a href="#faq">Vragen</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a href="/" class="nav-customer">Ik ben al klant →</a>
+      <a href="#contact" class="btn btn-primary" style="padding: 10px 20px; font-size: 14px;">Plan demo</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ─── Sectie 2 — Hero ─── -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <p class="eyebrow">Sinds 1 januari 2024 verplicht</p>
+      <h1>Wkb-bewijslast<br>in drie tikken.</h1>
+      <p class="lead">
+        Foto, GPS en weer worden automatisch vastgelegd op de bouwplaats.
+        De werkvoorbereider beoordeelt op kantoor. Aan einde project:
+        één klik, PDF voor de Wkb-borger.
+      </p>
+      <div class="hero-ctas">
+        <a href="#contact" class="btn btn-primary">Plan een demo van 20 minuten</a>
+        <a href="#hoe" class="btn btn-secondary">Bekijk hoe het werkt</a>
+      </div>
+      <p class="hero-trust">
+        <span>Eerste 6 maanden directe lijn naar Johnny</span>
+        <span>Workspace binnen 24 uur</span>
+        <span>30 dagen proef</span>
+      </p>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-visual-mock">
+        <div class="hero-visual-mock-row">
+          <div class="hero-visual-mock-thumb"></div>
+          <div class="hero-visual-mock-info">
+            <div class="line"></div>
+            <div class="line short"></div>
+          </div>
+        </div>
+        <div class="hero-visual-mock-row" style="margin-bottom: 8px;">
+          <div class="hero-visual-mock-thumb"></div>
+          <div class="hero-visual-mock-info">
+            <div class="line"></div>
+            <div class="line short"></div>
+          </div>
+        </div>
+        <span class="hero-visual-mock-pill">Goedgekeurd</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Sectie 3 — Probleem ─── -->
+<section class="alt-bg">
+  <div class="container narrow">
+    <p class="eyebrow">Het probleem</p>
+    <h2>Excel, WhatsApp, donderdagavond.</h2>
+    <p>
+      Sinds januari 2024 moet u Wkb-bewijslast aanleveren bij elk
+      bouwproject in Gevolgklasse 1. Tussen tachtig en tweehonderdvijftig
+      vastleggingen per project: foto's, GPS, weer, akkoord, vaak een
+      handtekening van de klant.
+    </p>
+    <p>
+      Zonder tool wordt dat handmatig bijgehouden in Excel, Dropbox en
+      WhatsApp-groepen. Werkvoorbereiders zijn er uren per week aan kwijt.
+      Foto's raken zoek. Eén uitvraag van een verzekeraar — en het
+      dossier blijkt onvolledig.
+    </p>
+  </div>
+</section>
+
+<!-- ─── Sectie 4 — 3 stappen ─── -->
+<section id="hoe">
+  <div class="container">
+    <div style="text-align: center; max-width: 720px; margin: 0 auto 16px;">
+      <p class="eyebrow">Zo werkt het</p>
+      <h2 style="text-align: center;">Drie tikken op de bouwplaats.</h2>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-badge">1</div>
+        <h3>Vakman</h3>
+        <p>Opent SpeeQ-app, maakt foto van het controlemoment. App voegt GPS, KNMI-weer en tijdstempel automatisch toe.</p>
+      </div>
+      <div class="step">
+        <div class="step-badge">2</div>
+        <h3>Werkvoorbereider</h3>
+        <p>Beoordeelt foto's op desktop-dashboard. AI-precheck filtert: groen door, oranje controleren, rood afkeuren.</p>
+      </div>
+      <div class="step">
+        <div class="step-badge">3</div>
+        <h3>Einde project</h3>
+        <p>Eén klik genereert het complete borgingsdossier als PDF, met uw bedrijfslogo. Klaar voor de Wkb-borger.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Sectie 5 — Het verschil ─── -->
+<section id="anders" class="alt-bg">
+  <div class="container vault-grid">
+    <div>
+      <p class="eyebrow">Het verschil</p>
+      <h2>Uw eigen database.<br>Niet bij uw concurrenten.</h2>
+      <p>
+        De meeste Wkb-tools bouwen op gedeelde Postgres-databases. Uw data
+        zit in dezelfde tabel als die van uw concurrenten — gescheiden door
+        filterregels. Werkt prima zolang het werkt.
+      </p>
+      <p>
+        SpeeQ levert elke klant een eigen Supabase-database in Frankfurt.
+        Fysiek apart. Geen gedeelde tabellen. Inbegrepen in de standaardprijs.
+      </p>
+      <p>
+        Voor de meeste aannemers maakt dat in het dagelijkse werk geen
+        verschil. Voor de keer dat een verzekeraar of opdrachtgever erom
+        vraagt — dan is die vraag in drie minuten beantwoord.
+      </p>
+      <p class="vault-quote">
+        Het verschil is een bankvak versus een eigen kluis.
+        Iedereen zit in hetzelfde gebouw, maar in zijn eigen ruimte.
+      </p>
+    </div>
+    <div class="vault-visual">
+      <div class="vault-card is-them">
+        <div class="vault-icon">⌹</div>
+        <p class="vault-label">Concurrent</p>
+        <p class="vault-title">Gedeelde database</p>
+      </div>
+      <div class="vault-card is-us">
+        <div class="vault-icon">◆</div>
+        <p class="vault-label">SpeeQ</p>
+        <p class="vault-title">Eigen database<br>per klant</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Sectie 6 — Prijzen ─── -->
+<section id="prijzen">
+  <div class="container">
+    <div style="text-align: center; max-width: 720px; margin: 0 auto;">
+      <p class="eyebrow">Voor wie</p>
+      <h2 style="text-align: center;">Voor de aannemer<br>die premium kiest.</h2>
+      <p style="font-size: 18px;">
+        Bouwbedrijven met vijf tot vijftig medewerkers, die niet de
+        goedkoopste hoeven te zijn — en wel een vaste contactpersoon
+        willen kunnen bellen.
+      </p>
+    </div>
+
+    <div class="pricing">
+      <div class="pkg">
+        <p class="pkg-label">Team</p>
+        <div>
+          <span class="pkg-price">€149</span>
+          <p class="pkg-period">per maand</p>
+        </div>
+        <ul class="pkg-bullets">
+          <li>tot 5 gebruikers</li>
+          <li>onbeperkt aantal projecten</li>
+          <li>standaard branding</li>
+          <li>e-mail support</li>
+          <li>30 dagen proef</li>
+        </ul>
+        <a href="#contact" class="btn btn-secondary">Plan demo</a>
+      </div>
+
+      <div class="pkg is-featured">
+        <span class="pkg-badge">Aanbevolen</span>
+        <p class="pkg-label">Pro</p>
+        <div>
+          <span class="pkg-price">€299</span>
+          <p class="pkg-period">per maand</p>
+        </div>
+        <ul class="pkg-bullets">
+          <li>tot 15 gebruikers</li>
+          <li>eigen branding op PDF's</li>
+          <li>vaste support-lijn</li>
+          <li>WhatsApp-integratie</li>
+          <li>KiK-koppeling</li>
+        </ul>
+        <a href="#contact" class="btn btn-primary">Plan demo</a>
+      </div>
+
+      <div class="pkg">
+        <p class="pkg-label">Enterprise</p>
+        <div>
+          <span class="pkg-price">€899</span>
+          <p class="pkg-period">vanaf, per maand</p>
+        </div>
+        <ul class="pkg-bullets">
+          <li>onbeperkt aantal gebruikers</li>
+          <li>SLA</li>
+          <li>custom-integraties</li>
+          <li>prioriteit-support</li>
+          <li>jaarlijkse review</li>
+        </ul>
+        <a href="#contact" class="btn btn-secondary">Vraag aan</a>
+      </div>
+    </div>
+
+    <div class="founder-strip">
+      <span class="founder-strip-label">Founder-deal</span>
+      <p class="founder-strip-text">
+        Eerste 3 klanten krijgen <strong>12 maanden Pro voor Team-prijs</strong>.
+        Nog <strong>2 plekken</strong> vrij in mei.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Sectie 7 — Wie maakt dit ─── -->
+<section class="alt-bg">
+  <div class="container maker-grid">
+    <div class="maker-portrait">JS</div>
+    <div>
+      <p class="eyebrow">Wie maakt dit</p>
+      <h2>Eén persoon,<br>één telefoonnummer.</h2>
+      <p>
+        Mijn naam is Johnny Spee. Ik bouw SpeeQ zelf — vanuit mijn eenmanszaak
+        Spee Solutions in Den Haag. Geen team van veertig, geen Amerikaanse
+        investeerders, geen vertaalde Engelse software.
+      </p>
+      <p>
+        Klanten krijgen de eerste zes maanden mijn directe lijn voor support.
+        Geen ticket-systeem, geen call-center. Als u me belt, neem ik op of
+        bel ik binnen een uur terug.
+      </p>
+      <p>Dat zal voorlopig zo blijven.</p>
+      <p class="maker-signature">— Johnny Spee, Spee Solutions</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Sectie 8 — FAQ ─── -->
+<section id="faq">
+  <div class="container">
+    <div style="text-align: center; max-width: 720px; margin: 0 auto 48px;">
+      <p class="eyebrow">Veelgestelde vragen</p>
+      <h2 style="text-align: center;">Wat u zich nu afvraagt.</h2>
+    </div>
+    <div class="faq">
+      <details class="faq-item">
+        <summary>Is mijn data echt veilig?</summary>
+        <p>Ja. Elke klant krijgt een eigen Supabase-database in Frankfurt, fysiek gescheiden. Geen gedeelde tabellen. AVG-conform omdat EU-grondgebied. Wij hebben geen "admin-toegang" tot uw data.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Wat als ik wil overstappen vanaf STA, Vastlegg of BKapp?</summary>
+        <p>Wij helpen met data-overdracht. Foto's en metadata kunnen we importeren als u een export-bestand heeft. Lukt het niet automatisch, dan doe ik het handmatig — kosteloos in de eerste 6 maanden.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Werkt het offline op de bouwplaats?</summary>
+        <p>Ja. De app slaat foto's lokaal op en synct zodra er weer netwerk is. GPS en tijdstempel worden lokaal vastgelegd. Pas bij upload checken we duplicaten.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Wat kost het écht — geen verborgen kosten?</summary>
+        <p>De prijs is wat u ziet. Geen setup-fee, geen support-pakket dat u apart moet kopen, geen "enterprise"-meerkost voor de eigen database. Alleen extra opslag boven de 100GB is bijbetaling, en daar zit u niet snel aan.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Hoe lang duurt de onboarding?</summary>
+        <p>Workspace staat binnen 24 uur na akkoord klaar. Eerste week: een kickoff-call van 30 minuten waarin we samen uw eerste project opzetten. Vanaf dag drie kan uw team er volledig mee werken.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Wat als ik wil weg?</summary>
+        <p>U kunt op elk moment opzeggen, geen lange contracten. Bij vertrek krijgt u een export van al uw data — foto's, metadata, PDF-dossiers. U bent eigenaar van uw data, wij bewaren een laatste backup van 30 dagen voor uw zekerheid, daarna wordt alles verwijderd.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Sectie 9 — Final CTA ─── -->
+<section class="final-cta" id="contact">
+  <div class="container">
+    <h2>Twintig minuten,<br>en u weet of het past.</h2>
+    <p>
+      Ik bel persoonlijk. Geen sales-script, geen overtuigingsverhaal —
+      gewoon een rustig gesprek over uw projecten en of SpeeQ ze beter
+      maakt. Doet het dat niet, dan zeg ik dat ook.
+    </p>
+    <a href="mailto:johnny@speesolutions.com?subject=Demo-aanvraag%20SpeeQ" class="btn btn-light">Plan een demo van 20 minuten</a>
+    <p class="final-cta-direct">of bel direct: <a href="tel:+31681908480">+31 6 81908480</a></p>
+  </div>
+</section>
+
+<!-- ─── Footer ─── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand-name">SpeeQ</div>
+        <p>Wkb-software voor mkb-aannemers.<br>Spee Solutions · Den Haag</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#hoe">Hoe werkt het</a></li>
+          <li><a href="#anders">Het verschil</a></li>
+          <li><a href="#prijzen">Prijzen</a></li>
+          <li><a href="#faq">Vragen</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Juridisch</h4>
+        <ul>
+          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/privacy">Algemene voorwaarden</a></li>
+          <li><a href="/privacy">Verwerkersovereenkomst</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:johnny@speesolutions.com">johnny@speesolutions.com</a></li>
+          <li><a href="tel:+31681908480">+31 6 81908480</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      © 2026 Spee Solutions · Alle rechten voorbehouden
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Subtle nav border-bottom on scroll
+  (function() {
+    var nav = document.getElementById('nav');
+    if (!nav) return;
+    function onScroll() {
+      if (window.scrollY > 30) nav.classList.add('scrolled');
+      else nav.classList.remove('scrolled');
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
+
+</body>
+</html>

@@ -5,6 +5,8 @@
   "rewrites": [
     { "source": "/privacy",       "destination": "/privacy/index.html" },
     { "source": "/privacy/(.*)", "destination": "/privacy/$1" },
+    { "source": "/landing",       "destination": "/landing/index.html" },
+    { "source": "/landing/(.*)", "destination": "/landing/$1" },
     { "source": "/reset",         "destination": "/reset.html" },
     { "source": "/reset.html",    "destination": "/reset.html" },
     { "source": "/sw.js",         "destination": "/sw.js" },
