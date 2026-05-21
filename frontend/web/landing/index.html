@@ -7,21 +7,18 @@
   <meta name="theme-color" content="#FBF6EE">
   <meta name="description" content="SpeeQ — Wkb-bewijslast in drie tikken. Uw eigen database in Frankfurt, voor u alleen. Wkb-software voor mkb-aannemers, gemaakt door Spee Solutions.">
 
-  <title>SpeeQ — Wkb-bewijslast in drie tikken</title>
+  <title>SpeeQ — Uw Wkb-partner in Nederland</title>
 
-  <!-- Open Graph (LinkedIn, WhatsApp, X) -->
-  <meta property="og:title" content="SpeeQ — Wkb-bewijslast in drie tikken">
-  <meta property="og:description" content="Foto, GPS, weer — automatisch vastgelegd. Werkvoorbereider beoordeelt op kantoor. Eén klik aan einde project: PDF voor de Wkb-borger.">
+  <meta property="og:title" content="SpeeQ — Uw Wkb-partner in Nederland">
+  <meta property="og:description" content="Wkb-bewijslast vastleggen in drie tikken. Eigen database in Frankfurt. Door Spee Solutions, voor mkb-aannemers.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://speeq-wkb-tool.vercel.app/landing">
   <meta property="og:locale" content="nl_NL">
 
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@400;500;600;700&display=swap">
 
-  <!-- Cookie-redirect voor terugkerende klanten -->
   <script>
     (function() {
       if (typeof document !== 'undefined' && document.cookie.includes('wkb_returning=1')) {
@@ -31,7 +28,6 @@
   </script>
 
   <style>
-    /* ─── Warm Minimal tokens ─── */
     :root {
       --cream: #FBF6EE;
       --oatmeal: #F3EDE2;
@@ -43,1146 +39,500 @@
       --forest: #1F4D3A;
       --terracotta: #F88363;
       --border-warm: #C9B099;
-
       --font-serif: 'Playfair Display', Georgia, serif;
       --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-
-      --max-width: 1140px;
-      --pad-x: 24px;
-      --pad-section: 96px;
+      --max-width: 1200px;
     }
-
-    /* ─── Reset ─── */
     *, *::before, *::after { box-sizing: border-box; }
     html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
       font-family: var(--font-sans);
-      font-size: 18px;
+      font-size: 17px;
       line-height: 1.6;
       color: var(--text-primary);
       background: var(--cream);
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
     img { max-width: 100%; height: auto; display: block; }
     a { color: inherit; text-decoration: none; }
     button { font: inherit; cursor: pointer; }
+    .container { max-width: var(--max-width); margin: 0 auto; padding: 0 24px; }
 
-    /* ─── Containers ─── */
-    .container {
-      max-width: var(--max-width);
-      margin: 0 auto;
-      padding-left: var(--pad-x);
-      padding-right: var(--pad-x);
-    }
-    section {
-      padding: var(--pad-section) 0;
-    }
-    .alt-bg { background: var(--oatmeal); }
-
-    /* ─── Typography ─── */
-    .eyebrow {
-      font-family: var(--font-sans);
-      font-weight: 500;
-      font-size: 13px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin: 0 0 16px;
-    }
     h1, h2 {
       font-family: var(--font-serif);
       font-weight: 700;
       font-style: italic;
       color: var(--text-primary);
-      margin: 0 0 24px;
+      margin: 0 0 20px;
       letter-spacing: -0.01em;
     }
-    h1 { font-size: clamp(40px, 6vw, 72px); line-height: 1.05; }
-    h2 { font-size: clamp(32px, 4.5vw, 48px); line-height: 1.1; }
-    h3 {
-      font-family: var(--font-sans);
-      font-weight: 600;
-      font-size: 22px;
-      line-height: 1.3;
-      margin: 0 0 12px;
-      color: var(--text-primary);
-    }
+    h1 { font-size: clamp(40px, 6vw, 76px); line-height: 1.05; }
+    h2 { font-size: clamp(32px, 4vw, 48px); line-height: 1.1; }
+    h3 { font-family: var(--font-sans); font-weight: 600; font-size: 22px; line-height: 1.3; margin: 0 0 12px; color: var(--text-primary); }
     p { margin: 0 0 16px; color: var(--text-secondary); }
-    p.lead { font-size: 20px; line-height: 1.5; max-width: 540px; }
+    .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-muted); margin: 0 0 18px; }
 
-    /* ─── Buttons ─── */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 14px 28px;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 600;
-      transition: transform 0.15s ease, opacity 0.15s ease;
-    }
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 16px 28px; border-radius: 999px; font-size: 15px; font-weight: 600; transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease; white-space: nowrap; }
     .btn:hover { transform: translateY(-1px); }
-    .btn-primary {
-      background: var(--text-primary);
-      color: var(--cream);
-      border: 1px solid var(--text-primary);
-    }
-    .btn-primary:hover { opacity: 0.92; }
-    .btn-secondary {
-      background: transparent;
-      color: var(--text-primary);
-      border: 1px solid var(--border-warm);
-    }
-    .btn-secondary:hover { background: var(--oatmeal); }
-    .btn-light {
-      background: var(--cream);
-      color: var(--text-primary);
-      border: 1px solid var(--cream);
-      padding: 18px 40px;
-      font-size: 18px;
-    }
-    .btn-light:hover { opacity: 0.95; }
+    .btn-primary { background: var(--text-primary); color: var(--cream); border: 1px solid var(--text-primary); }
+    .btn-primary:hover { box-shadow: 0 8px 24px -8px rgba(43,43,43,0.4); }
+    .btn-secondary { background: transparent; color: var(--text-primary); border: 1px solid var(--border-warm); }
+    .btn-secondary:hover { background: var(--beige); }
+    .btn-light { background: var(--cream); color: var(--text-primary); border: 1px solid var(--cream); }
 
-    /* ─── Nav ─── */
-    .nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(251, 246, 238, 0.95);
-      backdrop-filter: saturate(180%) blur(6px);
-      -webkit-backdrop-filter: saturate(180%) blur(6px);
-      border-bottom: 1px solid transparent;
-      transition: border-color 0.2s ease;
-    }
+    /* Nav */
+    .nav { position: sticky; top: 0; z-index: 100; background: rgba(251, 246, 238, 0.95); backdrop-filter: saturate(180%) blur(8px); -webkit-backdrop-filter: saturate(180%) blur(8px); transition: border-color 0.2s ease; border-bottom: 1px solid transparent; }
     .nav.scrolled { border-bottom-color: var(--border-warm); }
-    .nav-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-      padding: 18px 24px;
-      max-width: var(--max-width);
-      margin: 0 auto;
-    }
-    .nav-logo {
-      font-family: var(--font-serif);
-      font-weight: 700;
-      font-style: italic;
-      font-size: 28px;
-      color: var(--text-primary);
-    }
-    .nav-menu {
-      display: flex;
-      gap: 28px;
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    .nav-menu a {
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      transition: color 0.15s ease;
-    }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 18px 24px; max-width: var(--max-width); margin: 0 auto; }
+    .nav-brand { font-family: var(--font-serif); font-weight: 700; font-style: italic; font-size: 28px; color: var(--text-primary); }
+    .nav-menu { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; }
+    .nav-menu a { font-size: 15px; font-weight: 500; color: var(--text-secondary); }
     .nav-menu a:hover { color: var(--text-primary); }
-    .nav-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .nav-customer {
-      font-size: 14px;
-      color: var(--text-muted);
-    }
+    .nav-actions { display: flex; align-items: center; gap: 14px; }
+    .nav-customer { font-size: 14px; color: var(--text-muted); }
     .nav-customer:hover { color: var(--text-primary); }
-    @media (max-width: 768px) {
-      .nav-menu { display: none; }
+    @media (max-width: 768px) { .nav-menu { display: none; } }
+
+    /* Hero */
+    .hero { position: relative; padding: 60px 0 80px; overflow: hidden; }
+    .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; }
+    .hero-image { position: relative; aspect-ratio: 4/5; border-radius: 24px; overflow: hidden; background: linear-gradient(135deg, rgba(31,77,58,0.25), rgba(43,43,43,0.55)), linear-gradient(45deg, #5a4a3a 0%, #7a6a4a 40%, #4a3a2a 100%); box-shadow: 0 30px 60px -25px rgba(43,43,43,0.4); }
+    .hero-image::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 60%, transparent 30%, rgba(43,43,43,0.4) 90%), repeating-linear-gradient(135deg, transparent 0 80px, rgba(251,246,238,0.04) 80px 82px); }
+    .hero-image-tag { position: absolute; top: 24px; left: 24px; background: rgba(43,43,43,0.85); color: var(--cream); padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; z-index: 2; }
+    .hero-cta-card { position: absolute; right: 24px; bottom: 24px; background: var(--cream); border-radius: 16px; padding: 18px 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 16px 32px -16px rgba(43,43,43,0.45); z-index: 2; max-width: 280px; }
+    .hero-cta-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--forest); color: var(--cream); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .hero-cta-text { display: flex; flex-direction: column; gap: 2px; }
+    .hero-cta-text .label { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
+    .hero-cta-text .phone { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+    .hero-content { padding: 8px 0; }
+    .hero-sub { font-size: 19px; line-height: 1.6; color: var(--text-secondary); max-width: 540px; margin-bottom: 32px; }
+    .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 32px; }
+    .hero-trust { display: flex; gap: 24px; flex-wrap: wrap; }
+    .hero-trust-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+    .hero-trust-icon { width: 22px; height: 22px; border-radius: 50%; background: var(--forest); color: var(--cream); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+    @media (max-width: 920px) {
+      .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+      .hero-image { aspect-ratio: 16/12; max-width: 560px; margin: 0 auto; }
+      .hero-content { order: -1; }
     }
 
-    /* ─── Hero — centered phone with floating evidence cards ─── */
-    .hero {
-      position: relative;
-      padding: 96px 0 64px;
-      text-align: center;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 40% at 50% 20%, rgba(248, 131, 99, 0.10), transparent 70%),
-        radial-gradient(ellipse 40% 30% at 20% 40%, rgba(201, 176, 153, 0.18), transparent 70%),
-        radial-gradient(ellipse 40% 30% at 80% 50%, rgba(31, 77, 58, 0.06), transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-    .hero-content { position: relative; z-index: 2; }
-    .hero h1 {
-      max-width: 920px;
-      margin: 0 auto 24px;
-      text-align: center;
-    }
-    .hero-sub {
-      max-width: 580px;
-      margin: 0 auto 40px;
-      font-size: 19px;
-      line-height: 1.6;
-      color: var(--text-secondary);
-    }
-    .hero-cta-wrap {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 56px;
-    }
-    .btn-terracotta {
-      background: var(--terracotta);
-      color: var(--text-primary);
-      border: 1px solid var(--terracotta);
-      padding: 18px 36px;
-      font-size: 17px;
-      font-weight: 700;
-      box-shadow: 0 8px 24px -8px rgba(248, 131, 99, 0.4);
-    }
-    .btn-terracotta:hover { transform: translateY(-2px); opacity: 0.95; }
-    .hero-cta-sub {
-      font-size: 13px;
-      color: var(--text-muted);
+    /* Trust strip */
+    .trust-strip { background: var(--oatmeal); padding: 36px 0; border-top: 1px solid var(--border-warm); border-bottom: 1px solid var(--border-warm); }
+    .trust-strip-inner { display: flex; align-items: center; justify-content: center; gap: 48px; flex-wrap: wrap; text-align: center; }
+    .trust-strip-item { display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+    .trust-strip-item .top { font-family: var(--font-serif); font-style: italic; font-weight: 700; font-size: 26px; color: var(--text-primary); }
+    .trust-strip-item .bottom { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+
+    /* Sections */
+    section.padded { padding: 96px 0; }
+    section.alt-bg { background: var(--oatmeal); }
+
+    /* Promise (2 koloms met image) */
+    .promise-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+    .promise-image { aspect-ratio: 1/1; border-radius: 20px; background: linear-gradient(135deg, rgba(31,77,58,0.15), rgba(43,43,43,0.35)), linear-gradient(45deg, #6a5a3a 0%, #8a7a5a 50%, #5a4a2a 100%); box-shadow: 0 24px 48px -24px rgba(43,43,43,0.3); position: relative; overflow: hidden; }
+    .promise-image::after { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 70% 30%, rgba(248,131,99,0.15), transparent 60%), repeating-linear-gradient(135deg, transparent 0 60px, rgba(251,246,238,0.05) 60px 62px); }
+    .promise-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 32px; }
+    .stat-card { background: var(--cream); border: 1px solid var(--border-warm); border-radius: 16px; padding: 24px; display: flex; align-items: flex-start; gap: 14px; }
+    .stat-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--forest); color: var(--cream); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .stat-number { font-family: var(--font-serif); font-style: italic; font-weight: 700; font-size: 32px; line-height: 1; color: var(--text-primary); margin-bottom: 4px; }
+    .stat-label { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+    @media (max-width: 920px) {
+      .promise-grid { grid-template-columns: 1fr; gap: 40px; }
+      .promise-image { max-width: 520px; margin: 0 auto; aspect-ratio: 16/12; }
     }
 
-    /* Phone mockup stage */
-    .phone-stage {
-      position: relative;
-      max-width: 900px;
-      margin: 0 auto;
-      height: 600px;
-    }
-    .phone {
-      position: absolute;
-      left: 50%;
-      top: 0;
-      transform: translateX(-50%);
-      width: 280px;
-      height: 580px;
-      background: var(--text-primary);
-      border-radius: 44px;
-      padding: 12px;
-      box-shadow:
-        0 40px 80px -30px rgba(43, 43, 43, 0.35),
-        0 0 0 1px rgba(43, 43, 43, 0.05);
-      z-index: 5;
-    }
-    .phone-screen {
-      width: 100%;
-      height: 100%;
-      background: var(--cream);
-      border-radius: 32px;
-      padding: 32px 20px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      position: relative;
-      overflow: hidden;
-    }
-    .phone-notch {
-      position: absolute;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90px;
-      height: 24px;
-      background: var(--text-primary);
-      border-radius: 14px;
-      z-index: 10;
-    }
-    .phone-status {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-top: 8px;
-      padding: 0 4px;
-    }
-    .phone-title {
-      font-family: var(--font-serif);
-      font-style: italic;
-      font-weight: 700;
-      font-size: 22px;
-      color: var(--text-primary);
-      margin: 8px 0 4px;
-    }
-    .phone-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-    }
-    .phone-photo {
-      background: linear-gradient(135deg, var(--beige), var(--warmgrey));
-      border-radius: 14px;
-      flex: 1;
-      min-height: 180px;
-      position: relative;
-      border: 1px solid var(--border-warm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 48px;
-      opacity: 0.6;
-    }
-    .phone-pill {
-      position: absolute;
-      bottom: 10px;
-      right: 10px;
-      padding: 5px 11px;
-      background: var(--forest);
-      color: var(--cream);
-      border-radius: 999px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .phone-meta {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 4px;
-    }
-    .phone-meta-item {
-      background: var(--oatmeal);
-      border: 1px solid var(--border-warm);
-      border-radius: 10px;
-      padding: 8px 10px;
-    }
-    .phone-meta-label {
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 2px;
-    }
-    .phone-meta-value {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    .phone-cta {
-      background: var(--text-primary);
-      color: var(--cream);
-      border-radius: 14px;
-      padding: 14px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 600;
-      margin-top: 4px;
+    /* Steps (3 stappen cards) */
+    .steps-header { text-align: center; max-width: 720px; margin: 0 auto 64px; }
+    .steps-header h2 { text-align: center; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .step { background: var(--cream); border: 1px solid var(--border-warm); border-radius: 20px; padding: 32px; display: flex; flex-direction: column; gap: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .step:hover { transform: translateY(-4px); box-shadow: 0 24px 48px -24px rgba(43,43,43,0.18); }
+    .step-num { width: 52px; height: 52px; border-radius: 50%; background: var(--forest); color: var(--cream); display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-style: italic; font-weight: 700; font-size: 24px; }
+    .step h3 { margin: 0; font-size: 22px; }
+    .step p { font-size: 15px; line-height: 1.6; margin: 0; }
+    @media (max-width: 840px) { .steps { grid-template-columns: 1fr; gap: 16px; } }
+
+    /* Functies grid (4 service-cards) */
+    .services-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 56px; }
+    .services-head h2 { margin: 0; max-width: 580px; }
+    .services-head p { max-width: 360px; margin: 0; }
+    .services { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+    .service-card { background: var(--cream); border-radius: 20px; padding: 32px; display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: flex-start; border: 1px solid var(--border-warm); transition: transform 0.2s ease; }
+    .service-card:hover { transform: translateY(-4px); }
+    .service-icon { width: 56px; height: 56px; border-radius: 14px; background: var(--beige); border: 1px solid var(--border-warm); display: flex; align-items: center; justify-content: center; font-size: 26px; }
+    .service-card h3 { margin: 0 0 8px; font-size: 20px; }
+    .service-card p { margin: 0; font-size: 15px; line-height: 1.55; }
+    @media (max-width: 760px) {
+      .services-head { flex-direction: column; align-items: flex-start; }
+      .services { grid-template-columns: 1fr; }
     }
 
-    /* Floating evidence cards */
-    .evidence-card {
-      position: absolute;
-      background: var(--cream);
-      border: 1px solid var(--border-warm);
-      border-radius: 14px;
-      padding: 12px 14px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 12px 32px -12px rgba(43, 43, 43, 0.18);
-      width: 230px;
-      z-index: 3;
-      backdrop-filter: blur(8px);
-      animation: float 6s ease-in-out infinite;
-    }
-    .evidence-card.right { right: 0; }
-    .evidence-card.left { left: 0; }
-    .evidence-card.pos-1 { top: 60px; }
-    .evidence-card.pos-2 { top: 220px; animation-delay: 1.5s; }
-    .evidence-card.pos-3 { top: 380px; animation-delay: 3s; }
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-    .evidence-thumb {
-      width: 48px;
-      height: 48px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, var(--beige), var(--warmgrey));
-      border: 1px solid var(--border-warm);
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      opacity: 0.7;
-    }
-    .evidence-info {
-      flex: 1;
-      min-width: 0;
-    }
-    .evidence-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .evidence-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      padding: 2px 8px;
-      border-radius: 999px;
-    }
-    .evidence-status.success {
-      background: rgba(31, 77, 58, 0.1);
-      color: var(--forest);
-    }
-    .evidence-status.warning {
-      background: rgba(248, 131, 99, 0.12);
-      color: var(--terracotta);
-    }
-    .evidence-status.neutral {
-      background: var(--oatmeal);
-      color: var(--text-muted);
+    /* Process (onboarding 4 stappen) */
+    .process-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+    .process-image { aspect-ratio: 4/5; border-radius: 20px; background: linear-gradient(135deg, rgba(248,131,99,0.2), rgba(43,43,43,0.5)), linear-gradient(45deg, #6a4a3a 0%, #4a3a2a 100%); box-shadow: 0 24px 48px -24px rgba(43,43,43,0.3); position: relative; }
+    .process-image::after { content: ''; position: absolute; inset: 0; border-radius: 20px; background: repeating-linear-gradient(45deg, transparent 0 80px, rgba(251,246,238,0.04) 80px 82px); }
+    .process-list { display: flex; flex-direction: column; gap: 28px; }
+    .process-item { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: flex-start; }
+    .process-num { width: 40px; height: 40px; border-radius: 50%; background: var(--cream); color: var(--text-primary); display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-style: italic; font-weight: 700; font-size: 18px; border: 1px solid var(--border-warm); }
+    .process-item h3 { margin: 0 0 4px; font-size: 18px; }
+    .process-item p { margin: 0; font-size: 15px; }
+    @media (max-width: 920px) {
+      .process-grid { grid-template-columns: 1fr; gap: 40px; }
+      .process-image { max-width: 480px; margin: 0 auto; aspect-ratio: 16/12; }
     }
 
-    @media (max-width: 900px) {
-      .phone-stage { height: 640px; }
-      .evidence-card { width: 200px; }
-      .evidence-card.right { right: -10px; }
-      .evidence-card.left { left: -10px; }
-    }
-    @media (max-width: 720px) {
-      .hero { padding-top: 64px; }
-      .phone-stage { height: auto; padding: 0 0 32px; }
-      .phone {
-        position: relative;
-        left: auto;
-        transform: none;
-        margin: 0 auto;
-      }
-      .evidence-card {
-        position: relative;
-        top: auto !important;
-        left: auto !important;
-        right: auto !important;
-        width: 100%;
-        max-width: 320px;
-        margin: 12px auto 0;
-        animation: none;
-      }
-      .evidence-card.right + .evidence-card.right,
-      .evidence-card.left + .evidence-card.left { display: none; }
-    }
-    .hero-trust {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 8px;
-    }
-    .hero-trust span:not(:first-child)::before {
-      content: '·';
-      margin: 0 8px;
-      color: var(--border-warm);
+    /* About (Johnny) */
+    .about-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 64px; align-items: center; }
+    .about-portrait { aspect-ratio: 4/5; border-radius: 20px; background: linear-gradient(135deg, rgba(31,77,58,0.2), rgba(43,43,43,0.4)), linear-gradient(45deg, #4a3a2a 0%, #6a5a4a 100%); box-shadow: 0 24px 48px -24px rgba(43,43,43,0.35); position: relative; display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-style: italic; font-weight: 700; font-size: 80px; color: rgba(251,246,238,0.55); }
+    .about-quote { border-left: 3px solid var(--terracotta); padding-left: 20px; margin: 24px 0; font-family: var(--font-serif); font-style: italic; font-size: 20px; line-height: 1.5; color: var(--text-secondary); }
+    .signature { font-family: var(--font-serif); font-style: italic; font-size: 17px; color: var(--text-secondary); margin-top: 16px; }
+    @media (max-width: 920px) {
+      .about-grid { grid-template-columns: 1fr; gap: 40px; }
+      .about-portrait { max-width: 360px; margin: 0 auto; aspect-ratio: 1/1; }
     }
 
-    /* ─── Section: problem ─── */
-    .narrow {
-      max-width: 720px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    .narrow p { font-size: 18px; line-height: 1.7; text-align: left; }
-    .narrow .eyebrow { text-align: left; }
-    .narrow h2 { text-align: left; }
+    /* Phone CTA strip */
+    .phone-strip { background: var(--forest); color: var(--cream); padding: 64px 0; }
+    .phone-strip-inner { display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+    .phone-strip h3 { color: var(--cream); font-family: var(--font-serif); font-style: italic; font-weight: 700; font-size: 36px; margin: 0 0 4px; }
+    .phone-strip p { color: rgba(251,246,238,0.8); margin: 0; max-width: 560px; }
+    .phone-strip a.btn { background: var(--cream); color: var(--text-primary); border-color: var(--cream); padding: 18px 32px; font-size: 17px; font-weight: 700; }
 
-    /* ─── 3 steps ─── */
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 32px;
-      margin-top: 56px;
-    }
-    .step {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .step-badge {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: var(--forest);
-      color: var(--cream);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-serif);
-      font-weight: 700;
-      font-style: italic;
-      font-size: 22px;
-    }
-    .step p { font-size: 16px; line-height: 1.6; color: var(--text-secondary); }
-    @media (max-width: 768px) {
-      .steps { grid-template-columns: 1fr; gap: 40px; }
-    }
-
-    /* ─── Difference (vault) ─── */
-    .vault-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 64px;
-      align-items: center;
-    }
-    .vault-quote {
-      border-left: 3px solid var(--forest);
-      padding: 8px 0 8px 20px;
-      font-style: italic;
-      color: var(--text-secondary);
-      margin: 24px 0 0;
-    }
-    .vault-visual {
-      background: var(--cream);
-      border: 1px solid var(--border-warm);
-      border-radius: 20px;
-      padding: 32px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-    .vault-card {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 24px;
-      border-radius: 16px;
-      background: var(--oatmeal);
-      border: 1px solid var(--border-warm);
-    }
-    .vault-card.is-them { opacity: 0.85; }
-    .vault-card.is-us {
-      background: var(--cream);
-      border: 2px solid var(--forest);
-    }
-    .vault-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: 12px;
-      background: var(--text-primary);
-      color: var(--cream);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      font-family: var(--font-serif);
-      font-style: italic;
-      font-weight: 700;
-    }
-    .vault-card.is-us .vault-icon {
-      background: var(--forest);
-    }
-    .vault-label {
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      text-align: center;
-    }
-    .vault-title {
-      font-family: var(--font-serif);
-      font-style: italic;
-      font-weight: 700;
-      font-size: 18px;
-      text-align: center;
-      color: var(--text-primary);
-    }
-    @media (max-width: 768px) {
-      .vault-grid { grid-template-columns: 1fr; gap: 40px; }
-    }
-
-    /* ─── Pricing ─── */
-    .pricing {
-      display: grid;
-      grid-template-columns: 1fr 1.15fr 1fr;
-      gap: 24px;
-      margin-top: 56px;
-      align-items: stretch;
-    }
-    .pkg {
-      background: var(--beige);
-      border: 1px solid var(--border-warm);
-      border-radius: 18px;
-      padding: 32px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      position: relative;
-    }
-    .pkg.is-featured {
-      background: var(--cream);
-      border: 2px solid var(--forest);
-      transform: translateY(-12px);
-    }
-    .pkg-badge {
-      position: absolute;
-      top: -14px;
-      right: 24px;
-      background: var(--terracotta);
-      color: var(--text-primary);
-      padding: 6px 14px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .pkg-label {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-    }
-    .pkg-price {
-      font-family: var(--font-serif);
-      font-style: italic;
-      font-weight: 700;
-      font-size: 56px;
-      line-height: 1;
-      color: var(--text-primary);
-    }
-    .pkg-period { font-size: 14px; color: var(--text-muted); margin-top: -4px; }
-    .pkg-bullets { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 10px; flex: 1; }
-    .pkg-bullets li {
-      font-size: 15px;
-      color: var(--text-secondary);
-      padding-left: 24px;
-      position: relative;
-    }
-    .pkg-bullets li::before {
-      content: '✓';
-      position: absolute;
-      left: 0;
-      color: var(--forest);
-      font-weight: 700;
-    }
-    .founder-strip {
-      margin-top: 40px;
-      padding: 24px 32px;
-      background: var(--warmgrey);
-      border: 1px solid var(--border-warm);
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .founder-strip-label {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--terracotta);
-    }
-    .founder-strip-text {
-      flex: 1;
-      font-size: 15px;
-      color: var(--text-primary);
-    }
-    .founder-strip-text strong { color: var(--terracotta); }
-    @media (max-width: 768px) {
-      .pricing { grid-template-columns: 1fr; gap: 16px; }
-      .pkg.is-featured { transform: none; }
-    }
-
-    /* ─── Maker section ─── */
-    .maker-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.4fr;
-      gap: 48px;
-      align-items: center;
-    }
-    .maker-portrait {
-      aspect-ratio: 1 / 1;
-      background: linear-gradient(135deg, var(--beige), var(--warmgrey));
-      border-radius: 20px;
-      border: 1px solid var(--border-warm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-serif);
-      font-style: italic;
-      font-weight: 700;
-      font-size: 96px;
-      color: var(--text-primary);
-      opacity: 0.4;
-    }
-    .maker-signature {
-      font-family: var(--font-serif);
-      font-style: italic;
-      font-weight: 500;
-      font-size: 20px;
-      color: var(--text-secondary);
-      margin-top: 24px;
-    }
-    @media (max-width: 768px) {
-      .maker-grid { grid-template-columns: 1fr; }
-      .maker-portrait { max-width: 320px; }
-    }
-
-    /* ─── FAQ ─── */
-    .faq {
-      max-width: 720px;
-      margin: 0 auto;
-    }
-    .faq-item {
-      border-bottom: 1px solid var(--border-warm);
-      padding: 20px 0;
-    }
-    .faq-item summary {
-      list-style: none;
-      cursor: pointer;
-      font-family: var(--font-sans);
-      font-weight: 600;
-      font-size: 18px;
-      color: var(--text-primary);
-      padding-right: 40px;
-      position: relative;
-      transition: color 0.15s ease;
-    }
+    /* FAQ */
+    .faq-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 64px; align-items: flex-start; }
+    .faq-list { border-top: 1px solid var(--border-warm); }
+    .faq-item { border-bottom: 1px solid var(--border-warm); padding: 20px 0; }
+    .faq-item summary { list-style: none; cursor: pointer; font-family: var(--font-sans); font-weight: 600; font-size: 18px; color: var(--text-primary); padding-right: 40px; position: relative; }
     .faq-item summary::-webkit-details-marker { display: none; }
-    .faq-item summary::after {
-      content: '+';
-      position: absolute;
-      right: 0;
-      top: -2px;
-      font-family: var(--font-serif);
-      font-weight: 700;
-      font-size: 28px;
-      color: var(--border-warm);
-      transition: transform 0.2s ease;
-    }
-    .faq-item[open] summary::after {
-      content: '−';
-      color: var(--forest);
-    }
+    .faq-item summary::after { content: '+'; position: absolute; right: 0; top: -4px; font-family: var(--font-serif); font-weight: 700; font-size: 28px; color: var(--border-warm); }
+    .faq-item[open] summary::after { content: '−'; color: var(--forest); }
     .faq-item summary:hover { color: var(--forest); }
-    .faq-item p {
-      margin: 16px 0 0;
-      font-size: 16px;
-      line-height: 1.7;
-      color: var(--text-secondary);
-    }
+    .faq-item p { margin: 16px 0 0; font-size: 16px; line-height: 1.7; color: var(--text-secondary); }
+    @media (max-width: 920px) { .faq-grid { grid-template-columns: 1fr; gap: 24px; } }
 
-    /* ─── Final CTA ─── */
-    .final-cta {
-      background: var(--forest);
-      color: var(--cream);
-      text-align: center;
-    }
-    .final-cta h2 {
-      color: var(--cream);
-      font-size: clamp(36px, 5vw, 56px);
-      max-width: 720px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .final-cta p {
-      color: rgba(251, 246, 238, 0.9);
-      max-width: 600px;
-      margin: 0 auto 32px;
-      font-size: 18px;
-    }
-    .final-cta-direct {
-      margin-top: 24px;
-      font-size: 15px;
-      color: rgba(251, 246, 238, 0.7);
-    }
-    .final-cta-direct a {
-      color: var(--cream);
-      border-bottom: 1px solid rgba(251, 246, 238, 0.3);
-    }
+    /* Final CTA */
+    .final-cta { background: var(--text-primary); color: var(--cream); padding: 96px 0; text-align: center; }
+    .final-cta h2 { color: var(--cream); font-size: clamp(36px, 5vw, 56px); max-width: 800px; margin: 0 auto 24px; }
+    .final-cta p { color: rgba(251,246,238,0.85); max-width: 580px; margin: 0 auto 36px; font-size: 18px; }
+    .final-cta .btn { padding: 18px 40px; font-size: 17px; }
+    .final-cta-foot { margin-top: 24px; font-size: 14px; color: rgba(251,246,238,0.65); }
+    .final-cta-foot a { color: var(--cream); border-bottom: 1px solid rgba(251,246,238,0.3); }
 
-    /* ─── Footer ─── */
-    .footer {
-      background: var(--warmgrey);
-      padding: 64px 0 32px;
-    }
-    .footer-grid {
-      display: grid;
-      grid-template-columns: 1.5fr 1fr 1fr 1fr;
-      gap: 48px;
-      margin-bottom: 48px;
-    }
-    .footer h4 {
-      font-family: var(--font-sans);
-      font-weight: 600;
-      font-size: 13px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin: 0 0 16px;
-    }
-    .footer p, .footer a, .footer li {
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
+    /* Footer */
+    .footer { background: var(--warmgrey); padding: 64px 0 32px; }
+    .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+    .footer h4 { font-family: var(--font-sans); font-weight: 600; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin: 0 0 16px; }
     .footer ul { list-style: none; padding: 0; margin: 0; }
+    .footer li, .footer p, .footer a { font-size: 14px; color: var(--text-secondary); }
     .footer li { margin-bottom: 8px; }
     .footer a:hover { color: var(--text-primary); }
-    .footer-brand-name {
-      font-family: var(--font-serif);
-      font-style: italic;
-      font-weight: 700;
-      font-size: 24px;
-      color: var(--text-primary);
-      margin-bottom: 12px;
-    }
-    .footer-bottom {
-      border-top: 1px solid var(--border-warm);
-      padding-top: 24px;
-      text-align: center;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-    @media (max-width: 768px) {
-      .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
-    }
+    .footer-brand { font-family: var(--font-serif); font-style: italic; font-weight: 700; font-size: 28px; color: var(--text-primary); margin-bottom: 12px; }
+    .footer-bottom { border-top: 1px solid var(--border-warm); padding-top: 24px; text-align: center; font-size: 12px; color: var(--text-muted); }
+    @media (max-width: 920px) { .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; } }
   </style>
 </head>
 <body>
 
-<!-- ─── Nav ─── -->
 <nav class="nav" id="nav">
   <div class="nav-inner">
-    <a href="#" class="nav-logo">SpeeQ</a>
+    <a href="#" class="nav-brand">SpeeQ</a>
     <ul class="nav-menu">
       <li><a href="#hoe">Hoe werkt het</a></li>
-      <li><a href="#anders">Het verschil</a></li>
+      <li><a href="#functies">Functies</a></li>
       <li><a href="#prijzen">Prijzen</a></li>
-      <li><a href="#faq">Vragen</a></li>
+      <li><a href="#vragen">Vragen</a></li>
     </ul>
     <div class="nav-actions">
       <a href="/" class="nav-customer">Ik ben al klant →</a>
-      <a href="#contact" class="btn btn-primary" style="padding: 10px 20px; font-size: 14px;">Plan demo</a>
+      <a href="#contact" class="btn btn-primary" style="padding: 10px 22px; font-size: 14px;">Plan demo</a>
     </div>
   </div>
 </nav>
 
-<!-- ─── Sectie 2 — Hero (centered phone + floating evidence cards) ─── -->
 <section class="hero">
-  <div class="container hero-content">
-    <p class="eyebrow">Sinds 1 januari 2024 verplicht</p>
-    <h1>Wkb-bewijslast<br>in drie tikken.</h1>
-    <p class="hero-sub">
-      Foto, GPS en weer worden automatisch vastgelegd op de bouwplaats.
-      De werkvoorbereider beoordeelt op kantoor. Eén klik aan einde
-      project: PDF voor de Wkb-borger.
-    </p>
-    <div class="hero-cta-wrap">
-      <a href="#contact" class="btn btn-terracotta">Plan een demo van 20 minuten</a>
-      <p class="hero-cta-sub">Johnny belt persoonlijk binnen één werkdag</p>
+  <div class="container hero-grid">
+    <div class="hero-content">
+      <p class="eyebrow">Wkb-verplicht sinds 1 januari 2024</p>
+      <h1>Uw Wkb-partner op de bouwplaats.</h1>
+      <p class="hero-sub">
+        Foto, GPS en weer worden automatisch vastgelegd door de vakman.
+        De werkvoorbereider beoordeelt op kantoor. Eén klik aan einde
+        project: een compleet PDF-borgingsdossier voor de Wkb-borger.
+      </p>
+      <div class="hero-actions">
+        <a href="#contact" class="btn btn-primary">Plan een demo</a>
+        <a href="#hoe" class="btn btn-secondary">Hoe werkt het</a>
+      </div>
+      <div class="hero-trust">
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon">✓</span>
+          <span>Eigen database in Frankfurt</span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon">✓</span>
+          <span>AVG-conform, Nederlands gemaakt</span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon">✓</span>
+          <span>Persoonlijk gebeld door de oprichter</span>
+        </div>
+      </div>
     </div>
-
-    <!-- Phone stage met zwevende evidence-cards -->
-    <div class="phone-stage">
-
-      <!-- Linker floating cards -->
-      <div class="evidence-card left pos-1">
-        <div class="evidence-thumb">🏗️</div>
-        <div class="evidence-info">
-          <div class="evidence-name">Fundering — west</div>
-          <span class="evidence-status success">✓ Akkoord</span>
+    <div class="hero-image">
+      <span class="hero-image-tag">📐 Bouwplaats — Nederland</span>
+      <div class="hero-cta-card">
+        <div class="hero-cta-icon">📞</div>
+        <div class="hero-cta-text">
+          <span class="label">Bel direct</span>
+          <span class="phone">+31 6 81908480</span>
         </div>
       </div>
-      <div class="evidence-card left pos-2">
-        <div class="evidence-thumb">🧱</div>
-        <div class="evidence-info">
-          <div class="evidence-name">Wapening kelder</div>
-          <span class="evidence-status warning">⚠ Controle</span>
-        </div>
-      </div>
-      <div class="evidence-card left pos-3">
-        <div class="evidence-thumb">📐</div>
-        <div class="evidence-info">
-          <div class="evidence-name">Maatvoering rij A</div>
-          <span class="evidence-status success">✓ Akkoord</span>
-        </div>
-      </div>
-
-      <!-- Phone in het midden -->
-      <div class="phone">
-        <div class="phone-screen">
-          <div class="phone-notch"></div>
-          <div class="phone-status">
-            <span>9:41</span>
-            <span>SpeeQ</span>
-          </div>
-          <div class="phone-title">Controlemoment</div>
-          <div class="phone-subtitle">Vastleggen voor borgingsdossier</div>
-          <div class="phone-photo">
-            🏗
-            <span class="phone-pill">Akkoord</span>
-          </div>
-          <div class="phone-meta">
-            <div class="phone-meta-item">
-              <div class="phone-meta-label">GPS</div>
-              <div class="phone-meta-value">52.07° N</div>
-            </div>
-            <div class="phone-meta-item">
-              <div class="phone-meta-label">Weer</div>
-              <div class="phone-meta-value">11° bewolkt</div>
-            </div>
-          </div>
-          <div class="phone-cta">Toevoegen aan dossier</div>
-        </div>
-      </div>
-
-      <!-- Rechter floating cards -->
-      <div class="evidence-card right pos-1">
-        <div class="evidence-thumb">🪟</div>
-        <div class="evidence-info">
-          <div class="evidence-name">Kozijn voorgevel</div>
-          <span class="evidence-status success">✓ Akkoord</span>
-        </div>
-      </div>
-      <div class="evidence-card right pos-2">
-        <div class="evidence-thumb">💧</div>
-        <div class="evidence-info">
-          <div class="evidence-name">Dakdoorvoer 03</div>
-          <span class="evidence-status success">✓ Akkoord</span>
-        </div>
-      </div>
-      <div class="evidence-card right pos-3">
-        <div class="evidence-thumb">🔌</div>
-        <div class="evidence-info">
-          <div class="evidence-name">Meterkast</div>
-          <span class="evidence-status neutral">○ In review</span>
-        </div>
-      </div>
-
     </div>
-
-    <p class="hero-trust">
-      <span>Eerste 6 maanden directe lijn naar Johnny</span>
-      <span>Workspace binnen 24 uur</span>
-      <span>30 dagen proef</span>
-    </p>
   </div>
 </section>
 
-<!-- ─── Sectie 3 — Probleem ─── -->
-<section class="alt-bg">
-  <div class="container narrow">
-    <p class="eyebrow">Het probleem</p>
-    <h2>Excel, WhatsApp, donderdagavond.</h2>
-    <p>
-      Sinds januari 2024 moet u Wkb-bewijslast aanleveren bij elk
-      bouwproject in Gevolgklasse 1. Tussen tachtig en tweehonderdvijftig
-      vastleggingen per project: foto's, GPS, weer, akkoord, vaak een
-      handtekening van de klant.
-    </p>
-    <p>
-      Zonder tool wordt dat handmatig bijgehouden in Excel, Dropbox en
-      WhatsApp-groepen. Werkvoorbereiders zijn er uren per week aan kwijt.
-      Foto's raken zoek. Eén uitvraag van een verzekeraar — en het
-      dossier blijkt onvolledig.
-    </p>
+<div class="trust-strip">
+  <div class="container trust-strip-inner">
+    <div class="trust-strip-item">
+      <span class="top">3 tikken</span>
+      <span class="bottom">Vakman op de bouwplaats</span>
+    </div>
+    <div class="trust-strip-item">
+      <span class="top">24 uur</span>
+      <span class="bottom">Workspace klaar</span>
+    </div>
+    <div class="trust-strip-item">
+      <span class="top">100%</span>
+      <span class="bottom">Eigen database</span>
+    </div>
+    <div class="trust-strip-item">
+      <span class="top">6 maanden</span>
+      <span class="bottom">Directe lijn Johnny</span>
+    </div>
+  </div>
+</div>
+
+<section class="padded">
+  <div class="container promise-grid">
+    <div>
+      <p class="eyebrow">Wat SpeeQ voor u doet</p>
+      <h2>Wkb-bewijslast die zichzelf maakt — terwijl u werkt.</h2>
+      <p>
+        Sinds januari 2024 verplicht: tussen tachtig en tweehonderdvijftig
+        vastleggingen per project. Foto's, GPS, weersomstandigheden,
+        akkoord van de werkvoorbereider, soms een digitale handtekening
+        van de klant.
+      </p>
+      <p>
+        Zonder tool wordt dat handmatig bijgehouden in Excel, Dropbox en
+        WhatsApp. Foto's raken zoek. Werkvoorbereiders zijn er uren per
+        week aan kwijt. SpeeQ pakt dat op de bouwplaats op en levert aan
+        einde project één compleet PDF-dossier.
+      </p>
+      <div class="promise-stats">
+        <div class="stat-card">
+          <div class="stat-icon">📸</div>
+          <div>
+            <div class="stat-number">3 sec</div>
+            <div class="stat-label">Foto, GPS, weer — in één keer vastgelegd</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📋</div>
+          <div>
+            <div class="stat-number">1 klik</div>
+            <div class="stat-label">PDF-dossier aan einde project</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="promise-image"></div>
   </div>
 </section>
 
-<!-- ─── Sectie 4 — 3 stappen ─── -->
-<section id="hoe">
+<section class="padded alt-bg" id="hoe">
   <div class="container">
-    <div style="text-align: center; max-width: 720px; margin: 0 auto 16px;">
+    <div class="steps-header">
       <p class="eyebrow">Zo werkt het</p>
-      <h2 style="text-align: center;">Drie tikken op de bouwplaats.</h2>
+      <h2>Drie tikken op de bouwplaats — dossier vanzelf klaar.</h2>
     </div>
     <div class="steps">
       <div class="step">
-        <div class="step-badge">1</div>
-        <h3>Vakman</h3>
-        <p>Opent SpeeQ-app, maakt foto van het controlemoment. App voegt GPS, KNMI-weer en tijdstempel automatisch toe.</p>
+        <div class="step-num">1</div>
+        <h3>Vakman vangt het op</h3>
+        <p>Opent SpeeQ-app op de bouwplaats, maakt foto van het controlemoment. App voegt automatisch GPS, KNMI-weer en tijdstempel toe.</p>
       </div>
       <div class="step">
-        <div class="step-badge">2</div>
-        <h3>Werkvoorbereider</h3>
-        <p>Beoordeelt foto's op desktop-dashboard. AI-precheck filtert: groen door, oranje controleren, rood afkeuren.</p>
+        <div class="step-num">2</div>
+        <h3>Werkvoorbereider beoordeelt</h3>
+        <p>Ziet alleen wat zijn aandacht nodig heeft. AI-precheck filtert: groen door, oranje controleren, rood afkeuren. Geen Excel-werk meer.</p>
       </div>
       <div class="step">
-        <div class="step-badge">3</div>
-        <h3>Einde project</h3>
-        <p>Eén klik genereert het complete borgingsdossier als PDF, met uw bedrijfslogo. Klaar voor de Wkb-borger.</p>
+        <div class="step-num">3</div>
+        <h3>Eén PDF aan einde project</h3>
+        <p>Eén klik genereert het complete borgingsdossier met uw bedrijfslogo. Klaar voor de Wkb-borger of de verzekeraar.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ─── Sectie 5 — Het verschil ─── -->
-<section id="anders" class="alt-bg">
-  <div class="container vault-grid">
+<section class="padded" id="functies">
+  <div class="container">
+    <div class="services-head">
+      <div>
+        <p class="eyebrow">Functies</p>
+        <h2>Voor elke rol in uw bedrijf.</h2>
+      </div>
+      <p>Eén platform, vier kerngebruikers — vakman, werkvoorbereider, directeur en de externe Wkb-borger.</p>
+    </div>
+    <div class="services">
+      <div class="service-card">
+        <div class="service-icon">📸</div>
+        <div>
+          <h3>Bouwplaats-vastlegging</h3>
+          <p>Foto, GPS en KNMI-weer in drie tikken op de telefoon. Werkt offline — sync zodra er weer netwerk is.</p>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">🗂️</div>
+        <div>
+          <h3>Werkvoorbereider-dashboard</h3>
+          <p>Beoordeel alle bewijslast op één scherm. AI-precheck filtert ruis — u ziet alleen wat aandacht nodig heeft.</p>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">📄</div>
+        <div>
+          <h3>PDF-borgingsdossier</h3>
+          <p>Eén klik aan einde project. Compleet dossier met uw bedrijfslogo, juridisch waterdicht, klaar voor de Wkb-borger.</p>
+        </div>
+      </div>
+      <div class="service-card">
+        <div class="service-icon">🔗</div>
+        <div>
+          <h3>KiK-koppeling</h3>
+          <p>Optionele synchronisatie naar het externe Wkb-borgersplatform. Eén klik, geen handmatig overtypen.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="padded alt-bg">
+  <div class="container promise-grid">
+    <div class="promise-image" style="aspect-ratio: 4/5;"></div>
     <div>
       <p class="eyebrow">Het verschil</p>
-      <h2>Uw eigen database.<br>Niet bij uw concurrenten.</h2>
+      <h2>Uw eigen database. Niet bij uw concurrenten.</h2>
       <p>
-        De meeste Wkb-tools bouwen op gedeelde Postgres-databases. Uw data
-        zit in dezelfde tabel als die van uw concurrenten — gescheiden door
-        filterregels. Werkt prima zolang het werkt.
+        De meeste Wkb-tools bouwen op gedeelde Postgres-databases — uw
+        data zit in dezelfde tabel als die van uw concurrenten, gescheiden
+        door filterregels. Werkt prima zolang het werkt.
       </p>
       <p>
         SpeeQ levert elke klant een eigen Supabase-database in Frankfurt.
-        Fysiek apart. Geen gedeelde tabellen. Inbegrepen in de standaardprijs.
+        Fysiek apart. Geen gedeelde tabellen. Inbegrepen in de standaard­
+        prijs.
       </p>
-      <p>
-        Voor de meeste aannemers maakt dat in het dagelijkse werk geen
-        verschil. Voor de keer dat een verzekeraar of opdrachtgever erom
-        vraagt — dan is die vraag in drie minuten beantwoord.
-      </p>
-      <p class="vault-quote">
-        Het verschil is een bankvak versus een eigen kluis.
-        Iedereen zit in hetzelfde gebouw, maar in zijn eigen ruimte.
-      </p>
-    </div>
-    <div class="vault-visual">
-      <div class="vault-card is-them">
-        <div class="vault-icon">⌹</div>
-        <p class="vault-label">Concurrent</p>
-        <p class="vault-title">Gedeelde database</p>
-      </div>
-      <div class="vault-card is-us">
-        <div class="vault-icon">◆</div>
-        <p class="vault-label">SpeeQ</p>
-        <p class="vault-title">Eigen database<br>per klant</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ─── Sectie 6 — Prijzen ─── -->
-<section id="prijzen">
-  <div class="container">
-    <div style="text-align: center; max-width: 720px; margin: 0 auto;">
-      <p class="eyebrow">Voor wie</p>
-      <h2 style="text-align: center;">Voor de aannemer<br>die premium kiest.</h2>
-      <p style="font-size: 18px;">
-        Bouwbedrijven met vijf tot vijftig medewerkers, die niet de
-        goedkoopste hoeven te zijn — en wel een vaste contactpersoon
-        willen kunnen bellen.
-      </p>
-    </div>
-
-    <div class="pricing">
-      <div class="pkg">
-        <p class="pkg-label">Team</p>
-        <div>
-          <span class="pkg-price">€149</span>
-          <p class="pkg-period">per maand</p>
-        </div>
-        <ul class="pkg-bullets">
-          <li>tot 5 gebruikers</li>
-          <li>onbeperkt aantal projecten</li>
-          <li>standaard branding</li>
-          <li>e-mail support</li>
-          <li>30 dagen proef</li>
-        </ul>
-        <a href="#contact" class="btn btn-secondary">Plan demo</a>
-      </div>
-
-      <div class="pkg is-featured">
-        <span class="pkg-badge">Aanbevolen</span>
-        <p class="pkg-label">Pro</p>
-        <div>
-          <span class="pkg-price">€299</span>
-          <p class="pkg-period">per maand</p>
-        </div>
-        <ul class="pkg-bullets">
-          <li>tot 15 gebruikers</li>
-          <li>eigen branding op PDF's</li>
-          <li>vaste support-lijn</li>
-          <li>WhatsApp-integratie</li>
-          <li>KiK-koppeling</li>
-        </ul>
-        <a href="#contact" class="btn btn-primary">Plan demo</a>
-      </div>
-
-      <div class="pkg">
-        <p class="pkg-label">Enterprise</p>
-        <div>
-          <span class="pkg-price">€899</span>
-          <p class="pkg-period">vanaf, per maand</p>
-        </div>
-        <ul class="pkg-bullets">
-          <li>onbeperkt aantal gebruikers</li>
-          <li>SLA</li>
-          <li>custom-integraties</li>
-          <li>prioriteit-support</li>
-          <li>jaarlijkse review</li>
-        </ul>
-        <a href="#contact" class="btn btn-secondary">Vraag aan</a>
-      </div>
-    </div>
-
-    <div class="founder-strip">
-      <span class="founder-strip-label">Founder-deal</span>
-      <p class="founder-strip-text">
-        Eerste 3 klanten krijgen <strong>12 maanden Pro voor Team-prijs</strong>.
-        Nog <strong>2 plekken</strong> vrij in mei.
+      <p style="font-family: var(--font-serif); font-style: italic; color: var(--text-secondary); border-left: 3px solid var(--terracotta); padding-left: 20px; margin-top: 20px;">
+        Het verschil is een bankvak versus een eigen kluis. Iedereen zit in
+        hetzelfde gebouw — maar in zijn eigen ruimte.
       </p>
     </div>
   </div>
 </section>
 
-<!-- ─── Sectie 7 — Wie maakt dit ─── -->
-<section class="alt-bg">
-  <div class="container maker-grid">
-    <div class="maker-portrait">JS</div>
+<section class="padded">
+  <div class="container process-grid">
     <div>
-      <p class="eyebrow">Wie maakt dit</p>
-      <h2>Eén persoon,<br>één telefoonnummer.</h2>
+      <p class="eyebrow">Hoe begint u</p>
+      <h2>Van demo naar werkende workspace in 24 uur.</h2>
+      <div class="process-list" style="margin-top: 32px;">
+        <div class="process-item">
+          <div class="process-num">1</div>
+          <div>
+            <h3>Plan een demo van 20 minuten</h3>
+            <p>Geen verkooppraat, gewoon een rustig gesprek over uw projecten. Johnny belt persoonlijk.</p>
+          </div>
+        </div>
+        <div class="process-item">
+          <div class="process-num">2</div>
+          <div>
+            <h3>Workspace klaar binnen 24 uur</h3>
+            <p>Bij akkoord staat uw eigen Supabase-database in Frankfurt klaar — inclusief uw branding en eerste project.</p>
+          </div>
+        </div>
+        <div class="process-item">
+          <div class="process-num">3</div>
+          <div>
+            <h3>Kickoff-call van 30 minuten</h3>
+            <p>In de eerste week zetten we samen uw eerste project op. Daarna gaat uw team zelfstandig verder.</p>
+          </div>
+        </div>
+        <div class="process-item">
+          <div class="process-num">4</div>
+          <div>
+            <h3>Eerste 6 maanden: directe lijn</h3>
+            <p>Geen call-center, geen ticket-systeem. Bel of mail Johnny direct. Hij neemt op of belt binnen een uur terug.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="process-image"></div>
+  </div>
+</section>
+
+<section class="padded alt-bg">
+  <div class="container about-grid">
+    <div class="about-portrait">JS</div>
+    <div>
+      <p class="eyebrow">Wie maakt SpeeQ</p>
+      <h2>Eén persoon, één telefoonnummer.</h2>
       <p>
-        Mijn naam is Johnny Spee. Ik bouw SpeeQ zelf — vanuit mijn eenmanszaak
-        Spee Solutions in Den Haag. Geen team van veertig, geen Amerikaanse
-        investeerders, geen vertaalde Engelse software.
+        Mijn naam is Johnny Spee. Ik bouw SpeeQ zelf, vanuit Spee Solutions
+        in Den Haag. Geen team van veertig, geen Amerikaanse investeerders,
+        geen vertaalde Engelse software.
       </p>
       <p>
-        Klanten krijgen de eerste zes maanden mijn directe lijn voor support.
-        Geen ticket-systeem, geen call-center. Als u me belt, neem ik op of
-        bel ik binnen een uur terug.
+        Klanten krijgen de eerste zes maanden mijn directe lijn voor
+        support. Geen ticket-systeem, geen call-center. Als u me belt,
+        neem ik op of bel ik binnen een uur terug.
       </p>
-      <p>Dat zal voorlopig zo blijven.</p>
-      <p class="maker-signature">— Johnny Spee, Spee Solutions</p>
+      <p class="about-quote">
+        Dat zal voorlopig zo blijven. Als ik op een dag te klein word om
+        elke klant persoonlijk te bellen, zeg ik dat ook eerlijk.
+      </p>
+      <p class="signature">— Johnny Spee, Spee Solutions</p>
     </div>
   </div>
 </section>
 
-<!-- ─── Sectie 8 — FAQ ─── -->
-<section id="faq">
-  <div class="container">
-    <div style="text-align: center; max-width: 720px; margin: 0 auto 48px;">
-      <p class="eyebrow">Veelgestelde vragen</p>
-      <h2 style="text-align: center;">Wat u zich nu afvraagt.</h2>
+<section class="phone-strip">
+  <div class="container phone-strip-inner">
+    <div>
+      <h3>Bel direct — geen call-center</h3>
+      <p>Eerste 6 maanden directe lijn naar Johnny. Buiten kantoor­uren? Stuur een WhatsApp, ik reageer voor de volgende werkdag.</p>
     </div>
-    <div class="faq">
+    <a href="tel:+31681908480" class="btn">📞 +31 6 81908480</a>
+  </div>
+</section>
+
+<section class="padded" id="vragen">
+  <div class="container faq-grid">
+    <div>
+      <p class="eyebrow">Veelgestelde vragen</p>
+      <h2>Wat u zich nu afvraagt.</h2>
+      <p style="font-size: 15px; margin-top: 24px;">Geen antwoord op uw vraag? Bel Johnny direct: <strong><a href="tel:+31681908480" style="color: var(--forest); border-bottom: 1px solid var(--forest);">+31 6 81908480</a></strong></p>
+    </div>
+    <div class="faq-list">
       <details class="faq-item">
         <summary>Is mijn data echt veilig?</summary>
-        <p>Ja. Elke klant krijgt een eigen Supabase-database in Frankfurt, fysiek gescheiden. Geen gedeelde tabellen. AVG-conform omdat EU-grondgebied. Wij hebben geen "admin-toegang" tot uw data.</p>
+        <p>Ja. Elke klant krijgt een eigen Supabase-database in Frankfurt, fysiek gescheiden. Geen gedeelde tabellen. AVG-conform omdat EU-grondgebied. Wij hebben geen "admin-toegang" tot uw data — alleen u kunt erin.</p>
       </details>
       <details class="faq-item">
-        <summary>Wat als ik wil overstappen vanaf STA, Vastlegg of BKapp?</summary>
+        <summary>Wat als ik wil overstappen van STA, Vastlegg of BKapp?</summary>
         <p>Wij helpen met data-overdracht. Foto's en metadata kunnen we importeren als u een export-bestand heeft. Lukt het niet automatisch, dan doe ik het handmatig — kosteloos in de eerste 6 maanden.</p>
       </details>
       <details class="faq-item">
@@ -1190,8 +540,8 @@
         <p>Ja. De app slaat foto's lokaal op en synct zodra er weer netwerk is. GPS en tijdstempel worden lokaal vastgelegd. Pas bij upload checken we duplicaten.</p>
       </details>
       <details class="faq-item">
-        <summary>Wat kost het écht — geen verborgen kosten?</summary>
-        <p>De prijs is wat u ziet. Geen setup-fee, geen support-pakket dat u apart moet kopen, geen "enterprise"-meerkost voor de eigen database. Alleen extra opslag boven de 100GB is bijbetaling, en daar zit u niet snel aan.</p>
+        <summary>Wat kost het — geen verborgen kosten?</summary>
+        <p>Drie pakketten: Team €149/maand (tot 5 gebruikers), Pro €299/maand (tot 15, met eigen branding) en Enterprise vanaf €899/maand. Geen setup-fee, geen "enterprise"-meerkost voor de eigen database. Eerste 3 klanten krijgen 12 maanden Pro voor Team-prijs.</p>
       </details>
       <details class="faq-item">
         <summary>Hoe lang duurt de onboarding?</summary>
@@ -1205,41 +555,36 @@
   </div>
 </section>
 
-<!-- ─── Sectie 9 — Final CTA ─── -->
 <section class="final-cta" id="contact">
   <div class="container">
-    <h2>Twintig minuten,<br>en u weet of het past.</h2>
-    <p>
-      Ik bel persoonlijk. Geen sales-script, geen overtuigingsverhaal —
-      gewoon een rustig gesprek over uw projecten en of SpeeQ ze beter
-      maakt. Doet het dat niet, dan zeg ik dat ook.
-    </p>
+    <h2>Twintig minuten, en u weet of het past.</h2>
+    <p>Ik bel persoonlijk. Geen sales-script, geen overtuigingsverhaal — gewoon een rustig gesprek over uw projecten en of SpeeQ ze beter maakt.</p>
     <a href="mailto:johnny@speesolutions.com?subject=Demo-aanvraag%20SpeeQ" class="btn btn-light">Plan een demo van 20 minuten</a>
-    <p class="final-cta-direct">of bel direct: <a href="tel:+31681908480">+31 6 81908480</a></p>
+    <p class="final-cta-foot">Of bel direct: <a href="tel:+31681908480">+31 6 81908480</a></p>
   </div>
 </section>
 
-<!-- ─── Footer ─── -->
 <footer class="footer">
   <div class="container">
     <div class="footer-grid">
       <div>
-        <div class="footer-brand-name">SpeeQ</div>
-        <p>Wkb-software voor mkb-aannemers.<br>Spee Solutions · Den Haag</p>
+        <div class="footer-brand">SpeeQ</div>
+        <p>Wkb-software voor mkb-aannemers.<br>Spee Solutions · Den Haag · Nederland</p>
+        <p style="margin-top:12px; font-size:13px; color:var(--text-muted);">KvK 80098876 · BTW NL003329419B19</p>
       </div>
       <div>
         <h4>Product</h4>
         <ul>
           <li><a href="#hoe">Hoe werkt het</a></li>
-          <li><a href="#anders">Het verschil</a></li>
-          <li><a href="#prijzen">Prijzen</a></li>
-          <li><a href="#faq">Vragen</a></li>
+          <li><a href="#functies">Functies</a></li>
+          <li><a href="#vragen">Veelgestelde vragen</a></li>
+          <li><a href="#contact">Demo plannen</a></li>
         </ul>
       </div>
       <div>
         <h4>Juridisch</h4>
         <ul>
-          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/privacy">Privacyverklaring</a></li>
           <li><a href="/privacy">Algemene voorwaarden</a></li>
           <li><a href="/privacy">Verwerkersovereenkomst</a></li>
         </ul>
@@ -1249,6 +594,7 @@
         <ul>
           <li><a href="mailto:johnny@speesolutions.com">johnny@speesolutions.com</a></li>
           <li><a href="tel:+31681908480">+31 6 81908480</a></li>
+          <li><a href="https://linkedin.com/in/johnnyspee">LinkedIn</a></li>
         </ul>
       </div>
     </div>
@@ -1259,13 +605,11 @@
 </footer>
 
 <script>
-  // Subtle nav border-bottom on scroll
   (function() {
     var nav = document.getElementById('nav');
     if (!nav) return;
     function onScroll() {
-      if (window.scrollY > 30) nav.classList.add('scrolled');
-      else nav.classList.remove('scrolled');
+      if (window.scrollY > 30) nav.classList.add('scrolled'); else nav.classList.remove('scrolled');
     }
     window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
