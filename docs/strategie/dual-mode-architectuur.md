@@ -196,7 +196,36 @@ Werkt zelfs op de bouwplaats zonder netwerk. Daarna sync zodra netwerk er weer i
 | Engineering-tijd 2× boven budget | Hoog | Hoog | 6-weken hard deadline per sprint, scope-cut bij vertraging |
 | Backend-load valt weg = inefficient | Klein | Klein | Cloud-mode klanten blijven backend gebruiken |
 
+## 12. Geïmplementeerde modules (status mei 2026)
+
+| Module | PR | Doel |
+|---|---|---|
+| `database/offlineMigrations.ts` | #42 | SQLite migration-runner met `PRAGMA user_version` — schema-upgrades zonder klant-dataverlies |
+| `services/EvidenceRepository.ts` (cloud + local) | sprint 1 | Dual-mode abstractie, schermen hebben geen `supabase.from()` meer |
+| `services/OfflineSyncEngine.ts` | sprint 3 | Push-cyclus met LWW + exponential backoff |
+| `services/OfflineCloudPuller.ts` | sprint 3 | Pull-cyclus met conflict-detectie via `client_version` |
+| `services/OfflinePhotoStorage.ts` | sprint 2 | Platform-aware blob-storage (web: localforage; native: expo-file-system) |
+| `services/OfflineAuthCache.ts` | sprint 6 | JWT + 30-dagen offline-grace |
+| `services/OfflineBrandingCache.ts` | sprint 6 | Logo dataURL + 1u refresh-policy |
+| `services/OfflineStorageCleanup.ts` | sprint 4 | 30d retention + 1000-foto hard-cap |
+| `services/OfflineServiceWorkerBridge.ts` | #49 | SW Background Sync → OfflineSyncEngine bridge |
+| `services/OfflineConflictResolver.ts` | #50 | `keep-local` / `accept-cloud` resolutie-acties |
+| `services/OfflineRetryInsights.ts` | #52 | Read-only sync-queue inzicht, error-clustering |
+| `services/LocalAIService.ts` | sprint 5 | Blur-detectie (Laplacian variance) |
+| `services/LocalMobileNetClassifier.ts` | #53 | On-device foto-categorisatie, MobileNet v2, 13 WKB-buckets |
+| `services/OfflineTelemetryAggregator.ts` | #56 | Snapshot van alle offline-metrics + health-score |
+| `services/OfflineTelemetryBootstrap.ts` | #57 | Periodieke runner (1u) — wire-up van #56 |
+| `components/ui/OfflineConflictResolutionModal.tsx` | #51 | Werkvoorbereider UI voor conflict-resolutie |
+| `components/ui/OfflineConflictTrigger.tsx` | #51 | Floating "X conflicten" knop |
+| `components/ui/OfflineRetryInsightsPanel.tsx` | #54 | Diagnose-modal (Ctrl+Shift+D) |
+| `components/ui/OfflineRetryInsightsTrigger.tsx` | #54 | Toetsenbord-shortcut handler |
+| `components/ui/OfflineStorageMeter.tsx` | sprint 8 | Lokale storage-meter in TenantFeaturesScreen |
+| `components/ui/OfflineSyncFloatingBadge.tsx` | sprint 4 | Floating sync-status badge |
+| `components/OfflineSyncBootstrap.tsx` | sprint 4 | Top-level lifecycle voor engine + SW bridge + telemetry |
+
+**Test-coverage:** 248/248 groen — alle services unit-tested, UI-components rendering-tested via React-Native-testing patroon.
+
 ---
 
-*Versie 1.0 · 2026-05-22 · Spee Solutions*
+*Versie 1.1 · 2026-05-22 · Spee Solutions*
 *Volgende stap: lees ook `offline-mode-roadmap.md` voor sprint-planning.*
