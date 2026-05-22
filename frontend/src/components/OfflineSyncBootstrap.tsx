@@ -23,6 +23,10 @@ import {
   detachOfflineServiceWorkerBridge,
   registerOfflineSyncTag,
 } from '../services/OfflineServiceWorkerBridge';
+import {
+  startOfflineTelemetry,
+  stopOfflineTelemetry,
+} from '../services/OfflineTelemetryBootstrap';
 import { useOfflineMode } from '../hooks/useOfflineMode';
 
 export function OfflineSyncBootstrap(): null {
@@ -35,14 +39,18 @@ export function OfflineSyncBootstrap(): null {
       // Tag-registratie is best-effort — Safari/Firefox-stable hebben geen
       // SyncManager, dan valt het terug op de periodieke timer in de engine.
       void registerOfflineSyncTag();
+      // Telemetry: log elk uur een compact-overzicht naar console
+      startOfflineTelemetry();
     } else {
       stopOfflineSyncEngine();
       detachOfflineServiceWorkerBridge();
+      stopOfflineTelemetry();
     }
     return () => {
       // Bij unmount altijd opruimen — voorkomt timer-leaks bij tenant-switch
       stopOfflineSyncEngine();
       detachOfflineServiceWorkerBridge();
+      stopOfflineTelemetry();
     };
   }, [offline]);
 
