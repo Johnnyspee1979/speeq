@@ -43,11 +43,11 @@ class MockFileReader {
     }, 0);
   }
 }
-(globalThis as { FileReader: typeof MockFileReader }).FileReader = MockFileReader;
+(globalThis as unknown as { FileReader: typeof MockFileReader }).FileReader = MockFileReader;
 
 // fetch mock per test
 const mockFetch = jest.fn();
-(globalThis as { fetch: typeof mockFetch }).fetch = mockFetch;
+(globalThis as unknown as { fetch: typeof mockFetch }).fetch = mockFetch;
 
 import {
   cacheBranding,
