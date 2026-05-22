@@ -59,6 +59,26 @@ export const useWkbAuth = () => {
       }
 
       setUser(mapProfileToUser(authUser, (profile ?? null) as ProfileRow | null));
+
+      // Offline-mode: cache JWT + refresh-token in IndexedDB met 30d grace
+      // zodat de klant offline ingelogd blijft tijdens netwerk-onderbreking.
+      // Fire-and-forget — niet-fatal bij fout.
+      if (session?.access_token && session?.refresh_token) {
+        const expiresAtSec = session.expires_at ?? 0;
+        void import('../services/OfflineAuthCache')
+          .then(({ cacheSession }) =>
+            cacheSession({
+              accessToken: session.access_token,
+              refreshToken: session.refresh_token,
+              expiresAt: expiresAtSec * 1000,
+              userId: authUser.id,
+              email: authUser.email ?? null,
+            }),
+          )
+          .catch((err) =>
+            console.warn('[useWkbAuth] OfflineAuthCache update faalt:', err),
+          );
+      }
     } catch (error) {
       console.warn('⚠️ Autorisatie fout of geen actieve sessie:', error);
       setUser(null);
