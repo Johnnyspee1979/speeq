@@ -33,6 +33,7 @@ import {
 import { refreshTenantFeatures } from '../hooks/useTenantFeature';
 import { getActiveTenantId } from '../config/tenant';
 import { OfflineModeWizard } from '../components/ui/OfflineModeWizard';
+import { OfflineStorageMeter } from '../components/ui/OfflineStorageMeter';
 
 interface Props {
   onBack?: () => void;
@@ -192,6 +193,9 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
           })}
         </View>
       )}
+
+      {/* Storage-meter: hide-self wanneer offline_mode = false */}
+      <OfflineStorageMeter />
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
