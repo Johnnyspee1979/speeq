@@ -14,6 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { ThemeProvider, type TenantFeaturesPayload } from '../theme/ThemeProvider';
 import { OfflineSyncFloatingBadge } from '../components/ui/OfflineSyncFloatingBadge';
+import { OfflineConflictTrigger } from '../components/ui/OfflineConflictTrigger';
 import { OfflineSyncBootstrap } from '../components/OfflineSyncBootstrap';
 
 interface TenantProviderProps {
@@ -95,6 +96,7 @@ export const TenantProvider = ({ children, activeTenantId }: TenantProviderProps
         {children}
         <OfflineSyncBootstrap />
         <OfflineSyncFloatingBadge />
+        <OfflineConflictTrigger />
       </ThemeProvider>
     );
   }
@@ -104,6 +106,7 @@ export const TenantProvider = ({ children, activeTenantId }: TenantProviderProps
     <ThemeProvider tenantFeatures={tenantFeatures}>
       {children}
       <OfflineSyncFloatingBadge />
+      <OfflineConflictTrigger />
     </ThemeProvider>
   );
 };
