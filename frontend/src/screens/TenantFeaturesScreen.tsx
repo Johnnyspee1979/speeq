@@ -32,6 +32,7 @@ import {
 } from '../services/TenantFeaturesService';
 import { refreshTenantFeatures } from '../hooks/useTenantFeature';
 import { getActiveTenantId } from '../config/tenant';
+import { OfflineModeWizard } from '../components/ui/OfflineModeWizard';
 
 interface Props {
   onBack?: () => void;
@@ -47,6 +48,7 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState<FeatureKey | null>(null);
   const [message, setMessage] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null);
+  const [wizardVisible, setWizardVisible] = useState(false);
 
   const tenantId = getActiveTenantId();
   const role = user?.role ?? null;
@@ -71,11 +73,7 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
 
   useEffect(() => { void load(); }, [load]);
 
-  const handleToggle = useCallback(async (key: FeatureKey, next: boolean) => {
-    if (!canWrite) {
-      flash('err', 'Alleen Keyuser of Admin mag modules aanpassen.');
-      return;
-    }
+  const persistToggle = useCallback(async (key: FeatureKey, next: boolean) => {
     setBusyKey(key);
     // Optimistic update
     setFeatures(prev => ({ ...prev, [key]: next }));
@@ -89,12 +87,34 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
       // Rollback
       setFeatures(prev => ({ ...prev, [key]: !next }));
       flash('err', result.error ?? 'Wijzigen mislukt.');
-      return;
+      return false;
     }
     flash('ok', `${FEATURE_META[key].label} ${next ? 'aangezet' : 'uitgezet'}.`);
     // Globale cache verversen zodat andere schermen reageren
     void refreshTenantFeatures();
-  }, [canWrite, isMaker, flash]);
+    return true;
+  }, [isMaker, flash]);
+
+  const handleToggle = useCallback(async (key: FeatureKey, next: boolean) => {
+    if (!canWrite) {
+      flash('err', 'Alleen Keyuser of Admin mag modules aanpassen.');
+      return;
+    }
+    // Speciale onboarding-wizard voor offline-mode bij aanzetten
+    if (key === 'offline_mode' && next === true) {
+      setWizardVisible(true);
+      return;
+    }
+    await persistToggle(key, next);
+  }, [canWrite, flash, persistToggle]);
+
+  const handleWizardConfirm = useCallback(async () => {
+    await persistToggle('offline_mode', true);
+  }, [persistToggle]);
+
+  const handleWizardClose = useCallback(() => {
+    setWizardVisible(false);
+  }, []);
 
   const styles = createStyles(theme);
 
@@ -179,6 +199,13 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
           Uitgezette modules zijn voor jouw bedrijf nergens meer zichtbaar.
         </Text>
       </View>
+
+      {/* Onboarding-wizard die opent bij eerste activatie van offline_mode */}
+      <OfflineModeWizard
+        visible={wizardVisible}
+        onClose={handleWizardClose}
+        onConfirm={handleWizardConfirm}
+      />
     </ScrollView>
   );
 }
