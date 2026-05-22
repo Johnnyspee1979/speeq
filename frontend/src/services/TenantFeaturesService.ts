@@ -21,6 +21,7 @@ export const FEATURE_KEYS = [
   'qr_stickers',
   'floor_plan',
   'multilang',
+  'offline_mode',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -74,6 +75,14 @@ export const FEATURE_META: Record<FeatureKey, FeatureMeta> = {
     label: 'Meertalig (NL/EN/DE)',
     description: 'Interface beschikbaar in Engels en Duits naast Nederlands.',
     icon: '🌐',
+    defaultOn: false,
+  },
+  offline_mode: {
+    key: 'offline_mode',
+    label: 'Offline modus',
+    description:
+      'Werkt zonder netwerk — foto\'s, GPS en lokale AI-precheck draaien op het toestel. Sync zodra het netwerk er weer is. Vereist eenmalige download van AI-modellen (~40 MB).',
+    icon: '📡',
     defaultOn: false,
   },
 };
