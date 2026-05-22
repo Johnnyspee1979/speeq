@@ -183,16 +183,41 @@ const localAIServiceImpl: LocalAIService = {
     };
   },
 
-  async analyzeImageCategory(_uri: string): Promise<AIVerdict> {
-    // STUB voor volgende sprint — vervang met react-native-fast-tflite + MobileNet.
-    // Voor nu: categorisatie wordt overgelaten aan cloud-AI bij sync.
-    return {
-      status: 'NEEDS_REVIEW',
-      confidence: 0,
-      notes:
-        'Categorisatie nog niet lokaal beschikbaar — wordt door cloud-AI bepaald bij sync.',
-      source: 'local-stub',
-    };
+  async analyzeImageCategory(uri: string): Promise<AIVerdict> {
+    // On-device MobileNet via LocalMobileNetClassifier (lazy-loaded).
+    // Werkt web-only — op native valt 'ie terug op 'unknown' en laat
+    // cloud-AI de categorisatie doen bij sync.
+    try {
+      const { classifyPhotoCategory } = await import('./LocalMobileNetClassifier');
+      const prediction = await classifyPhotoCategory(uri);
+
+      if (prediction.category === 'unknown') {
+        return {
+          status: 'NEEDS_REVIEW',
+          confidence: 0,
+          notes:
+            'Lokale categorisatie niet beschikbaar op dit toestel — cloud-AI doet het bij sync.',
+          source: 'local-stub',
+        };
+      }
+
+      // Confidence >= 0.5 = PASSED, anders WARNING (laat werkvoorbereider checken)
+      const status = prediction.confidence >= 0.5 ? 'PASSED' : 'WARNING';
+      return {
+        status,
+        confidence: prediction.confidence,
+        notes: `Categorie: ${prediction.category} (MobileNet: ${prediction.rawLabel})`,
+        source: 'local-category',
+      };
+    } catch (err) {
+      console.warn('[LocalAIService] categorisatie faalt:', err);
+      return {
+        status: 'NEEDS_REVIEW',
+        confidence: 0,
+        notes: 'Categorisatie tijdelijk niet beschikbaar — cloud-AI bepaalt het bij sync.',
+        source: 'local-stub',
+      };
+    }
   },
 };
 
