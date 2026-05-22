@@ -53,6 +53,16 @@ function writeLocalCache(b: TenantBranding) {
 function notify(b: TenantBranding) {
   cache = b;
   writeLocalCache(b);
+  // Offline-mode: schrijf óók naar IndexedDB OfflineBrandingCache met
+  // logo als dataURL — dan blijft branding zichtbaar zonder netwerk.
+  // Fire-and-forget (non-fatal bij fout).
+  void import('./OfflineBrandingCache').then(({ cacheBranding }) =>
+    cacheBranding({
+      companyName: b.companyName,
+      logoUrl: b.logoUrl,
+      primaryColor: b.primaryColor,
+    }).catch((err) => console.warn('[TenantBrandingService] OfflineBrandingCache update faalt:', err)),
+  );
   listeners.forEach(fn => fn(b));
 }
 
