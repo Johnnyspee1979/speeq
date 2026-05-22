@@ -27,6 +27,29 @@ import {
 } from '../database/offlineDb';
 import { getActiveTenantId } from '../config/tenant';
 import localforage from 'localforage';
+import { getOfflinePhotoStorage } from './OfflinePhotoStorage';
+
+/**
+ * Cache een remote photo lokaal zodat de vakman 'm ook offline kan
+ * terugzien. Idempotent — als al lokaal aanwezig, geen re-download.
+ *
+ * Returns de lokale URI of null bij fout.
+ */
+async function cacheRemotePhoto(
+  uuid: string,
+  remoteUrl: string | null,
+): Promise<string | null> {
+  if (!remoteUrl) return null;
+  try {
+    const photoStore = await getOfflinePhotoStorage();
+    const existing = await photoStore.loadPhoto(uuid);
+    if (existing) return existing;
+    return await photoStore.savePhoto(uuid, remoteUrl);
+  } catch (err) {
+    console.warn('[OfflineCloudPuller] photo-cache faalde:', uuid, err);
+    return null;
+  }
+}
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -196,7 +219,16 @@ export async function pullCloudIntoLocal(): Promise<PullResult> {
 
       if (!localRow) {
         // Nieuwe record vanuit cloud — insert lokaal
-        await store.insertEvidence(remoteToLocalRow(remote));
+        const newRow = remoteToLocalRow(remote);
+        // Cache de remote foto lokaal voor offline raadpleging
+        const cachedUri = await cacheRemotePhoto(newRow.uuid, remote.photo_uri);
+        if (cachedUri) {
+          newRow.photo_uri = cachedUri;
+          if (remote.media_uri === remote.photo_uri) {
+            newRow.media_uri = cachedUri;
+          }
+        }
+        await store.insertEvidence(newRow);
         result.inserted += 1;
         continue;
       }
@@ -223,12 +255,18 @@ export async function pullCloudIntoLocal(): Promise<PullResult> {
         continue;
       }
 
-      // Geen lokale pending — cloud wint, overschrijf lokaal
+      // Geen lokale pending — cloud wint, overschrijf lokaal.
+      // Foto opnieuw cachen indien de remote URL is veranderd.
+      const cachedUri = await cacheRemotePhoto(localRow.uuid, remote.photo_uri);
+      const finalPhotoUri = cachedUri ?? remote.photo_uri;
+      const finalMediaUri =
+        remote.media_uri === remote.photo_uri ? finalPhotoUri : remote.media_uri;
+
       await store.updateEvidence(localRow.uuid, {
         project_id: remote.project_id,
         inspection_point_id: remote.inspection_point_id,
-        photo_uri: remote.photo_uri,
-        media_uri: remote.media_uri,
+        photo_uri: finalPhotoUri,
+        media_uri: finalMediaUri,
         timestamp: remote.timestamp,
         latitude: remote.latitude,
         longitude: remote.longitude,
