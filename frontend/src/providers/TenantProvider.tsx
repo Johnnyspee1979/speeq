@@ -14,6 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { ThemeProvider, type TenantFeaturesPayload } from '../theme/ThemeProvider';
 import { OfflineSyncFloatingBadge } from '../components/ui/OfflineSyncFloatingBadge';
+import { OfflineSyncBootstrap } from '../components/OfflineSyncBootstrap';
 
 interface TenantProviderProps {
   children: React.ReactNode;
@@ -92,6 +93,7 @@ export const TenantProvider = ({ children, activeTenantId }: TenantProviderProps
     return (
       <ThemeProvider tenantFeatures={null}>
         {children}
+        <OfflineSyncBootstrap />
         <OfflineSyncFloatingBadge />
       </ThemeProvider>
     );
