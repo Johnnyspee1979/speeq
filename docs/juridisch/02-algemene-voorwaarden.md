@@ -42,7 +42,7 @@
 | Solo | €49 | 5 | 3 | 25 GB |
 | Team | €149 | 25 | onbeperkt | 100 GB |
 | Pro | €299 | onbeperkt | onbeperkt | 250 GB |
-| Enterprise | vanaf €699 | onbeperkt | onbeperkt | 1 TB fair-use |
+| Enterprise | vanaf €899 | onbeperkt | onbeperkt | 1 TB fair-use |
 
 1. Bij overschrijding van limieten neemt Leverancier contact op met Klant. Klant heeft 14 dagen om naar een hoger Pakket te upgraden of het gebruik te verminderen.
 2. Bij voortdurende overschrijding van fair-use-grenzen kan Leverancier het account beperken na een schriftelijke waarschuwing.

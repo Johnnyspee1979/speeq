@@ -1,0 +1,351 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e6]:
+      - generic [ref=e8]:
+        - link [ref=e10] [cursor=pointer]:
+          - /url: ./
+        - navigation [ref=e12]:
+          - generic [ref=e13]:
+            - paragraph [ref=e15]:
+              - link "Home" [ref=e16] [cursor=pointer]:
+                - /url: ./
+            - paragraph [ref=e18]:
+              - link "About" [ref=e19] [cursor=pointer]:
+                - /url: ./about-us
+            - paragraph [ref=e21]:
+              - link "Blog" [ref=e22] [cursor=pointer]:
+                - /url: ./blog
+            - paragraph [ref=e24]:
+              - link "Services" [ref=e25] [cursor=pointer]:
+                - /url: ./services
+            - paragraph [ref=e27]:
+              - link "Contact" [ref=e28] [cursor=pointer]:
+                - /url: ./contact
+          - link "Get template" [ref=e30] [cursor=pointer]:
+            - /url: https://framer.link/fOdQ2Bh
+            - paragraph [ref=e32]: Get template
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - img "a man standing on the roof of a house" [ref=e37]
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - heading "Your go-to partner for home repairs" [level=1] [ref=e43]
+            - paragraph [ref=e46]: Your go-to partner for all your home improvement needs.
+            - generic [ref=e48]:
+              - heading "(959) 555-0123" [level=6] [ref=e54]
+              - heading "Available 24/7" [level=6] [ref=e60]
+          - generic [ref=e62]:
+            - heading "Request Your Free Call" [level=4] [ref=e64]
+            - generic [ref=e65]:
+              - textbox [ref=e68]:
+                - /placeholder: Name
+              - textbox [ref=e71]:
+                - /placeholder: Email
+              - textbox [ref=e74]:
+                - /placeholder: Number
+              - combobox [ref=e77]:
+                - option "Select your service…" [disabled] [selected]
+                - option "Roofing"
+                - option "Interior"
+                - option "Exterior"
+              - button "Request Call" [ref=e80] [cursor=pointer]:
+                - paragraph [ref=e82]: Request Call
+      - generic [ref=e85]:
+        - heading "Our company is a top-rated service provider" [level=3] [ref=e88]
+        - generic [ref=e90]:
+          - generic [ref=e91]:
+            - img [ref=e94]
+            - paragraph [ref=e103]: 4.6 on Trustpilot
+          - paragraph [ref=e114]: 4.85 on Yelp
+          - paragraph [ref=e124]: 4.9 on Google
+      - generic [ref=e127]:
+        - generic [ref=e128]:
+          - img "an empty room with white walls and wooden floors" [ref=e132]
+          - img "brown wooden bed frame with white and brown bed linen" [ref=e136]
+          - img "living room with brown wooden table and chairs" [ref=e140]
+        - generic [ref=e141]:
+          - heading "Get professional handyman services" [level=2] [ref=e143]
+          - paragraph [ref=e145]: Our team of skilled and dedicated handymen is ready to tackle any project, big or small, to enhance the comfort and functionality of your living spaces. From fixing a leaky faucet to remodeling your entire kitchen, you're covered.
+          - generic [ref=e147]:
+            - generic [ref=e151]:
+              - heading "24/7" [level=3] [ref=e153]
+              - paragraph [ref=e155]: availability
+            - generic [ref=e159]:
+              - heading "5 hours" [level=3] [ref=e161]
+              - paragraph [ref=e163]: response time
+      - generic [ref=e167]:
+        - heading "How does it work?" [level=2] [ref=e170]
+        - generic [ref=e171]:
+          - generic [ref=e174]:
+            - generic [ref=e176] [cursor=pointer]:
+              - heading "Do you offer warranties on your work?" [level=5] [ref=e179]
+              - paragraph [ref=e182]: Yes, we stand by the quality of our work. We provide warranties to ensure your satisfaction and address any issues that may arise after the completion of the service.
+            - heading "Can I schedule services for weekends?" [level=5] [ref=e187] [cursor=pointer]
+            - heading "Are your handymen licensed?" [level=5] [ref=e193] [cursor=pointer]
+          - img "white wooden kitchen island and cupboard cabinets near glass panel door" [ref=e198]
+      - generic [ref=e200]:
+        - heading "We offer a wide range of services" [level=2] [ref=e205]
+        - generic [ref=e206]:
+          - generic [ref=e209] [cursor=pointer]:
+            - link "Exterior works" [ref=e210]:
+              - /url: ./services/exterior-works
+              - heading "Exterior works" [level=6] [ref=e213]
+            - link [ref=e214]:
+              - /url: ./services/exterior-works
+              - list [ref=e217]:
+                - listitem [ref=e218]:
+                  - heading [level=3] [ref=e221]: landscaping gardening painting garage restoration
+                - listitem [ref=e222]:
+                  - heading [level=3] [ref=e225]: landscaping gardening painting garage restoration
+            - img "a white building with a bunch of flowers growing on the side of it" [ref=e228]
+          - generic [ref=e231] [cursor=pointer]:
+            - link "Interior works" [ref=e232]:
+              - /url: ./services/interior-works
+              - heading "Interior works" [level=6] [ref=e235]
+            - link [ref=e236]:
+              - /url: ./services/interior-works
+              - list [ref=e239]:
+                - listitem [ref=e240]:
+                  - heading [level=3] [ref=e243]: kitchen bathroom stairs bedroom guest
+                - listitem [ref=e244]:
+                  - heading [level=3] [ref=e247]: kitchen bathroom stairs bedroom guest
+                - listitem [ref=e248]:
+                  - heading [level=3] [ref=e251]: kitchen bathroom stairs bedroom guest
+            - img "gray 2 seat sofa near brown wooden coffee table" [ref=e254]
+          - generic [ref=e257] [cursor=pointer]:
+            - link "Carpentry" [ref=e258]:
+              - /url: ./services/carpentry
+              - heading "Carpentry" [level=6] [ref=e261]
+            - link [ref=e262]:
+              - /url: ./services/carpentry
+              - list [ref=e265]:
+                - listitem [ref=e266]:
+                  - heading [level=3] [ref=e269]: custom woodwork furniture assembly renovations
+                - listitem [ref=e270]:
+                  - heading [level=3] [ref=e273]: custom woodwork furniture assembly renovations
+            - img "Carpentry" [ref=e276]
+      - generic [ref=e281]:
+        - generic [ref=e282]:
+          - img "wicker table and two chairs near swimming pool" [ref=e286]
+          - generic [ref=e287]:
+            - generic [ref=e289]:
+              - heading "25" [level=2] [ref=e291]
+              - paragraph [ref=e293]: Years of activity
+            - generic [ref=e295]:
+              - heading "30k" [level=2] [ref=e297]
+              - paragraph [ref=e299]: Projects done
+        - generic [ref=e300]:
+          - heading "We are your trusted partners for repairs" [level=2] [ref=e302]
+          - generic [ref=e303]:
+            - paragraph [ref=e304]: Founded with a vision to redefine home improvement, Handyman emerged from a passion for craftsmanship and a desire to create homes that go beyond the ordinary.
+            - paragraph [ref=e305]: From minor repairs to remodeling, our commitment to customer satisfaction remains unwavering.
+          - link "Discover our story" [ref=e308] [cursor=pointer]:
+            - /url: ./about-us
+            - paragraph [ref=e310]: Discover our story
+      - generic [ref=e312]:
+        - generic [ref=e313]:
+          - heading "Our work process" [level=2] [ref=e315]
+          - paragraph [ref=e317]: Whether you have a specific project in mind or need guidance on where to start, our team is here to assist you.
+        - generic [ref=e318]:
+          - generic [ref=e324]:
+            - heading "Book an appointment" [level=5] [ref=e326]
+            - paragraph [ref=e328]: Reach us with our contact form and we call you back.
+          - generic [ref=e335]:
+            - heading "Receive an estimate" [level=5] [ref=e337]
+            - paragraph [ref=e339]: Our expert will come to estimate the project cost.
+          - generic [ref=e346]:
+            - heading "The project can start" [level=5] [ref=e348]
+            - paragraph [ref=e350]: You will receive frequent updates by mail.
+        - generic [ref=e351]:
+          - heading "We remain available 24/7 by phone" [level=3] [ref=e358]
+          - heading "(959) 555-0123" [level=6] [ref=e365]
+      - generic [ref=e369]:
+        - heading "What clients say" [level=2] [ref=e374]
+        - list [ref=e381]:
+          - listitem [ref=e382]:
+            - generic [ref=e384]:
+              - paragraph [ref=e392]: Facing a plumbing emergency, I contacted Handyman, and they responded promptly. Their quick and efficient repair saved me from a potential disaster. I'm grateful for their reliable service and will definitely call on them for future needs.
+              - generic [ref=e394]:
+                - img [ref=e397]
+                - generic [ref=e398]:
+                  - heading [level=6] [ref=e400]: Alex Peterson
+                  - heading [level=6] [ref=e402]: Plumbing service
+          - listitem [ref=e403]:
+            - generic [ref=e405]:
+              - paragraph [ref=e413]: I've used Handyman for various repairs around my home, and they never disappoint. From fixing faucets to regular maintenance checks, their team is reliable and provides great customer service. It's a relief to have a trustworthy service.
+              - generic [ref=e415]:
+                - img [ref=e418]
+                - generic [ref=e419]:
+                  - heading [level=6] [ref=e421]: Mark Rodriguez
+                  - heading [level=6] [ref=e423]: Kitchen renovation
+          - listitem [ref=e424]:
+            - generic [ref=e426]:
+              - paragraph [ref=e434]: Handyman turned my outdated bathroom into a spa-like retreat. The attention to detail, creative solutions, and professionalism were outstanding. I'm thrilled with the transformation and would choose them for any future projects.
+              - generic [ref=e439]:
+                - heading [level=6] [ref=e441]: Ryan Johnson
+                - heading [level=6] [ref=e443]: Remodeling Project
+          - listitem [ref=e444]:
+            - generic [ref=e446]:
+              - paragraph [ref=e454]: I signed up for Handyman's maintenance services, and it's been a game-changer. Their team is thorough, and the regular checks have prevented potential issues. It's comforting to know my home is in capable hands. Great service!
+              - generic [ref=e456]:
+                - img [ref=e459]
+                - generic [ref=e460]:
+                  - heading [level=6] [ref=e462]: Tom Bennett
+                  - heading [level=6] [ref=e464]: Home Repairs
+          - listitem [ref=e465]:
+            - generic [ref=e467]:
+              - paragraph [ref=e475]: Facing a plumbing emergency, I contacted Handyman, and they responded promptly. Their quick and efficient repair saved me from a potential disaster. I'm grateful for their reliable service and will definitely call on them for future needs.
+              - generic [ref=e477]:
+                - img [ref=e480]
+                - generic [ref=e481]:
+                  - heading [level=6] [ref=e483]: Alex Peterson
+                  - heading [level=6] [ref=e485]: Plumbing service
+          - listitem [ref=e486]:
+            - generic [ref=e488]:
+              - paragraph [ref=e496]: I've used Handyman for various repairs around my home, and they never disappoint. From fixing faucets to regular maintenance checks, their team is reliable and provides great customer service. It's a relief to have a trustworthy service.
+              - generic [ref=e498]:
+                - img [ref=e501]
+                - generic [ref=e502]:
+                  - heading [level=6] [ref=e504]: Mark Rodriguez
+                  - heading [level=6] [ref=e506]: Kitchen renovation
+          - listitem [ref=e507]:
+            - generic [ref=e509]:
+              - paragraph [ref=e517]: Handyman turned my outdated bathroom into a spa-like retreat. The attention to detail, creative solutions, and professionalism were outstanding. I'm thrilled with the transformation and would choose them for any future projects.
+              - generic [ref=e522]:
+                - heading [level=6] [ref=e524]: Ryan Johnson
+                - heading [level=6] [ref=e526]: Remodeling Project
+          - listitem [ref=e527]:
+            - generic [ref=e529]:
+              - paragraph [ref=e537]: I signed up for Handyman's maintenance services, and it's been a game-changer. Their team is thorough, and the regular checks have prevented potential issues. It's comforting to know my home is in capable hands. Great service!
+              - generic [ref=e539]:
+                - img [ref=e542]
+                - generic [ref=e543]:
+                  - heading [level=6] [ref=e545]: Tom Bennett
+                  - heading [level=6] [ref=e547]: Home Repairs
+          - listitem [ref=e548]:
+            - generic [ref=e550]:
+              - paragraph [ref=e558]: Facing a plumbing emergency, I contacted Handyman, and they responded promptly. Their quick and efficient repair saved me from a potential disaster. I'm grateful for their reliable service and will definitely call on them for future needs.
+              - generic [ref=e560]:
+                - img [ref=e563]
+                - generic [ref=e564]:
+                  - heading [level=6] [ref=e566]: Alex Peterson
+                  - heading [level=6] [ref=e568]: Plumbing service
+          - listitem [ref=e569]:
+            - generic [ref=e571]:
+              - paragraph [ref=e579]: I've used Handyman for various repairs around my home, and they never disappoint. From fixing faucets to regular maintenance checks, their team is reliable and provides great customer service. It's a relief to have a trustworthy service.
+              - generic [ref=e581]:
+                - img [ref=e584]
+                - generic [ref=e585]:
+                  - heading [level=6] [ref=e587]: Mark Rodriguez
+                  - heading [level=6] [ref=e589]: Kitchen renovation
+          - listitem [ref=e590]:
+            - generic [ref=e592]:
+              - paragraph [ref=e600]: Handyman turned my outdated bathroom into a spa-like retreat. The attention to detail, creative solutions, and professionalism were outstanding. I'm thrilled with the transformation and would choose them for any future projects.
+              - generic [ref=e605]:
+                - heading [level=6] [ref=e607]: Ryan Johnson
+                - heading [level=6] [ref=e609]: Remodeling Project
+          - listitem [ref=e610]:
+            - generic [ref=e612]:
+              - paragraph [ref=e620]: I signed up for Handyman's maintenance services, and it's been a game-changer. Their team is thorough, and the regular checks have prevented potential issues. It's comforting to know my home is in capable hands. Great service!
+              - generic [ref=e622]:
+                - img [ref=e625]
+                - generic [ref=e626]:
+                  - heading [level=6] [ref=e628]: Tom Bennett
+                  - heading [level=6] [ref=e630]: Home Repairs
+      - generic [ref=e632]:
+        - generic [ref=e633]:
+          - heading "Explore insights and get inspiration" [level=2] [ref=e637]
+          - link "Explore blog" [ref=e639] [cursor=pointer]:
+            - /url: ./blog
+            - paragraph [ref=e641]: Explore blog
+        - generic [ref=e642]:
+          - link "The importance of regular home maintenance Apr 8, 2022 The importance of regular home maintenance Read more →" [ref=e646] [cursor=pointer]:
+            - /url: ./blog/the-importance-of-regular-home-maintenance
+            - img "The importance of regular home maintenance" [ref=e649]
+            - generic [ref=e652]:
+              - heading "Apr 8, 2022" [level=6] [ref=e654]:
+                - time [ref=e655]: Apr 8, 2022
+              - heading "The importance of regular home maintenance" [level=4] [ref=e657]
+              - paragraph [ref=e659]: Read more →
+          - generic [ref=e660]:
+            - link "Navigating home improvement on budget Feb 28, 2022 Navigating home improvement on budget Read more →" [ref=e663] [cursor=pointer]:
+              - /url: ./blog/navigating-home-improvement-on-budget
+              - img "Navigating home improvement on budget" [ref=e666]
+              - generic [ref=e669]:
+                - heading "Feb 28, 2022" [level=6] [ref=e671]:
+                  - time [ref=e672]: Feb 28, 2022
+                - heading "Navigating home improvement on budget" [level=4] [ref=e674]
+                - paragraph [ref=e676]: Read more →
+            - 'link "Maximizing spaces: tips for tiny apartments Feb 6, 2022 Maximizing spaces: tips for tiny apartments Read more →" [ref=e679] [cursor=pointer]':
+              - /url: ./blog/maximizing-spaces-tips-for-tiny-apartments
+              - 'img "Maximizing spaces: tips for tiny apartments" [ref=e682]'
+              - generic [ref=e685]:
+                - heading "Feb 6, 2022" [level=6] [ref=e687]:
+                  - time [ref=e688]: Feb 6, 2022
+                - 'heading "Maximizing spaces: tips for tiny apartments" [level=4] [ref=e690]'
+                - paragraph [ref=e692]: Read more →
+    - generic [ref=e697]:
+      - heading "Ready to transform your home?" [level=2] [ref=e699]
+      - link "Get started with us" [ref=e701] [cursor=pointer]:
+        - /url: ./contact
+        - paragraph [ref=e703]: Get started with us
+    - contentinfo [ref=e706]:
+      - generic [ref=e708]:
+        - generic [ref=e709]:
+          - paragraph [ref=e713]: Your go-to destination for all your home repair and improvement needs
+          - generic [ref=e714]:
+            - link [ref=e715] [cursor=pointer]:
+              - /url: https://www.facebook.com/facebook
+            - link [ref=e717] [cursor=pointer]:
+              - /url: https://twitter.com
+            - link [ref=e719] [cursor=pointer]:
+              - /url: https://www.instagram.com/instagram/
+            - link [ref=e721] [cursor=pointer]:
+              - /url: https://www.youtube.com/youtube
+        - generic [ref=e723]:
+          - heading "Company" [level=5] [ref=e725]
+          - generic [ref=e726]:
+            - paragraph [ref=e728]:
+              - link "Home" [ref=e729] [cursor=pointer]:
+                - /url: ./
+            - paragraph [ref=e731]:
+              - link "About Us" [ref=e732] [cursor=pointer]:
+                - /url: ./about-us
+            - paragraph [ref=e734]:
+              - link "Services" [ref=e735] [cursor=pointer]:
+                - /url: ./services
+            - paragraph [ref=e737]:
+              - link "Contact" [ref=e738] [cursor=pointer]:
+                - /url: ./contact
+        - generic [ref=e739]:
+          - heading "Services" [level=5] [ref=e741]
+          - generic [ref=e742]:
+            - paragraph [ref=e744]:
+              - link "Interior works" [ref=e745] [cursor=pointer]:
+                - /url: ./services/interior-works
+            - paragraph [ref=e747]:
+              - link "Exterior works" [ref=e748] [cursor=pointer]:
+                - /url: ./services/exterior-works
+            - paragraph [ref=e750]:
+              - link "Carpentry" [ref=e751] [cursor=pointer]:
+                - /url: ./services/carpentry
+            - paragraph [ref=e753]:
+              - link "Plumbing" [ref=e754] [cursor=pointer]:
+                - /url: ./services/plumbing
+        - generic [ref=e755]:
+          - heading "More content" [level=5] [ref=e757]
+          - generic [ref=e758]:
+            - paragraph [ref=e760]:
+              - link "Blog Posts" [ref=e761] [cursor=pointer]:
+                - /url: ./blog
+            - paragraph [ref=e763]:
+              - link "Blog Single" [ref=e764] [cursor=pointer]:
+                - /url: ./blog/the-importance-of-regular-home-maintenance
+            - paragraph [ref=e766]:
+              - link "Other services" [ref=e767] [cursor=pointer]:
+                - /url: ./services-2
+            - paragraph [ref=e769]: 404 page
+  - link "Create a free website with Framer, the website builder loved by startups, designers and agencies." [ref=e770] [cursor=pointer]:
+    - /url: https://www.framer.com
+    - paragraph [ref=e775]: Create a free website with Framer, the website builder loved by startups, designers and agencies.
+  - img [ref=e777]

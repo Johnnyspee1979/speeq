@@ -16,6 +16,7 @@ import React, {
 } from 'react';
 import { supabase } from '../lib/supabase';
 import { DEFAULT_PROJECT_ID, DEFAULT_PROJECT_NAME } from '../config/app';
+import { getActiveTenantId } from '../config/tenant';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,6 +111,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
 
         if (allowedIds.length > 0) {
           query = query.in('id', allowedIds);
+        }
+
+        // Tenant-isolatie: bij een actieve klant-tenant alleen hun projecten.
+        const activeTenantId = getActiveTenantId();
+        if (activeTenantId) {
+          query = query.eq('tenant_id', activeTenantId);
         }
 
         const { data, error } = await query;

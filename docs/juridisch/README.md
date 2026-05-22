@@ -49,7 +49,7 @@ Vóór gebruik moet je deze waardes per template invullen:
 ## Belangrijke disclaimer
 
 Deze templates zijn een **vertrekpunt op basis van standaard ICT-praktijk**.
-- Voor enterprise-klanten (€699+) is een gang naar een specialist (Considerati, ICTRecht, of een lokale ICT-advocaat) aanbevolen
+- Voor enterprise-klanten (€899+) is een gang naar een specialist (Considerati, ICTRecht, of een lokale ICT-advocaat) aanbevolen
 - Bij internationale klanten (buiten EU): laat een gespecialiseerd kantoor naar de cross-border data flows kijken
 - Bij geschillen: deze documenten zijn geen vervanging voor juridisch advies
 

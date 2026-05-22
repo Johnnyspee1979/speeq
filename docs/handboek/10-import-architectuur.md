@@ -72,7 +72,7 @@ Onder de motorkap (Johnny):
 
 ### Fase A (klant #4+) — Self-service portal
 
-Klant ziet op `import.speeq.nl/jansen` (of `/?t=jansen&mode=import`):
+Klant ziet op `app.speesolutions.com/import/jansen` (of `/?t=jansen&mode=import`):
 1. **Stap 1:** "Welke tool gebruikte je?" (dropdown: STA / Vastlegg / BKapp / anders)
 2. **Stap 2:** Drag-drop je ZIP-bestand hierheen
 3. **Stap 3:** Progress bar — "32% verwerkt, 1.247 foto's geladen"

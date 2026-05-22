@@ -51,7 +51,7 @@ Je hebt de Stitch-prompt al af. Vandaag:
 1. Plak prompt in Stitch
 2. Kies beste design
 3. Export naar Vercel-deploy
-4. Alias instellen: `speeq.nl` of `speesolutions.com/speeq`
+4. Alias instellen: `speesolutions.com/speeq` (product) + `app.speesolutions.com` (web-app)
 
 **Tegen Claude zeggen:** "help mij Stitch design uit te rollen op vercel"
 

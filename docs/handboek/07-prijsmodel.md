@@ -33,7 +33,7 @@ Vastlegg ──── Homigo ──── Bouwportaal ──── STA Software 
 | **Solo** | €49 | €23 | €26 | ZZP, klusbedrijf, 1-mans aannemer |
 | **Team** | €149 | €23 | €126 | MKB 2-10 man |
 | **Pro** | €299 | €31 | €268 | MKB 10-30 man |
-| **Enterprise** | €699+ | €100+ | €599+ | 30+ users, multi-locatie |
+| **Enterprise** | €899+ | €100+ | €599+ | 30+ users, multi-locatie |
 
 **Jaar-bundel:** 12 maanden vooruit betalen → 2 maanden gratis (≈17% korting). Cashflow boost + minder churn.
 
@@ -73,7 +73,7 @@ Vastlegg ──── Homigo ──── Bouwportaal ──── STA Software 
 - Transparante prijs in plaats van "offerte op aanvraag"
 - Onboarding 60 min remote inbegrepen — STA rekent dat los
 
-**Enterprise €699+:**
+**Enterprise €899+:**
 - 5-10 Enterprise klanten = de kers-op-de-taart
 - Eén Enterprise-klant ≈ 14× Solo-klant qua omzet, ≈ 3× minder support-werk
 
@@ -115,7 +115,7 @@ Bij een gemixte portefeuille van 40 klanten:
 20× Solo  × €49  = €  980   +   20× 1u  =  20u/mnd
 10× Team  × €149 = €1.490   +   10× 3u  =  30u/mnd
  8× Pro   × €299 = €2.392   +    8× 6u  =  48u/mnd
- 2× Enter × €699 = €1.398   +    2×10u  =  20u/mnd
+ 2× Enter × €899 = €1.398   +    2×10u  =  20u/mnd
 ─────────────────────────────────────────────────────
             MRR  = €6.260        Tijd   = 118u/mnd
        Hosting   = − €965

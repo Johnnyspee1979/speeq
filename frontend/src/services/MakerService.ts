@@ -26,7 +26,7 @@ export interface Tenant {
   createdAt: string | null;
 }
 
-const MAKER_EMAIL = 'johnny@speesolutions.nl';
+const MAKER_EMAIL = 'johnny@speesolutions.com';
 
 export function isMakerEmail(email: string | null | undefined): boolean {
   return (email ?? '').toLowerCase().trim() === MAKER_EMAIL;

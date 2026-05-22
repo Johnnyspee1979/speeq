@@ -1,0 +1,537 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e6]:
+        - link "Framer" [ref=e8] [cursor=pointer]:
+          - /url: https://www.framer.com
+          - img [ref=e9]
+          - generic [ref=e11]: Framer
+        - generic [ref=e12]:
+          - button "Product" [ref=e13] [cursor=pointer]
+          - button "Teams" [ref=e14] [cursor=pointer]
+          - button "Resources" [ref=e15] [cursor=pointer]
+          - button "Community" [ref=e16] [cursor=pointer]
+          - button "Support" [ref=e17] [cursor=pointer]
+          - link "Enterprise" [ref=e18] [cursor=pointer]:
+            - /url: https://www.framer.com/enterprise
+          - link "Pricing" [ref=e19] [cursor=pointer]:
+            - /url: https://www.framer.com/pricing
+        - generic [ref=e21]:
+          - link "Log in" [ref=e22] [cursor=pointer]:
+            - /url: https://login.framer.com/?origin=framer-web&redirect=https://www.framer.com/marketplace/
+          - link "Sign up" [ref=e23] [cursor=pointer]:
+            - /url: https://framer.com/r/signup/
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic:
+            - generic:
+              - link "Marketplace":
+                - /url: /marketplace/
+                - img
+                - generic: Marketplace
+        - generic [ref=e27]:
+          - link "Templates" [ref=e28] [cursor=pointer]:
+            - /url: /marketplace/templates/
+          - link "Plugins" [ref=e29] [cursor=pointer]:
+            - /url: /marketplace/plugins/
+          - link "Components" [ref=e30] [cursor=pointer]:
+            - /url: /marketplace/components/
+          - link "Vectors" [ref=e31] [cursor=pointer]:
+            - /url: /marketplace/vectors/
+          - link "Tutorials" [ref=e32] [cursor=pointer]:
+            - /url: /marketplace/tutorials/
+        - generic [ref=e34]:
+          - img
+          - searchbox "Search" [ref=e35] [cursor=pointer]
+    - generic [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - link "Marketplace" [ref=e41] [cursor=pointer]:
+            - /url: /marketplace/
+          - img [ref=e42]
+          - link "Templates" [ref=e44] [cursor=pointer]:
+            - /url: /marketplace/templates/
+          - img [ref=e45]
+          - link "Categories" [ref=e47] [cursor=pointer]:
+            - /url: /marketplace/templates/category/
+          - img [ref=e48]
+          - link "Agency" [ref=e50] [cursor=pointer]:
+            - /url: /marketplace/templates/category/agency/
+        - generic [ref=e51]:
+          - heading "Handyman — Free Roofer & Renovation Template" [level=1] [ref=e52]:
+            - text: Handyman
+            - generic [ref=e53]: — Free Roofer & Renovation Template
+          - generic [ref=e54]:
+            - link "Preview" [ref=e55] [cursor=pointer]:
+              - /url: https://handyman.framer.photos
+            - link "Use for Free" [ref=e56] [cursor=pointer]:
+              - /url: https://framer.link/fOdQ2Bh?duplicateType=siteTemplate
+      - generic [ref=e57]:
+        - img "Screenshot 1 for Handyman, a Framer Marketplace template by Designbuds." [ref=e59]
+        - img "Screenshot 2 for Handyman, a Framer Marketplace template by Designbuds." [ref=e61]
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - heading "Handyman is a free Framer Template made for renovation & construction businesses such as interior remodeling, plumbers, roofers and home improvement businesses. This free Framer template is designed to help you showcase your expertise and build trust." [level=4] [ref=e64]
+          - generic [ref=e67]:
+            - heading "Create your Renovation website fast and easy on Framer" [level=2] [ref=e68]
+            - paragraph [ref=e69]: Handyman is a clean, practical, and free website template built for handymen, interior renovation, home improvement, and general home service professionals.
+            - list [ref=e70]:
+              - listitem [ref=e71]:
+                - paragraph [ref=e72]: Clean and professional look, easy to read
+              - listitem [ref=e73]:
+                - paragraph [ref=e74]: Works on computers, tablets and phones
+              - listitem [ref=e75]:
+                - paragraph [ref=e76]: Optimized for search engines
+              - listitem [ref=e77]:
+                - paragraph [ref=e78]: Easy to match with your brand’s visual identity
+            - heading "A free template with free, personalized support" [level=2] [ref=e79]
+            - paragraph [ref=e80]: Even though our templates are free to use, we genuinely value and support our users. When you choose to build your website with one of our templates, free doesn’t mean you’re on your own. Our support team is here to help—or even just to offer feedback before you launch, so you can go live with confidence.
+            - heading "Made for home service professionals" [level=2] [ref=e81]
+            - paragraph [ref=e82]: "Whether you’re a solo handyman, a small team of remodelers, or a general contractor with years of experience, this free template gives you a fast, reliable, and professional way to present your services. Built specifically for home service professionals, this free template helps you showcase what you do best: solving real problems, improving homes, and delivering quality craftsmanship."
+            - heading "The Handyman template is perfect for:" [level=2] [ref=e83]
+            - list [ref=e84]:
+              - listitem [ref=e85]:
+                - paragraph [ref=e86]: Handyman businesses
+              - listitem [ref=e87]:
+                - paragraph [ref=e88]: Independent contractors
+              - listitem [ref=e89]:
+                - paragraph [ref=e90]: Home remodelers and renovation experts
+              - listitem [ref=e91]:
+                - paragraph [ref=e92]: Painters, carpenters, electricians, and plumbers
+              - listitem [ref=e93]:
+                - paragraph [ref=e94]: Home repair, improvement, and maintenance teams
+            - paragraph [ref=e95]: Feel free to use it, customize it, and make it your own. Whether you’re just starting out or looking to refresh your existing site, this is your foundation for a stronger web presence.
+          - generic [ref=e96]:
+            - heading "Features" [level=2] [ref=e97]
+            - generic [ref=e98]:
+              - button "A11y Optimized" [ref=e100] [cursor=pointer]:
+                - paragraph [ref=e101]: A11y Optimized
+                - img [ref=e103]
+              - button "Animations & Effects" [ref=e106] [cursor=pointer]:
+                - paragraph [ref=e107]: Animations & Effects
+                - img [ref=e109]
+              - button "Automated SEO" [ref=e112] [cursor=pointer]:
+                - paragraph [ref=e113]: Automated SEO
+                - img [ref=e115]
+              - button "Built-in Analytics" [ref=e118] [cursor=pointer]:
+                - paragraph [ref=e119]: Built-in Analytics
+                - img [ref=e121]
+              - button "Components" [ref=e124] [cursor=pointer]:
+                - paragraph [ref=e125]: Components
+                - img [ref=e127]
+              - button "Overlays & Modals" [ref=e130] [cursor=pointer]:
+                - paragraph [ref=e131]: Overlays & Modals
+                - img [ref=e133]
+              - button "Project Styles" [ref=e136] [cursor=pointer]:
+                - paragraph [ref=e137]: Project Styles
+                - img [ref=e139]
+              - button "Rich Media" [ref=e142] [cursor=pointer]:
+                - paragraph [ref=e143]: Rich Media
+                - img [ref=e145]
+              - button "Slideshows/Tickers" [ref=e148] [cursor=pointer]:
+                - paragraph [ref=e149]: Slideshows/Tickers
+                - img [ref=e151]
+              - button "Sticky Scrolling" [ref=e154] [cursor=pointer]:
+                - paragraph [ref=e155]: Sticky Scrolling
+                - img [ref=e157]
+              - button "Visual Breakpoints" [ref=e160] [cursor=pointer]:
+                - paragraph [ref=e161]: Visual Breakpoints
+                - img [ref=e163]
+        - generic [ref=e165]:
+          - generic [ref=e166]:
+            - heading "Details" [level=6] [ref=e167]
+            - link "Designbuds avatar Designbuds" [ref=e168] [cursor=pointer]:
+              - /url: /@designbuds/
+              - img "Designbuds avatar" [ref=e169]
+              - generic [ref=e170]: Designbuds
+            - generic [ref=e171]:
+              - img [ref=e172]
+              - generic [ref=e174]: Updated 3 hours ago
+            - generic [ref=e175]:
+              - img [ref=e176]
+              - generic [ref=e178]: 49.1K views
+          - generic [ref=e179]:
+            - heading "Categories" [level=6] [ref=e180]
+            - link "Agency" [ref=e181] [cursor=pointer]:
+              - /url: /marketplace/templates/category/agency/
+              - img [ref=e182]
+              - generic [ref=e184]: Agency
+            - link "Real Estate" [ref=e185] [cursor=pointer]:
+              - /url: /marketplace/templates/category/real-estate/
+              - img [ref=e186]
+              - generic [ref=e188]: Real Estate
+            - link "Interior Design" [ref=e189] [cursor=pointer]:
+              - /url: /marketplace/templates/category/interior-design/
+              - img [ref=e190]
+              - generic [ref=e192]: Interior Design
+            - link "Modern" [ref=e193] [cursor=pointer]:
+              - /url: /marketplace/templates/category/modern/
+              - img [ref=e194]
+              - generic [ref=e196]: Modern
+            - link "Colorful" [ref=e197] [cursor=pointer]:
+              - /url: /marketplace/templates/category/colorful/
+              - img [ref=e198]
+              - generic [ref=e200]: Colorful
+            - link "Professional" [ref=e201] [cursor=pointer]:
+              - /url: /marketplace/templates/category/professional/
+              - img [ref=e202]
+              - generic [ref=e204]: Professional
+            - link "Light" [ref=e205] [cursor=pointer]:
+              - /url: /marketplace/templates/category/light/
+              - img [ref=e206]
+              - generic [ref=e208]: Light
+            - link "Animated" [ref=e209] [cursor=pointer]:
+              - /url: /marketplace/templates/category/animated/
+              - img [ref=e210]
+              - generic [ref=e212]: Animated
+          - generic [ref=e213]:
+            - heading "Pages" [level=6] [ref=e214]
+            - generic [ref=e215]:
+              - img [ref=e216]
+              - generic [ref=e218]: Home
+            - generic [ref=e219]:
+              - img [ref=e220]
+              - generic [ref=e222]: "404"
+            - generic [ref=e223]:
+              - img [ref=e224]
+              - generic [ref=e226]: About Us
+            - generic [ref=e227]:
+              - img [ref=e228]
+              - generic [ref=e230]: Blog
+            - generic [ref=e231] [cursor=pointer]:
+              - img [ref=e232]
+              - generic [ref=e234]: 6 more
+          - generic [ref=e235]:
+            - heading "Support" [level=6] [ref=e236]
+            - link "About Templates" [ref=e237] [cursor=pointer]:
+              - /url: https://www.framer.com/academy/lessons/how-to-use-templates
+              - img [ref=e238]
+              - generic [ref=e240]: About Templates
+            - link "Refund Policy" [ref=e241] [cursor=pointer]:
+              - /url: https://www.framer.com/help/articles/how-refunds-work-on-the-marketplace/
+              - img [ref=e242]
+              - generic [ref=e244]: Refund Policy
+            - link "Contact Creator" [ref=e245] [cursor=pointer]:
+              - /url: mailto:hello@designbuds.com
+              - img [ref=e246]
+              - generic [ref=e248]: Contact Creator
+            - button "Report Template" [ref=e249] [cursor=pointer]:
+              - generic [ref=e250]:
+                - img [ref=e251]
+                - generic [ref=e253]: Report Template
+      - separator [ref=e254]
+      - generic [ref=e255]:
+        - generic [ref=e256]:
+          - heading "More from Designbuds" [level=2] [ref=e257]
+          - link "See All →" [ref=e258] [cursor=pointer]:
+            - /url: /@designbuds/
+        - generic [ref=e259]:
+          - generic [ref=e260]:
+            - link "Thumbnail 1 for Designfast, a Framer Marketplace template by Designbuds. Thumbnail 2 for Designfast, a Framer Marketplace template by Designbuds." [ref=e261] [cursor=pointer]:
+              - /url: /marketplace/templates/designfast/
+              - img "Thumbnail 1 for Designfast, a Framer Marketplace template by Designbuds." [ref=e262]
+              - img "Thumbnail 2 for Designfast, a Framer Marketplace template by Designbuds." [ref=e263]
+            - generic [ref=e264]:
+              - link "Designfast" [ref=e265] [cursor=pointer]:
+                - /url: /marketplace/templates/designfast/
+              - generic [ref=e266]:
+                - generic [ref=e267]:
+                  - generic [ref=e268]: template
+                  - generic [ref=e269]: · Free
+                - generic:
+                  - link "Designbuds":
+                    - /url: /@designbuds/
+          - generic [ref=e270]:
+            - link "Thumbnail 1 for Impact, a Framer Marketplace template by Designbuds. Thumbnail 2 for Impact, a Framer Marketplace template by Designbuds." [ref=e271] [cursor=pointer]:
+              - /url: /marketplace/templates/impact/
+              - img "Thumbnail 1 for Impact, a Framer Marketplace template by Designbuds." [ref=e272]
+              - img "Thumbnail 2 for Impact, a Framer Marketplace template by Designbuds." [ref=e273]
+            - generic [ref=e274]:
+              - link "Impact" [ref=e275] [cursor=pointer]:
+                - /url: /marketplace/templates/impact/
+              - generic [ref=e276]:
+                - generic [ref=e277]:
+                  - generic [ref=e278]: template
+                  - generic [ref=e279]: · Free
+                - generic:
+                  - link "Designbuds":
+                    - /url: /@designbuds/
+          - generic [ref=e280]:
+            - link "Thumbnail 1 for Plumbing, a Framer Marketplace template by Designbuds. Thumbnail 2 for Plumbing, a Framer Marketplace template by Designbuds." [ref=e281] [cursor=pointer]:
+              - /url: /marketplace/templates/plumbing-contractor-local-service-template/
+              - img "Thumbnail 1 for Plumbing, a Framer Marketplace template by Designbuds." [ref=e282]
+              - img "Thumbnail 2 for Plumbing, a Framer Marketplace template by Designbuds." [ref=e283]
+            - generic [ref=e284]:
+              - link "Plumbing" [ref=e285] [cursor=pointer]:
+                - /url: /marketplace/templates/plumbing-contractor-local-service-template/
+              - generic [ref=e286]:
+                - generic [ref=e287]:
+                  - generic [ref=e288]: template
+                  - generic [ref=e289]: · Free
+                - generic:
+                  - link "Designbuds":
+                    - /url: /@designbuds/
+          - generic [ref=e290]:
+            - link "Thumbnail 1 for Gardener, a Framer Marketplace template by Designbuds. Thumbnail 2 for Gardener, a Framer Marketplace template by Designbuds." [ref=e291] [cursor=pointer]:
+              - /url: /marketplace/templates/gardener/
+              - img "Thumbnail 1 for Gardener, a Framer Marketplace template by Designbuds." [ref=e292]
+              - img "Thumbnail 2 for Gardener, a Framer Marketplace template by Designbuds." [ref=e293]
+            - generic [ref=e294]:
+              - link "Gardener" [ref=e295] [cursor=pointer]:
+                - /url: /marketplace/templates/gardener/
+              - generic [ref=e296]:
+                - generic [ref=e297]:
+                  - generic [ref=e298]: template
+                  - generic [ref=e299]: · Free
+                - generic:
+                  - link "Designbuds":
+                    - /url: /@designbuds/
+          - generic [ref=e300]:
+            - link "Thumbnail 1 for Consulting, a Framer Marketplace template by Designbuds. Thumbnail 2 for Consulting, a Framer Marketplace template by Designbuds." [ref=e301] [cursor=pointer]:
+              - /url: /marketplace/templates/consulting/
+              - img "Thumbnail 1 for Consulting, a Framer Marketplace template by Designbuds." [ref=e302]
+              - img "Thumbnail 2 for Consulting, a Framer Marketplace template by Designbuds." [ref=e303]
+            - generic [ref=e304]:
+              - link "Consulting" [ref=e305] [cursor=pointer]:
+                - /url: /marketplace/templates/consulting/
+              - generic [ref=e306]:
+                - generic [ref=e307]:
+                  - generic [ref=e308]: template
+                  - generic [ref=e309]: · Free
+                - generic:
+                  - link "Designbuds":
+                    - /url: /@designbuds/
+          - generic [ref=e310]:
+            - link "Thumbnail 1 for Unicorn, a Framer Marketplace template by Designbuds. Thumbnail 2 for Unicorn, a Framer Marketplace template by Designbuds." [ref=e311] [cursor=pointer]:
+              - /url: /marketplace/templates/unicorn-startup-website-template/
+              - img "Thumbnail 1 for Unicorn, a Framer Marketplace template by Designbuds." [ref=e312]
+              - img "Thumbnail 2 for Unicorn, a Framer Marketplace template by Designbuds." [ref=e313]
+            - generic [ref=e314]:
+              - link "Unicorn" [ref=e315] [cursor=pointer]:
+                - /url: /marketplace/templates/unicorn-startup-website-template/
+              - generic [ref=e316]:
+                - generic [ref=e317]:
+                  - generic [ref=e318]: template
+                  - generic [ref=e319]: · Free
+                - generic:
+                  - link "Designbuds":
+                    - /url: /@designbuds/
+      - separator [ref=e320]
+      - generic [ref=e321]:
+        - generic [ref=e322]:
+          - heading "Related Templates" [level=2] [ref=e323]
+          - link "See All →" [ref=e324] [cursor=pointer]:
+            - /url: /marketplace/templates/
+        - generic [ref=e325]:
+          - generic [ref=e326]:
+            - link "Thumbnail 1 for Sonic, a Framer Marketplace template by Shaigexp. Thumbnail 2 for Sonic, a Framer Marketplace template by Shaigexp." [ref=e327] [cursor=pointer]:
+              - /url: /marketplace/templates/sonic/
+              - img "Thumbnail 1 for Sonic, a Framer Marketplace template by Shaigexp." [ref=e328]
+              - img "Thumbnail 2 for Sonic, a Framer Marketplace template by Shaigexp." [ref=e329]
+            - generic [ref=e330]:
+              - link "Sonic" [ref=e331] [cursor=pointer]:
+                - /url: /marketplace/templates/sonic/
+              - generic [ref=e332]:
+                - generic [ref=e333]: Free
+                - generic:
+                  - link "Shaigexp":
+                    - /url: /@shaigexp/
+          - generic [ref=e334]:
+            - link "Thumbnail 1 for Blocks, a Framer Marketplace template by Framer. Thumbnail 2 for Blocks, a Framer Marketplace template by Framer." [ref=e335] [cursor=pointer]:
+              - /url: /marketplace/templates/blocks/
+              - img "Thumbnail 1 for Blocks, a Framer Marketplace template by Framer." [ref=e336]
+              - img "Thumbnail 2 for Blocks, a Framer Marketplace template by Framer." [ref=e337]
+            - generic [ref=e338]:
+              - link "Blocks" [ref=e339] [cursor=pointer]:
+                - /url: /marketplace/templates/blocks/
+              - generic [ref=e340]:
+                - generic [ref=e341]: Free
+                - generic:
+                  - link "Framer":
+                    - /url: /@framer/
+          - generic [ref=e342]:
+            - link "Thumbnail 1 for Vitalflow, a Framer Marketplace template by Muzamal Hussain. Thumbnail 2 for Vitalflow, a Framer Marketplace template by Muzamal Hussain." [ref=e343] [cursor=pointer]:
+              - /url: /marketplace/templates/vitalflow/
+              - img "Thumbnail 1 for Vitalflow, a Framer Marketplace template by Muzamal Hussain." [ref=e344]
+              - img "Thumbnail 2 for Vitalflow, a Framer Marketplace template by Muzamal Hussain." [ref=e345]
+            - generic [ref=e346]:
+              - link "Vitalflow" [ref=e347] [cursor=pointer]:
+                - /url: /marketplace/templates/vitalflow/
+              - generic [ref=e348]:
+                - generic [ref=e349]: Free
+                - generic:
+                  - link "Muzamal Hussain":
+                    - /url: /@muzamal-hussain/
+          - generic [ref=e350]:
+            - link "Thumbnail 1 for Landio, a Framer Marketplace template by Framebase. Thumbnail 2 for Landio, a Framer Marketplace template by Framebase." [ref=e351] [cursor=pointer]:
+              - /url: /marketplace/templates/landio/
+              - img "Thumbnail 1 for Landio, a Framer Marketplace template by Framebase." [ref=e352]
+              - img "Thumbnail 2 for Landio, a Framer Marketplace template by Framebase." [ref=e353]
+            - generic [ref=e354]:
+              - link "Landio" [ref=e355] [cursor=pointer]:
+                - /url: /marketplace/templates/landio/
+              - generic [ref=e356]:
+                - generic [ref=e357]: Free
+                - generic:
+                  - link "Framebase":
+                    - /url: /@framebase/
+          - generic [ref=e358]:
+            - link "Thumbnail 1 for Refit, a Framer Marketplace template by JJ Gerrish. Thumbnail 2 for Refit, a Framer Marketplace template by JJ Gerrish." [ref=e359] [cursor=pointer]:
+              - /url: /marketplace/templates/refit/
+              - img "Thumbnail 1 for Refit, a Framer Marketplace template by JJ Gerrish." [ref=e360]
+              - img "Thumbnail 2 for Refit, a Framer Marketplace template by JJ Gerrish." [ref=e361]
+            - generic [ref=e362]:
+              - link "Refit" [ref=e363] [cursor=pointer]:
+                - /url: /marketplace/templates/refit/
+              - generic [ref=e364]:
+                - generic [ref=e365]: Free
+                - generic:
+                  - link "JJ Gerrish":
+                    - /url: /@jj-gerrish/
+          - generic [ref=e366]:
+            - link "Thumbnail 1 for Polo, a Framer Marketplace template by Framebase. Thumbnail 2 for Polo, a Framer Marketplace template by Framebase." [ref=e367] [cursor=pointer]:
+              - /url: /marketplace/templates/polo/
+              - img "Thumbnail 1 for Polo, a Framer Marketplace template by Framebase." [ref=e368]
+              - img "Thumbnail 2 for Polo, a Framer Marketplace template by Framebase." [ref=e369]
+            - generic [ref=e370]:
+              - link "Polo" [ref=e371] [cursor=pointer]:
+                - /url: /marketplace/templates/polo/
+              - generic [ref=e372]:
+                - generic [ref=e373]: Free
+                - generic:
+                  - link "Framebase":
+                    - /url: /@framebase/
+          - generic [ref=e374]:
+            - link "Thumbnail 1 for Billie, a Framer Marketplace template by Gustave Flowbert. Thumbnail 2 for Billie, a Framer Marketplace template by Gustave Flowbert." [ref=e375] [cursor=pointer]:
+              - /url: /marketplace/templates/billie/
+              - img "Thumbnail 1 for Billie, a Framer Marketplace template by Gustave Flowbert." [ref=e376]
+              - img "Thumbnail 2 for Billie, a Framer Marketplace template by Gustave Flowbert." [ref=e377]
+            - generic [ref=e378]:
+              - link "Billie" [ref=e379] [cursor=pointer]:
+                - /url: /marketplace/templates/billie/
+              - generic [ref=e380]:
+                - generic [ref=e381]: Free
+                - generic:
+                  - link "Gustave Flowbert":
+                    - /url: /@gustave-flowbert/
+          - generic [ref=e382]:
+            - link "Thumbnail 1 for LanX, a Framer Marketplace template by Framebase. Thumbnail 2 for LanX, a Framer Marketplace template by Framebase." [ref=e383] [cursor=pointer]:
+              - /url: /marketplace/templates/lanx/
+              - img "Thumbnail 1 for LanX, a Framer Marketplace template by Framebase." [ref=e384]
+              - img "Thumbnail 2 for LanX, a Framer Marketplace template by Framebase." [ref=e385]
+            - generic [ref=e386]:
+              - link "LanX" [ref=e387] [cursor=pointer]:
+                - /url: /marketplace/templates/lanx/
+              - generic [ref=e388]:
+                - generic [ref=e389]: Free
+                - generic:
+                  - link "Framebase":
+                    - /url: /@framebase/
+    - generic [ref=e390]:
+      - generic [ref=e391]:
+        - generic [ref=e392]:
+          - heading "Become a Framer Creator today" [level=2] [ref=e393]
+          - paragraph [ref=e394]: Sell products, make referrals, and keep all your earnings.
+        - link "Learn More" [ref=e395] [cursor=pointer]:
+          - /url: https://www.framer.com/creators
+          - button "Learn More" [ref=e396]
+      - img "Creator Pivot" [ref=e397]
+    - contentinfo [ref=e398]:
+      - generic [ref=e399]:
+        - generic [ref=e400]:
+          - heading "Resources" [level=6] [ref=e402]
+          - link "Desktop app" [ref=e404] [cursor=pointer]:
+            - /url: https://www.framer.com/downloads/
+          - link "Marketplace" [ref=e406] [cursor=pointer]:
+            - /url: https://www.framer.com/marketplace/
+          - link "Community" [ref=e408] [cursor=pointer]:
+            - /url: https://www.framer.community/
+          - link "Developers" [ref=e410] [cursor=pointer]:
+            - /url: https://www.framer.com/developers/
+          - link "Wallpapers" [ref=e412] [cursor=pointer]:
+            - /url: https://www.framer.com/wallpapers/
+          - link "Meetups" [ref=e414] [cursor=pointer]:
+            - /url: https://www.framer.com/meetups/
+        - generic [ref=e415]:
+          - heading "Company" [level=6] [ref=e417]
+          - link "Security" [ref=e419] [cursor=pointer]:
+            - /url: https://www.framer.com/security/
+          - link "Careers" [ref=e421] [cursor=pointer]:
+            - /url: https://www.framer.com/careers/
+          - link "Report" [ref=e423] [cursor=pointer]:
+            - /url: mailto:abuse@framer.com
+          - link "Status" [ref=e425] [cursor=pointer]:
+            - /url: https://www.framerstatus.com/
+          - link "Legal" [ref=e427] [cursor=pointer]:
+            - /url: https://www.framer.com/legal/terms-of-service/
+          - link "Blog" [ref=e429] [cursor=pointer]:
+            - /url: https://www.framer.com/blog/
+        - generic [ref=e430]:
+          - heading "Creators" [level=6] [ref=e432]
+          - link "Program" [ref=e434] [cursor=pointer]:
+            - /url: https://www.framer.com/creators/
+          - link "Payouts" [ref=e436] [cursor=pointer]:
+            - /url: https://www.framer.com/help/articles/how-affiliate-links-work/
+          - link "Experts" [ref=e438] [cursor=pointer]:
+            - /url: https://www.framer.com/experts/
+          - link "Awards" [ref=e440] [cursor=pointer]:
+            - /url: https://www.framer.com/awards/
+          - link "Events" [ref=e442] [cursor=pointer]:
+            - /url: https://www.framer.com/events/
+          - link "Brand" [ref=e444] [cursor=pointer]:
+            - /url: https://www.framer.com/brand/
+        - generic [ref=e445]:
+          - heading "Compare" [level=6] [ref=e447]
+          - link "Squarespace" [ref=e449] [cursor=pointer]:
+            - /url: https://www.framer.com/compare/framer-vs-squarespace/
+          - link "Wordpress" [ref=e451] [cursor=pointer]:
+            - /url: https://www.framer.com/compare/framer-vs-wordpress/
+          - link "Unbounce" [ref=e453] [cursor=pointer]:
+            - /url: https://www.framer.com/compare/framer-vs-unbounce/
+          - link "Webflow" [ref=e455] [cursor=pointer]:
+            - /url: https://www.framer.com/compare/framer-vs-webflow/
+          - link "Figma" [ref=e457] [cursor=pointer]:
+            - /url: https://www.framer.com/compare/framer-vs-figma/
+          - link "Wix" [ref=e459] [cursor=pointer]:
+            - /url: https://www.framer.com/compare/framer-vs-wix/
+        - generic [ref=e460]:
+          - heading "Solutions" [level=6] [ref=e462]
+          - link "Figma to HTML" [ref=e464] [cursor=pointer]:
+            - /url: https://www.framer.com/solutions/figma-to-html/
+          - link "Website builder" [ref=e466] [cursor=pointer]:
+            - /url: https://www.framer.com/solutions/website-builder/
+          - link "Portfolio maker" [ref=e468] [cursor=pointer]:
+            - /url: https://www.framer.com/solutions/portfolio-website/
+          - link "Landing pages" [ref=e470] [cursor=pointer]:
+            - /url: https://www.framer.com/solutions/landing-pages/
+          - link "UI/UX design" [ref=e472] [cursor=pointer]:
+            - /url: https://www.framer.com/solutions/ui-ux-design/
+          - link "No-code" [ref=e474] [cursor=pointer]:
+            - /url: https://www.framer.com/solutions/no-code-website-builder/
+        - generic [ref=e475]:
+          - heading "Socials" [level=6] [ref=e477]
+          - link "Instagram" [ref=e479] [cursor=pointer]:
+            - /url: https://www.instagram.com/framer/
+          - link "X Twitter" [ref=e481] [cursor=pointer]:
+            - /url: https://twitter.com/framer/
+          - link "YouTube" [ref=e483] [cursor=pointer]:
+            - /url: https://www.youtube.com/@framer/
+          - link "LinkedIn" [ref=e485] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/framer/
+          - link "Threads" [ref=e487] [cursor=pointer]:
+            - /url: https://www.threads.net/@framer/
+          - link "TikTok" [ref=e489] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@framer/
+        - img [ref=e491]
+  - region "Notifications (F8)":
+    - list
+  - generic [ref=e493]:
+    - paragraph [ref=e494]:
+      - text: We use cookies to enhance your experience, analyze site traffic and deliver personalized content. Read our
+      - link "Cookie Policy" [ref=e495] [cursor=pointer]:
+        - /url: https://www.framer.com/legal/cookie-policy/
+      - text: .
+    - generic [ref=e496]:
+      - button "Reject" [ref=e497] [cursor=pointer]
+      - button "Accept" [ref=e498] [cursor=pointer]
+  - alert [ref=e499]

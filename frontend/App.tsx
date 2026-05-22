@@ -57,6 +57,7 @@ import WerkvoorbereiderDashboard from './src/screens/WerkvoorbereiderDashboard';
 import LoginScreen from './src/screens/LoginScreen';
 import TeamBeheerScreen from './src/screens/TeamBeheerScreen';
 import TenantBrandingScreen from './src/screens/TenantBrandingScreen';
+import TenantFeaturesScreen from './src/screens/TenantFeaturesScreen';
 import MakerDashboard from './src/screens/MakerDashboard';
 import EvidenceMapView from './src/components/EvidenceMapView';
 import JoinScreen from './src/screens/JoinScreen';
@@ -70,6 +71,7 @@ import { LanguageProvider } from './src/i18n';
 import { ActivityIndicator } from 'react-native';
 import { getTenantConfig, setTenantConfig } from './src/config/tenant';
 import { getTenantBySlug } from './src/services/MakerService';
+import { setBrandingFromMaster } from './src/services/TenantBrandingService';
 import { initSupabase } from './src/lib/supabase';
 import TenantLoginScreen from './src/screens/TenantLoginScreen';
 import LandingScreen from './src/screens/LandingScreen';
@@ -86,6 +88,7 @@ type Tab =
   | 'dso'
   | 'team'
   | 'branding'
+  | 'modules'
   | 'about'
   | 'overzicht'
   | 'vakman';
@@ -106,6 +109,7 @@ const NAV_ITEMS: ResponsiveLayoutItem[] = [
   { key: 'portal', label: 'Portaal', desktopLabel: 'Opdrachtgever', icon: Building2 },
   { key: 'team', label: 'Team', desktopLabel: 'Team Beheer', icon: Users },
   { key: 'branding', label: 'Branding', desktopLabel: 'Bedrijfsbranding', icon: SlidersHorizontal },
+  { key: 'modules', label: 'Modules', desktopLabel: 'Modules', icon: SlidersHorizontal },
   { key: 'presets', label: 'Presets', desktopLabel: 'Presets', icon: SlidersHorizontal },
   { key: 'dso', label: 'DSO', desktopLabel: 'DSO', icon: Building2 },
   { key: 'about', label: 'Info', desktopLabel: 'Info', icon: Info },
@@ -200,7 +204,15 @@ function TenantGate({ children }: { children: React.ReactNode }) {
       if (Platform.OS === 'web' && typeof window !== 'undefined') {
         try {
           const params = new URLSearchParams(window.location.search);
-          const slug = params.get('t');
+          let slug = params.get('t');
+          // 1a. Hostname-routing: `<slug>-wkb.vercel.app` of `<slug>.speeq.nl` →
+          //     automatisch ?t=<slug> zodat een klant een eigen subdomein heeft.
+          if (!slug) {
+            const host = window.location.hostname;
+            const m = host.match(/^([a-z0-9-]+)-wkb\.vercel\.app$/i)
+                  || host.match(/^([a-z0-9-]+)\.speeq\.nl$/i);
+            if (m && m[1] && m[1] !== 'wkb-snap-sync') slug = m[1].toLowerCase();
+          }
           if (slug) {
             const tenant = await getTenantBySlug(slug);
             if (tenant && tenant.supabaseUrl && tenant.supabaseAnonKey) {
@@ -210,6 +222,16 @@ function TenantGate({ children }: { children: React.ReactNode }) {
                 supabaseAnonKey: tenant.supabaseAnonKey,
               });
               initSupabase(tenant.supabaseUrl, tenant.supabaseAnonKey);
+              // Voed master-branding direct in de lokale cache zodat de
+              // header/headers/PDF meteen het juiste logo + naam + kleur tonen.
+              setBrandingFromMaster({
+                companyName:  tenant.displayName || tenant.name || null,
+                logoUrl:      tenant.logoUrl || null,
+                primaryColor: tenant.primaryColor || null,
+              });
+              if (typeof window !== 'undefined') {
+                try { window.localStorage.setItem('wkb_active_tenant_id', tenant.companyId); } catch {}
+              }
               // ?t= weghalen uit de URL zodat refresh netjes werkt
               const url = new URL(window.location.href);
               url.searchParams.delete('t');
@@ -316,8 +338,8 @@ function AppShell() {
     if (role === 'OPDRACHTGEVER') {
       return NAV_ITEMS.filter((item) => item.key === 'portal');
     }
-    if (role === 'ADMIN') {
-      // Desktop: geen camera — start op review/dossier
+    if (role === 'ADMIN' || role === 'KEYUSER') {
+      // Desktop: geen camera — start op review/dossier; krijgt alle admin-tools
       if (isDesktop) return NAV_ITEMS.filter((item) => item.key !== 'camera');
       // Mobiel: camera + kaart (geen team op telefoon)
       return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
@@ -346,9 +368,9 @@ function AppShell() {
       // Mobiel: camera + kaart
       return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
     }
-    // Overige rollen (ONDERAANNEMER, AANNEMER, KWALITEITSBORGER)
-    if (isDesktop) return NAV_ITEMS.filter((item) => !['camera', 'review', 'dso', 'team', 'branding', 'portal', 'overzicht'].includes(item.key));
-    return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'branding', 'portal', 'overzicht'].includes(item.key));
+    // Overige rollen (ONDERAANNEMER, AANNEMER, KWALITEITSBORGER) — geen modules
+    if (isDesktop) return NAV_ITEMS.filter((item) => !['camera', 'review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
+    return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
   }, [user, isMobile]);
 
   const handleSelectTask = (task: CaptureTask, context?: StartFlowResumeContext) => {
@@ -598,6 +620,7 @@ function AppShell() {
     );
     if (activeTab === 'team') return <TeamBeheerScreen />;
     if (activeTab === 'branding') return <TenantBrandingScreen />;
+    if (activeTab === 'modules') return <TenantFeaturesScreen />;
     if (activeTab === 'presets') return <PresetsManager />;
     if (activeTab === 'dso') return <DsoLog />;
     if (activeTab === 'vakman') return (
@@ -627,7 +650,7 @@ function AppShell() {
       return;
     }
 
-    if (role === 'ADMIN') {
+    if (role === 'ADMIN' || role === 'KEYUSER') {
       if (isDesktop && activeTab === 'camera') setActiveTab('review');
       return;
     }
@@ -665,7 +688,7 @@ function AppShell() {
     }
 
     // Overige rollen
-    const restrictedTabs: Tab[] = ['review', 'dso', 'team', 'branding', 'portal', 'overzicht'];
+    const restrictedTabs: Tab[] = ['review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'];
     if (restrictedTabs.includes(activeTab)) setActiveTab(isDesktop ? 'dossier' : 'camera');
   }, [activeTab, user, isMobile]);
 

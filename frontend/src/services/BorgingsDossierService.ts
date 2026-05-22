@@ -396,6 +396,7 @@ export function generateDossierHtml(
 
     <!-- Cover -->
     <div class="cover">
+      ${getBrandingSync().logoUrl ? `<img src="${getBrandingSync().logoUrl}" alt="Logo" style="height:48px;max-width:240px;object-fit:contain;margin-bottom:18px;display:block" />` : ''}
       <div class="cover-tag">WKB Borgingsdossier</div>
       <div class="cover-title">${projectName}</div>
       <div class="cover-sub">Project ${projectId} &nbsp;·&nbsp; ${now}</div>
@@ -461,7 +462,6 @@ export function generateDossierHtml(
     </div>` : ''}
 
     <!-- Handtekeningen -->
-    ${(signatures.projectleider || signatures.opdrachtgever) ? `
     <div class="sig-section">
       <div class="sig-title">Ondertekening oplevering</div>
       <div class="sig-grid">
@@ -469,7 +469,9 @@ export function generateDossierHtml(
           <div class="sig-label">PROJECTLEIDER / AANNEMER</div>
           ${signatures.projectleider
             ? `<img src="${signatures.projectleider}" class="sig-img" alt="Handtekening projectleider" />`
-            : `<div class="sig-empty">Nog niet ondertekend</div>`}
+            : `<div class="sig-empty">Handtekening: __________________________</div>
+               <div class="sig-empty" style="margin-top:8px">Naam: __________________________</div>
+               <div class="sig-empty" style="margin-top:8px">Datum: __________________________</div>`}
           ${signatures.projectleiderNaam ? `<div class="sig-name">${signatures.projectleiderNaam}</div>` : ''}
           ${signatures.signedAt ? `<div class="sig-date">${new Date(signatures.signedAt).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' })}</div>` : ''}
         </div>
@@ -477,11 +479,13 @@ export function generateDossierHtml(
           <div class="sig-label">OPDRACHTGEVER</div>
           ${signatures.opdrachtgever
             ? `<img src="${signatures.opdrachtgever}" class="sig-img" alt="Handtekening opdrachtgever" />`
-            : `<div class="sig-empty">Nog niet ondertekend</div>`}
+            : `<div class="sig-empty">Handtekening: __________________________</div>
+               <div class="sig-empty" style="margin-top:8px">Naam: __________________________</div>
+               <div class="sig-empty" style="margin-top:8px">Datum: __________________________</div>`}
           ${signatures.opdrachtgeverNaam ? `<div class="sig-name">${signatures.opdrachtgeverNaam}</div>` : ''}
         </div>
       </div>
-    </div>` : ''}
+    </div>
 
     <!-- Footer -->
     <div class="footer">

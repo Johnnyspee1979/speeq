@@ -39,7 +39,7 @@ krijg jij:
 
 Wat ik terugvraag is simpel:
 - Eén korte testimonial na 3 maanden ("dit werkt, dit niet")
-- Je bedrijfslogo op de speeq.nl-website als klant van het eerste uur
+- Je bedrijfslogo op speesolutions.com/speeq als klant van het eerste uur
 
 Heb je 20 minuten volgende week voor een demo? Dan laat ik live zien hoe een
 borgingsdossier eruit ziet en jij beoordeelt of het bij je werk past.

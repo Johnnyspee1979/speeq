@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { getActiveTenantId } from '../config/tenant';
 
 export interface WkbProject {
   id: string;
@@ -43,11 +44,16 @@ function rowToProject(row: Record<string, unknown>): WkbProject {
 }
 
 export async function getProjects(): Promise<WkbProject[]> {
-  const { data, error } = await supabase
+  const tenantId = getActiveTenantId();
+  let query = supabase
     .from('projects')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(100);
+  if (tenantId) {
+    query = query.eq('tenant_id', tenantId);
+  }
+  const { data, error } = await query;
 
   if (error || !data) return [];
   return data.map(rowToProject);

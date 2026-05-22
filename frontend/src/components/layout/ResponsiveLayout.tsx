@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import {
+  Image,
   Platform,
   SafeAreaView,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useTenantBranding } from '../../hooks/useTenantBranding';
 
 export interface ResponsiveLayoutItem {
   key: string;
@@ -43,9 +45,16 @@ export function ResponsiveLayout({
   children,
 }: ResponsiveLayoutProps) {
   const { theme, toggleTheme } = useTheme();
+  const branding = useTenantBranding();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
-  const styles = useMemo(() => createStyles(theme, isDesktop), [theme, isDesktop]);
+  const brandTitle = branding.companyName ?? title;
+  const brandColor = branding.primaryColor ?? theme.colors.accent;
+  const brandLogo = branding.logoUrl ?? null;
+  const styles = useMemo(
+    () => createStyles(theme, isDesktop, brandColor),
+    [theme, isDesktop, brandColor]
+  );
 
   // Determine sync dot color from statusLabel
   const syncDotColor =
@@ -126,8 +135,16 @@ export function ResponsiveLayout({
         <View style={styles.headerRow}>
           <View style={styles.headerCopy}>
             <View style={styles.titleRow}>
-              <View style={styles.titleDot} />
-              <Text style={styles.title}>{title}</Text>
+              {brandLogo ? (
+                <Image
+                  source={{ uri: brandLogo }}
+                  style={styles.brandLogo}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={styles.titleDot} />
+              )}
+              <Text style={styles.title}>{brandTitle}</Text>
             </View>
             {isDesktop && desktopSubtitle ? (
               <Text style={styles.subtitle}>{desktopSubtitle}</Text>
@@ -163,7 +180,7 @@ export function ResponsiveLayout({
             {/* Bottom brand mark */}
             <View style={styles.sidebarFooter}>
               <View style={[styles.titleDot, { opacity: 0.4 }]} />
-              <Text style={styles.sidebarBrand}>Spee Solutions</Text>
+              <Text style={styles.sidebarBrand}>{branding.companyName ?? 'Spee Solutions'}</Text>
             </View>
           </View>
 
@@ -183,7 +200,7 @@ export function ResponsiveLayout({
                 Hallo {userName}
               </Text>
               <Text style={styles.userBarBrand}>
-                Made by Spee Solutions
+                {branding.companyName ? `Made by Spee Solutions · ${branding.companyName}` : 'Made by Spee Solutions'}
               </Text>
             </View>
           ) : null}
@@ -209,7 +226,8 @@ export function ResponsiveLayout({
 
 const createStyles = (
   theme: { name: 'dark' | 'light'; colors: Record<string, string> },
-  isDesktop: boolean
+  isDesktop: boolean,
+  brandColor: string
 ) => {
   const isDark = theme.name === 'dark';
 
@@ -219,10 +237,16 @@ const createStyles = (
       backgroundColor: theme.colors.background,
     },
 
-    // Top accent stripe (3px red line)
+    // Top accent stripe (3px brand color)
     accentStripe: {
       height: 3,
-      backgroundColor: theme.colors.accent,
+      backgroundColor: brandColor,
+    },
+    brandLogo: {
+      width: isDesktop ? 32 : 24,
+      height: isDesktop ? 32 : 24,
+      borderRadius: 6,
+      backgroundColor: '#FFFFFF',
     },
 
     // Header
@@ -252,7 +276,7 @@ const createStyles = (
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: theme.colors.accent,
+      backgroundColor: brandColor,
     },
     title: {
       color: theme.colors.textPrimary,
@@ -355,7 +379,7 @@ const createStyles = (
       bottom: 8,
       width: 3,
       borderRadius: 2,
-      backgroundColor: theme.colors.accent,
+      backgroundColor: brandColor,
     },
     sidebarButtonInner: {
       flexDirection: 'row',
@@ -453,7 +477,7 @@ const createStyles = (
       minHeight: 52,
     },
     bottomButtonActive: {
-      backgroundColor: theme.colors.accent,
+      backgroundColor: brandColor,
     },
     bottomButtonText: {
       color: theme.colors.textSecondary,

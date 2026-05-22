@@ -1,0 +1,265 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - link "SpeeQ" [ref=e4] [cursor=pointer]:
+        - /url: "#"
+      - list [ref=e5]:
+        - listitem [ref=e6]:
+          - link "Hoe werkt het" [ref=e7] [cursor=pointer]:
+            - /url: "#hoe"
+        - listitem [ref=e8]:
+          - link "Het verschil" [ref=e9] [cursor=pointer]:
+            - /url: "#anders"
+        - listitem [ref=e10]:
+          - link "Prijzen" [ref=e11] [cursor=pointer]:
+            - /url: "#prijzen"
+        - listitem [ref=e12]:
+          - link "Vragen" [ref=e13] [cursor=pointer]:
+            - /url: "#faq"
+      - generic [ref=e14]:
+        - link "Ik ben al klant →" [ref=e15] [cursor=pointer]:
+          - /url: /
+        - link "Plan demo" [ref=e16] [cursor=pointer]:
+          - /url: "#contact"
+  - generic [ref=e18]:
+    - paragraph [ref=e19]: Sinds 1 januari 2024 verplicht
+    - heading "Wkb-bewijslast in drie tikken." [level=1] [ref=e20]:
+      - text: Wkb-bewijslast
+      - text: in drie tikken.
+    - paragraph [ref=e21]: "Foto, GPS en weer worden automatisch vastgelegd op de bouwplaats. De werkvoorbereider beoordeelt op kantoor. Eén klik aan einde project: PDF voor de Wkb-borger."
+    - generic [ref=e22]:
+      - link "Plan een demo van 20 minuten" [ref=e23] [cursor=pointer]:
+        - /url: "#contact"
+      - paragraph [ref=e24]: Johnny belt persoonlijk binnen één werkdag
+    - generic [ref=e25]:
+      - generic [ref=e26]:
+        - generic [ref=e27]: 🏗️
+        - generic [ref=e28]:
+          - generic [ref=e29]: Fundering — west
+          - generic [ref=e30]: ✓ Akkoord
+      - generic [ref=e31]:
+        - generic [ref=e32]: 🧱
+        - generic [ref=e33]:
+          - generic [ref=e34]: Wapening kelder
+          - generic [ref=e35]: ⚠ Controle
+      - generic [ref=e36]:
+        - generic [ref=e37]: 📐
+        - generic [ref=e38]:
+          - generic [ref=e39]: Maatvoering rij A
+          - generic [ref=e40]: ✓ Akkoord
+      - generic [ref=e42]:
+        - generic [ref=e44]:
+          - generic [ref=e45]: 9:41
+          - generic [ref=e46]: SpeeQ
+        - generic [ref=e47]: Controlemoment
+        - generic [ref=e48]: Vastleggen voor borgingsdossier
+        - generic [ref=e49]:
+          - text: 🏗
+          - generic [ref=e50]: Akkoord
+        - generic [ref=e51]:
+          - generic [ref=e52]:
+            - generic [ref=e53]: GPS
+            - generic [ref=e54]: 52.07° N
+          - generic [ref=e55]:
+            - generic [ref=e56]: Weer
+            - generic [ref=e57]: 11° bewolkt
+        - generic [ref=e58]: Toevoegen aan dossier
+      - generic [ref=e59]:
+        - generic [ref=e60]: 🪟
+        - generic [ref=e61]:
+          - generic [ref=e62]: Kozijn voorgevel
+          - generic [ref=e63]: ✓ Akkoord
+      - generic [ref=e64]:
+        - generic [ref=e65]: 💧
+        - generic [ref=e66]:
+          - generic [ref=e67]: Dakdoorvoer 03
+          - generic [ref=e68]: ✓ Akkoord
+      - generic [ref=e69]:
+        - generic [ref=e70]: 🔌
+        - generic [ref=e71]:
+          - generic [ref=e72]: Meterkast
+          - generic [ref=e73]: ○ In review
+    - paragraph [ref=e74]: Eerste 6 maanden directe lijn naar Johnny ·Workspace binnen 24 uur ·30 dagen proef
+  - generic [ref=e76]:
+    - paragraph [ref=e77]: Het probleem
+    - heading "Excel, WhatsApp, donderdagavond." [level=2] [ref=e78]
+    - paragraph [ref=e79]: "Sinds januari 2024 moet u Wkb-bewijslast aanleveren bij elk bouwproject in Gevolgklasse 1. Tussen tachtig en tweehonderdvijftig vastleggingen per project: foto's, GPS, weer, akkoord, vaak een handtekening van de klant."
+    - paragraph [ref=e80]: Zonder tool wordt dat handmatig bijgehouden in Excel, Dropbox en WhatsApp-groepen. Werkvoorbereiders zijn er uren per week aan kwijt. Foto's raken zoek. Eén uitvraag van een verzekeraar — en het dossier blijkt onvolledig.
+  - generic [ref=e82]:
+    - generic [ref=e83]:
+      - paragraph [ref=e84]: Zo werkt het
+      - heading "Drie tikken op de bouwplaats." [level=2] [ref=e85]
+    - generic [ref=e86]:
+      - generic [ref=e87]:
+        - generic [ref=e88]: "1"
+        - heading "Vakman" [level=3] [ref=e89]
+        - paragraph [ref=e90]: Opent SpeeQ-app, maakt foto van het controlemoment. App voegt GPS, KNMI-weer en tijdstempel automatisch toe.
+      - generic [ref=e91]:
+        - generic [ref=e92]: "2"
+        - heading "Werkvoorbereider" [level=3] [ref=e93]
+        - paragraph [ref=e94]: "Beoordeelt foto's op desktop-dashboard. AI-precheck filtert: groen door, oranje controleren, rood afkeuren."
+      - generic [ref=e95]:
+        - generic [ref=e96]: "3"
+        - heading "Einde project" [level=3] [ref=e97]
+        - paragraph [ref=e98]: Eén klik genereert het complete borgingsdossier als PDF, met uw bedrijfslogo. Klaar voor de Wkb-borger.
+  - generic [ref=e100]:
+    - generic [ref=e101]:
+      - paragraph [ref=e102]: Het verschil
+      - heading "Uw eigen database. Niet bij uw concurrenten." [level=2] [ref=e103]:
+        - text: Uw eigen database.
+        - text: Niet bij uw concurrenten.
+      - paragraph [ref=e104]: De meeste Wkb-tools bouwen op gedeelde Postgres-databases. Uw data zit in dezelfde tabel als die van uw concurrenten — gescheiden door filterregels. Werkt prima zolang het werkt.
+      - paragraph [ref=e105]: SpeeQ levert elke klant een eigen Supabase-database in Frankfurt. Fysiek apart. Geen gedeelde tabellen. Inbegrepen in de standaardprijs.
+      - paragraph [ref=e106]: Voor de meeste aannemers maakt dat in het dagelijkse werk geen verschil. Voor de keer dat een verzekeraar of opdrachtgever erom vraagt — dan is die vraag in drie minuten beantwoord.
+      - paragraph [ref=e107]: Het verschil is een bankvak versus een eigen kluis. Iedereen zit in hetzelfde gebouw, maar in zijn eigen ruimte.
+    - generic [ref=e108]:
+      - generic [ref=e109]:
+        - generic [ref=e110]: ⌹
+        - paragraph [ref=e111]: Concurrent
+        - paragraph [ref=e112]: Gedeelde database
+      - generic [ref=e113]:
+        - generic [ref=e114]: ◆
+        - paragraph [ref=e115]: SpeeQ
+        - paragraph [ref=e116]:
+          - text: Eigen database
+          - text: per klant
+  - generic [ref=e118]:
+    - generic [ref=e119]:
+      - paragraph [ref=e120]: Voor wie
+      - heading "Voor de aannemer die premium kiest." [level=2] [ref=e121]:
+        - text: Voor de aannemer
+        - text: die premium kiest.
+      - paragraph [ref=e122]: Bouwbedrijven met vijf tot vijftig medewerkers, die niet de goedkoopste hoeven te zijn — en wel een vaste contactpersoon willen kunnen bellen.
+    - generic [ref=e123]:
+      - generic [ref=e124]:
+        - paragraph [ref=e125]: Team
+        - generic [ref=e126]:
+          - text: €149
+          - paragraph [ref=e127]: per maand
+        - list [ref=e128]:
+          - listitem [ref=e129]: ✓ tot 5 gebruikers
+          - listitem [ref=e130]: ✓ onbeperkt aantal projecten
+          - listitem [ref=e131]: ✓ standaard branding
+          - listitem [ref=e132]: ✓ e-mail support
+          - listitem [ref=e133]: ✓ 30 dagen proef
+        - link "Plan demo" [ref=e134] [cursor=pointer]:
+          - /url: "#contact"
+      - generic [ref=e135]:
+        - generic [ref=e136]: Aanbevolen
+        - paragraph [ref=e137]: Pro
+        - generic [ref=e138]:
+          - text: €299
+          - paragraph [ref=e139]: per maand
+        - list [ref=e140]:
+          - listitem [ref=e141]: ✓ tot 15 gebruikers
+          - listitem [ref=e142]: ✓ eigen branding op PDF's
+          - listitem [ref=e143]: ✓ vaste support-lijn
+          - listitem [ref=e144]: ✓ WhatsApp-integratie
+          - listitem [ref=e145]: ✓ KiK-koppeling
+        - link "Plan demo" [ref=e146] [cursor=pointer]:
+          - /url: "#contact"
+      - generic [ref=e147]:
+        - paragraph [ref=e148]: Enterprise
+        - generic [ref=e149]:
+          - text: €899
+          - paragraph [ref=e150]: vanaf, per maand
+        - list [ref=e151]:
+          - listitem [ref=e152]: ✓ onbeperkt aantal gebruikers
+          - listitem [ref=e153]: ✓ SLA
+          - listitem [ref=e154]: ✓ custom-integraties
+          - listitem [ref=e155]: ✓ prioriteit-support
+          - listitem [ref=e156]: ✓ jaarlijkse review
+        - link "Vraag aan" [ref=e157] [cursor=pointer]:
+          - /url: "#contact"
+    - generic [ref=e158]:
+      - generic [ref=e159]: Founder-deal
+      - paragraph [ref=e160]:
+        - text: Eerste 3 klanten krijgen
+        - strong [ref=e161]: 12 maanden Pro voor Team-prijs
+        - text: . Nog
+        - strong [ref=e162]: 2 plekken
+        - text: vrij in mei.
+  - generic [ref=e164]:
+    - generic [ref=e165]: JS
+    - generic [ref=e166]:
+      - paragraph [ref=e167]: Wie maakt dit
+      - heading "Eén persoon, één telefoonnummer." [level=2] [ref=e168]:
+        - text: Eén persoon,
+        - text: één telefoonnummer.
+      - paragraph [ref=e169]: Mijn naam is Johnny Spee. Ik bouw SpeeQ zelf — vanuit mijn eenmanszaak Spee Solutions in Den Haag. Geen team van veertig, geen Amerikaanse investeerders, geen vertaalde Engelse software.
+      - paragraph [ref=e170]: Klanten krijgen de eerste zes maanden mijn directe lijn voor support. Geen ticket-systeem, geen call-center. Als u me belt, neem ik op of bel ik binnen een uur terug.
+      - paragraph [ref=e171]: Dat zal voorlopig zo blijven.
+      - paragraph [ref=e172]: — Johnny Spee, Spee Solutions
+  - generic [ref=e174]:
+    - generic [ref=e175]:
+      - paragraph [ref=e176]: Veelgestelde vragen
+      - heading "Wat u zich nu afvraagt." [level=2] [ref=e177]
+    - generic [ref=e178]:
+      - group [ref=e179]:
+        - generic "Is mijn data echt veilig? +" [ref=e180] [cursor=pointer]
+      - group [ref=e181]:
+        - generic "Wat als ik wil overstappen vanaf STA, Vastlegg of BKapp? +" [ref=e182] [cursor=pointer]
+      - group [ref=e183]:
+        - generic "Werkt het offline op de bouwplaats? +" [ref=e184] [cursor=pointer]
+      - group [ref=e185]:
+        - generic "Wat kost het écht — geen verborgen kosten? +" [ref=e186] [cursor=pointer]
+      - group [ref=e187]:
+        - generic "Hoe lang duurt de onboarding? +" [ref=e188] [cursor=pointer]
+      - group [ref=e189]:
+        - generic "Wat als ik wil weg? +" [ref=e190] [cursor=pointer]
+  - generic [ref=e192]:
+    - heading "Twintig minuten, en u weet of het past." [level=2] [ref=e193]:
+      - text: Twintig minuten,
+      - text: en u weet of het past.
+    - paragraph [ref=e194]: Ik bel persoonlijk. Geen sales-script, geen overtuigingsverhaal — gewoon een rustig gesprek over uw projecten en of SpeeQ ze beter maakt. Doet het dat niet, dan zeg ik dat ook.
+    - link "Plan een demo van 20 minuten" [ref=e195] [cursor=pointer]:
+      - /url: mailto:johnny@speesolutions.com?subject=Demo-aanvraag%20SpeeQ
+    - paragraph [ref=e196]:
+      - text: "of bel direct:"
+      - link "+31 6 81908480" [ref=e197] [cursor=pointer]:
+        - /url: tel:+31681908480
+  - contentinfo [ref=e198]:
+    - generic [ref=e199]:
+      - generic [ref=e200]:
+        - generic [ref=e201]:
+          - generic [ref=e202]: SpeeQ
+          - paragraph [ref=e203]:
+            - text: Wkb-software voor mkb-aannemers.
+            - text: Spee Solutions · Den Haag
+        - generic [ref=e204]:
+          - heading "Product" [level=4] [ref=e205]
+          - list [ref=e206]:
+            - listitem [ref=e207]:
+              - link "Hoe werkt het" [ref=e208] [cursor=pointer]:
+                - /url: "#hoe"
+            - listitem [ref=e209]:
+              - link "Het verschil" [ref=e210] [cursor=pointer]:
+                - /url: "#anders"
+            - listitem [ref=e211]:
+              - link "Prijzen" [ref=e212] [cursor=pointer]:
+                - /url: "#prijzen"
+            - listitem [ref=e213]:
+              - link "Vragen" [ref=e214] [cursor=pointer]:
+                - /url: "#faq"
+        - generic [ref=e215]:
+          - heading "Juridisch" [level=4] [ref=e216]
+          - list [ref=e217]:
+            - listitem [ref=e218]:
+              - link "Privacy" [ref=e219] [cursor=pointer]:
+                - /url: /privacy
+            - listitem [ref=e220]:
+              - link "Algemene voorwaarden" [ref=e221] [cursor=pointer]:
+                - /url: /privacy
+            - listitem [ref=e222]:
+              - link "Verwerkersovereenkomst" [ref=e223] [cursor=pointer]:
+                - /url: /privacy
+        - generic [ref=e224]:
+          - heading "Contact" [level=4] [ref=e225]
+          - list [ref=e226]:
+            - listitem [ref=e227]:
+              - link "johnny@speesolutions.com" [ref=e228] [cursor=pointer]:
+                - /url: mailto:johnny@speesolutions.com
+            - listitem [ref=e229]:
+              - link "+31 6 81908480" [ref=e230] [cursor=pointer]:
+                - /url: tel:+31681908480
+      - generic [ref=e231]: © 2026 Spee Solutions · Alle rechten voorbehouden

@@ -34,7 +34,7 @@ Dit zijn drie aparte verkooppunten waar SpeeQ als eerste echt kan claimen.
 > "Anders dan STA Software en BKapp krijgt elke SpeeQ-klant een eigen geïsoleerde database in Frankfurt — geen gedeelde Postgres-pot waarin jouw projectfoto's en die van je concurrent in dezelfde tabel staan."
 
 **Zin 2 — transparantie**
-> "Onze verwerkersovereenkomst staat publiek als PDF op speeq.nl/legal — geen formulier, geen 'neem contact op'. STA, Vastlegg en BKapp publiceren hun DPA niet."
+> "Onze verwerkersovereenkomst staat publiek als PDF op speesolutions.com/speeq/legal — geen formulier, geen 'neem contact op'. STA, Vastlegg en BKapp publiceren hun DPA niet."
 
 **Zin 3 — datalek-belofte**
 > "Wij garanderen je een datalek-melding binnen 24 uur na vaststelling — concurrenten in dit segment leggen die termijn contractueel niet vast."
@@ -100,19 +100,19 @@ Concurrenten zijn niet "fout" — ze zijn alleen **niet transparant op deze punt
 | **Solo** (€49) | €49 | **€49 houden** | ZZP koopt op prijs. Vastlegg zit op €29,95 — onder ons. Juridiek wint hier niet. |
 | **Team** (€149) | €149 | **€169** | Kleine MKB-aannemer waardeert "eigen database" zodra z'n opdrachtgever ernaar vraagt. |
 | **Pro** (€299) | €299 | **€349** | Mid-size aannemer krijgt AVG-audits van gemeentes/woningcorporaties. Eigen DB + publieke DPA = echt argument. |
-| **Enterprise** (€699+) | €699+ | **€899–1.499** | Grote partijen eisen data-isolatie. Concurrenten kunnen dit structureel niet. Hier zit je sowieso te laag. |
+| **Enterprise** (€899+) | €899+ | **€899–1.499** | Grote partijen eisen data-isolatie. Concurrenten kunnen dit structureel niet. |
 
 ### Rekensom — 30 klanten verdeeld 5/15/8/2
 
-- **Nu:** €49×5 + €149×15 + €299×8 + €699×2 = **€6.280/maand**
-- **Premium:** €49×5 + €169×15 + €349×8 + €999×2 = **€7.580/maand**
-- **Verschil: +€1.300/maand = +€15.600/jaar** zonder één extra klant
+- **Nu:** €49×5 + €149×15 + €299×8 + €899×2 = **€6.680/maand**
+- **Premium (later):** €49×5 + €169×15 + €349×8 + €1.299×2 = **€8.180/maand**
+- **Verschil: +€1.500/maand = +€18.000/jaar** zonder één extra klant
 
 ### De gefaseerde uitrol (4 stappen)
 
-1. **Klant #1 t/m #3** — huidige prijzen (€49 / €149 / €299 / €699)
+1. **Klant #1 t/m #3** — huidige prijzen (€49 / €149 / €299 / €899)
 2. **Klant #1 specifiek** — bied de founder-deal: 12 mnd Pro à €149 i.p.v. €299 in ruil voor testimonial + logo op website
-3. **Vanaf klant #4** — verhoog Pro naar €349, Enterprise naar €999. Site-prijslijst toont de nieuwe prijzen.
+3. **Vanaf klant #4** — verhoog Pro naar €349, Enterprise naar €1.299. Site-prijslijst toont de nieuwe prijzen.
 4. **Bestaande klanten = grandfathering** — behouden hun oude prijs. Voorkomt churn, en is goede marketing: *"loyaliteit beloond, geen sluipverhogingen"*.
 
 ### Wat je in de Stitch-website meteen kunt zetten
