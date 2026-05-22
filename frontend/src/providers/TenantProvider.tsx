@@ -13,6 +13,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { ThemeProvider, type TenantFeaturesPayload } from '../theme/ThemeProvider';
+import { OfflineSyncFloatingBadge } from '../components/ui/OfflineSyncFloatingBadge';
 
 interface TenantProviderProps {
   children: React.ReactNode;
@@ -88,9 +89,19 @@ export const TenantProvider = ({ children, activeTenantId }: TenantProviderProps
   if (loading) {
     // Toon nooit dodelijke witte schermen of errors tijdens het laden.
     // Behoud visuele rust — ThemeProvider met designTokens-fallback.
-    return <ThemeProvider tenantFeatures={null}>{children}</ThemeProvider>;
+    return (
+      <ThemeProvider tenantFeatures={null}>
+        {children}
+        <OfflineSyncFloatingBadge />
+      </ThemeProvider>
+    );
   }
 
   // 3. Injecteer de cloud-gebaseerde data in de ThemeProvider.
-  return <ThemeProvider tenantFeatures={tenantFeatures}>{children}</ThemeProvider>;
+  return (
+    <ThemeProvider tenantFeatures={tenantFeatures}>
+      {children}
+      <OfflineSyncFloatingBadge />
+    </ThemeProvider>
+  );
 };
