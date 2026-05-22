@@ -22,6 +22,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { getOfflineStorage, type SyncQueueRow } from '../database/offlineDb';
+import { pullCloudIntoLocal } from './OfflineCloudPuller';
 
 // ─── Public state types ──────────────────────────────────────────────────────
 
@@ -197,6 +198,17 @@ export async function processOfflineSyncQueue(): Promise<void> {
 
   isSyncing = true;
   try {
+    // Stap 1: PULL — haal remote wijzigingen lokaal binnen.
+    // Dit voorkomt dat een vakman die zojuist online komt zijn
+    // werkvoorbereider-edits mist.
+    try {
+      await pullCloudIntoLocal();
+    } catch (err) {
+      console.warn('[OfflineSyncEngine] pull-step faalde:', err);
+      // Pull-fout is non-fatal — ga door met push
+    }
+
+    // Stap 2: PUSH — verwerk de lokale sync-queue
     const store = await getOfflineStorage();
     const queue = await store.listPendingSync();
 
