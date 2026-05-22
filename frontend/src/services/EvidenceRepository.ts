@@ -22,6 +22,9 @@ import {
   fetchEvidenceForReview as cloudFetchEvidenceForReview,
   updateEvidenceStatus as cloudUpdateEvidenceStatus,
 } from './cloudEvidenceService';
+import { supabase } from '../lib/supabase';
+import { getOfflinePhotoStorage } from './OfflinePhotoStorage';
+import { generateEvidenceUuid } from '../database/offlineDb';
 
 /**
  * Genormaliseerd evidence-type dat beide repository's teruggeven.
@@ -29,6 +32,34 @@ import {
  * dit shape teruggeven (mapper-laag bij sync).
  */
 export type EvidenceRecord = CloudEvidence;
+
+/**
+ * Input voor het aanmaken van een nieuwe evidence-row.
+ *
+ * `photoSource` kan zijn:
+ *  - data:image/jpeg;base64,...
+ *  - blob://...
+ *  - file://...   (native camera-output)
+ *  - https://...  (remote URL — wordt gefetcht)
+ *  - Blob/File object
+ *
+ * Cloud-mode upload direct naar Supabase Storage.
+ * Offline-mode slaat lokaal op via OfflinePhotoStorage en queued de upload.
+ */
+export interface EvidenceCreateInput {
+  projectId: string;
+  inspectionPointId?: string | null;
+  photoSource: string | Blob;
+  timestamp?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  gpsAccuracy?: number | null;
+  exifHash?: string | null;
+  fieldNote?: string | null;
+  aiStatus?: ReviewableEvidenceStatus | null;
+  aiConfidence?: number | null;
+  aiNotes?: string | null;
+}
 
 export interface EvidenceRepository {
   /**
@@ -46,9 +77,38 @@ export interface EvidenceRepository {
     nextStatus: 'APPROVED' | 'REJECTED' | 'NEEDS_REVIEW',
     note?: string | null,
   ): Promise<boolean>;
+
+  /**
+   * Maak een nieuwe evidence-row aan. In cloud-mode synchroon naar
+   * Supabase; in offline-mode lokaal + sync-queue.
+   *
+   * Returns de gegenereerde (lokale of remote) ID, of null bij fout.
+   */
+  createEvidence(input: EvidenceCreateInput): Promise<number | null>;
 }
 
 // ─── Cloud implementation ────────────────────────────────────────────────────
+
+const EVIDENCE_BUCKET = 'wkb-evidence';
+
+async function photoSourceToBlob(source: string | Blob): Promise<Blob> {
+  if (source instanceof Blob) return source;
+  if (typeof source === 'string') {
+    if (source.startsWith('data:')) {
+      const [meta, base64] = source.split(',');
+      const mime = /data:([^;]+);/.exec(meta)?.[1] ?? 'image/jpeg';
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return new Blob([bytes], { type: mime });
+    }
+    // blob:/http(s)/file:// — fetch werkt voor alle drie in moderne RN-web
+    const r = await fetch(source);
+    if (!r.ok) throw new Error(`Photo fetch faalt: ${r.status}`);
+    return r.blob();
+  }
+  throw new Error('Onbekende photoSource type');
+}
 
 export const cloudEvidenceRepository: EvidenceRepository = {
   async listForReview(projectId?: string) {
@@ -56,6 +116,56 @@ export const cloudEvidenceRepository: EvidenceRepository = {
   },
   async updateStatus(id, nextStatus, note = null) {
     return cloudUpdateEvidenceStatus(id, nextStatus, note);
+  },
+  async createEvidence(input) {
+    try {
+      const uuid = generateEvidenceUuid();
+      const fileName = `wkb_foto_${uuid}_${Date.now()}.jpg`;
+      const blob = await photoSourceToBlob(input.photoSource);
+
+      const { error: uploadError } = await supabase.storage
+        .from(EVIDENCE_BUCKET)
+        .upload(fileName, blob, { contentType: blob.type || 'image/jpeg' });
+      if (uploadError) {
+        console.error('[cloudEvidenceRepository] upload faalde:', uploadError);
+        return null;
+      }
+
+      const { data: publicData } = supabase.storage
+        .from(EVIDENCE_BUCKET)
+        .getPublicUrl(fileName);
+
+      const { data, error } = await supabase
+        .from('evidence')
+        .insert({
+          project_id: input.projectId,
+          inspection_point_id: input.inspectionPointId ?? null,
+          photo_uri: publicData.publicUrl,
+          media_uri: publicData.publicUrl,
+          timestamp: input.timestamp ?? new Date().toISOString(),
+          latitude: input.latitude ?? null,
+          longitude: input.longitude ?? null,
+          gps_accuracy: input.gpsAccuracy ?? null,
+          exif_hash: input.exifHash ?? null,
+          field_note: input.fieldNote ?? null,
+          ai_status: input.aiStatus ?? null,
+          ai_confidence: input.aiConfidence ?? null,
+          ai_notes: input.aiNotes ?? null,
+          client_uuid: uuid,
+          client_version: 1,
+        })
+        .select('id')
+        .single<{ id: number }>();
+
+      if (error) {
+        console.error('[cloudEvidenceRepository] insert faalde:', error);
+        return null;
+      }
+      return data?.id ?? null;
+    } catch (err) {
+      console.error('[cloudEvidenceRepository] createEvidence:', err);
+      return null;
+    }
   },
 };
 
@@ -130,6 +240,63 @@ export const localEvidenceRepository: EvidenceRepository = {
     });
 
     return true;
+  },
+
+  async createEvidence(input) {
+    try {
+      const store = await getOfflineStorage();
+      const photoStore = await getOfflinePhotoStorage();
+      const uuid = generateEvidenceUuid();
+      const now = new Date().toISOString();
+
+      // 1. Foto fysiek opslaan op het toestel
+      const localPhotoUri = await photoStore.savePhoto(uuid, input.photoSource);
+
+      // 2. Evidence-row insert (sync_status = pending)
+      const row = await store.insertEvidence({
+        uuid,
+        remote_id: null,
+        project_id: input.projectId,
+        inspection_point_id: input.inspectionPointId ?? null,
+        photo_uri: localPhotoUri,
+        media_uri: localPhotoUri,
+        timestamp: input.timestamp ?? now,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        gps_accuracy: input.gpsAccuracy ?? null,
+        exif_hash: input.exifHash ?? null,
+        exif_verified: null,
+        field_note: input.fieldNote ?? null,
+        betonkwaliteit: null,
+        milieuklasse: null,
+        volume: null,
+        leverdatum: null,
+        ai_status: input.aiStatus ?? null,
+        ai_confidence: input.aiConfidence ?? null,
+        ai_notes: input.aiNotes ?? null,
+        sync_status: 'pending',
+        created_at: now,
+        updated_at: now,
+        last_sync_at: null,
+        client_version: 1,
+      });
+
+      // 3. Sync-queue: create-operation. Sync-engine pakt op zodra netwerk.
+      await store.enqueueSyncOperation({
+        evidence_uuid: uuid,
+        operation: 'create',
+        payload: JSON.stringify({}), // create-payload niet meer nodig, alles staat in row
+        attempts: 0,
+        last_attempt_at: null,
+        last_error: null,
+        created_at: now,
+      });
+
+      return row.id;
+    } catch (err) {
+      console.error('[LocalEvidenceRepository] createEvidence:', err);
+      return null;
+    }
   },
 };
 
