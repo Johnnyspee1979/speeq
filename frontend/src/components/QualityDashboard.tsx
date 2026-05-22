@@ -16,11 +16,8 @@ import {
 import { DEFAULT_PROJECT_ID } from '../config/app';
 import { getDeviceType } from '../lib/platform';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import {
-  fetchEvidenceForReview,
-  type CloudEvidence,
-  updateEvidenceStatus,
-} from '../services/cloudEvidenceService';
+import type { CloudEvidence } from '../services/cloudEvidenceService';
+import { useEvidenceRepository } from '../hooks/useEvidenceRepository';
 import { useWkbAuth } from '../hooks/useWkbAuth';
 import { useIsAdmin } from '../hooks/useIsAdmin';
 import { pushApprovedEvidenceToKik } from '../services/kik';
@@ -99,6 +96,9 @@ export default function QualityDashboard() {
   const isWide = deviceType === 'DESKTOP';
   const styles = useMemo(() => createStyles(theme, isWide), [theme, isWide, width]);
 
+  // Dual-mode: cloud OF lokaal, gekozen op basis van tenant_features.offline_mode
+  const evidenceRepo = useEvidenceRepository();
+
   const loadCloudEvidence = useCallback(async () => {
     if (!isSupabaseConfigured()) {
       setRecords([]);
@@ -108,7 +108,7 @@ export default function QualityDashboard() {
 
     setIsLoading(true);
 
-    const nextRecords = await fetchEvidenceForReview(DEFAULT_PROJECT_ID);
+    const nextRecords = await evidenceRepo.listForReview(DEFAULT_PROJECT_ID);
     setRecords(nextRecords);
     setNoteDrafts(
       nextRecords.reduce<Record<number, string>>((acc, item) => {
@@ -117,7 +117,7 @@ export default function QualityDashboard() {
       }, {})
     );
     setIsLoading(false);
-  }, []);
+  }, [evidenceRepo]);
 
   useEffect(() => {
     void loadCloudEvidence();
@@ -209,7 +209,7 @@ export default function QualityDashboard() {
     setIsSavingId(record.id);
 
     const nextNote = noteDrafts[record.id] ?? record.ai_notes ?? '';
-    const success = await updateEvidenceStatus(record.id, nextStatus, nextNote || null);
+    const success = await evidenceRepo.updateStatus(record.id, nextStatus, nextNote || null);
 
     if (!success) {
       Alert.alert('Opslaan mislukt', 'De reviewstatus kon niet in de cloud worden opgeslagen.');
