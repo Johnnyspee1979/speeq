@@ -59,24 +59,77 @@ export const cloudEvidenceRepository: EvidenceRepository = {
   },
 };
 
-// ─── Local implementation (stub voor week 2+) ────────────────────────────────
+// ─── Local implementation (Week 2 — SQLite/IndexedDB via offlineDb) ─────────
+
+import { getOfflineStorage, type LocalEvidenceRow } from '../database/offlineDb';
+
+function localRowToEvidence(row: LocalEvidenceRow): EvidenceRecord {
+  return {
+    // Server-id heeft prioriteit (na sync), anders lokale id
+    id: row.remote_id ?? row.id,
+    project_id: row.project_id,
+    inspection_point_id: row.inspection_point_id,
+    photo_uri: row.photo_uri,
+    media_uri: row.media_uri,
+    timestamp: row.timestamp,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    gps_accuracy: row.gps_accuracy,
+    exif_hash: row.exif_hash,
+    exif_verified: row.exif_verified,
+    field_note: row.field_note,
+    betonkwaliteit: row.betonkwaliteit,
+    milieuklasse: row.milieuklasse,
+    volume: row.volume,
+    leverdatum: row.leverdatum,
+    stop_moment_confirmed: null,
+    measurement_tool_confirmed: null,
+    location_verified: null,
+    location_spoof_risk: null,
+    location_security_message: null,
+    ai_status: row.ai_status as EvidenceRecord['ai_status'],
+    ai_confidence: row.ai_confidence,
+    ai_notes: row.ai_notes,
+  };
+}
 
 export const localEvidenceRepository: EvidenceRepository = {
-  async listForReview(_projectId?: string) {
-    // TODO week 2: SQLite query + sync-queue dedupe
-    console.warn(
-      '[LocalEvidenceRepository] listForReview() niet geïmplementeerd — ' +
-        'val terug op cloud. Te bouwen in week 2 (zie offline-mode-roadmap.md).',
-    );
-    return cloudEvidenceRepository.listForReview(_projectId);
+  async listForReview(projectId?: string) {
+    const store = await getOfflineStorage();
+    const rows = await store.listEvidence({ projectId });
+    return rows.map(localRowToEvidence);
   },
+
   async updateStatus(id, nextStatus, note = null) {
-    // TODO week 3: lokale mutation + sync-queue + LWW conflict-resolution
-    console.warn(
-      '[LocalEvidenceRepository] updateStatus() niet geïmplementeerd — ' +
-        'val terug op cloud. Te bouwen in week 3 (zie offline-mode-roadmap.md).',
-    );
-    return cloudEvidenceRepository.updateStatus(id, nextStatus, note);
+    // Update lokaal + enqueue voor sync. De daadwerkelijke push naar cloud
+    // gebeurt in week 3 (sync-engine).
+    const store = await getOfflineStorage();
+
+    // Zoek de evidence — id kan zowel lokaal als remote zijn
+    const all = await store.listEvidence();
+    const row = all.find((r) => r.remote_id === id || r.id === id);
+    if (!row) {
+      console.error('[LocalEvidenceRepository] updateStatus: evidence niet gevonden, id=', id);
+      return false;
+    }
+
+    await store.updateEvidence(row.uuid, {
+      ai_status: nextStatus,
+      ai_notes: note,
+      sync_status: 'pending',
+    });
+
+    await store.enqueueSyncOperation({
+      evidence_uuid: row.uuid,
+      operation: 'update',
+      payload: JSON.stringify({ status: nextStatus, note }),
+      attempts: 0,
+      last_attempt_at: null,
+      last_error: null,
+      created_at: new Date().toISOString(),
+    });
+
+    return true;
   },
 };
 
