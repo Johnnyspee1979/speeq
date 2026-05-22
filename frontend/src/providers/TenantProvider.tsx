@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase';
 import { ThemeProvider, type TenantFeaturesPayload } from '../theme/ThemeProvider';
 import { OfflineSyncFloatingBadge } from '../components/ui/OfflineSyncFloatingBadge';
 import { OfflineConflictTrigger } from '../components/ui/OfflineConflictTrigger';
+import { OfflineRetryInsightsTrigger } from '../components/ui/OfflineRetryInsightsTrigger';
 import { OfflineSyncBootstrap } from '../components/OfflineSyncBootstrap';
 
 interface TenantProviderProps {
@@ -97,6 +98,7 @@ export const TenantProvider = ({ children, activeTenantId }: TenantProviderProps
         <OfflineSyncBootstrap />
         <OfflineSyncFloatingBadge />
         <OfflineConflictTrigger />
+        <OfflineRetryInsightsTrigger />
       </ThemeProvider>
     );
   }
