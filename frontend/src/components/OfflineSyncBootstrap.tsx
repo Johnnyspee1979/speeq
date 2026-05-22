@@ -18,6 +18,11 @@ import {
   startOfflineSyncEngine,
   stopOfflineSyncEngine,
 } from '../services/OfflineSyncEngine';
+import {
+  attachOfflineServiceWorkerBridge,
+  detachOfflineServiceWorkerBridge,
+  registerOfflineSyncTag,
+} from '../services/OfflineServiceWorkerBridge';
 import { useOfflineMode } from '../hooks/useOfflineMode';
 
 export function OfflineSyncBootstrap(): null {
@@ -26,12 +31,18 @@ export function OfflineSyncBootstrap(): null {
   useEffect(() => {
     if (offline) {
       startOfflineSyncEngine();
+      attachOfflineServiceWorkerBridge();
+      // Tag-registratie is best-effort — Safari/Firefox-stable hebben geen
+      // SyncManager, dan valt het terug op de periodieke timer in de engine.
+      void registerOfflineSyncTag();
     } else {
       stopOfflineSyncEngine();
+      detachOfflineServiceWorkerBridge();
     }
     return () => {
       // Bij unmount altijd opruimen — voorkomt timer-leaks bij tenant-switch
       stopOfflineSyncEngine();
+      detachOfflineServiceWorkerBridge();
     };
   }, [offline]);
 

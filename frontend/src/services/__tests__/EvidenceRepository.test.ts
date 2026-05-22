@@ -86,11 +86,11 @@ jest.mock('../../database/offlineDb', () => ({
 
 // fetch mock — voor photoSourceToBlob bij HTTP-URLs
 const mockFetch = jest.fn();
-(globalThis as { fetch: typeof mockFetch }).fetch = mockFetch;
+(globalThis as unknown as { fetch: typeof mockFetch }).fetch = mockFetch;
 
 // atob mock — Node 18+ heeft 'm wel, maar voor zekerheid
 if (!globalThis.atob) {
-  (globalThis as { atob: (s: string) => string }).atob = (s) =>
+  (globalThis as unknown as { atob: (s: string) => string }).atob = (s) =>
     Buffer.from(s, 'base64').toString('binary');
 }
 
