@@ -337,6 +337,18 @@ export async function processOfflineSyncQueue(): Promise<void> {
         lastSyncAt: new Date().toISOString(),
         pendingCount: 0,
       });
+      // Geslaagde sync-cycle → opruim oude lokale foto-cache (fire-and-forget)
+      void import('./OfflineStorageCleanup')
+        .then(({ runOfflineStorageCleanup }) => runOfflineStorageCleanup())
+        .then((cleanup) => {
+          if (cleanup.removed > 0) {
+            console.info(
+              `[OfflineSyncEngine] cleanup: ${cleanup.removed} foto's opgeruimd, ` +
+                `${cleanup.retained} behouden${cleanup.hardCapTriggered ? ' (hard cap)' : ''}`,
+            );
+          }
+        })
+        .catch((err) => console.warn('[OfflineSyncEngine] cleanup faalt:', err));
     }
   } finally {
     isSyncing = false;
