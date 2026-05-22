@@ -23,6 +23,57 @@ import { Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { getOfflineStorage, type SyncQueueRow } from '../database/offlineDb';
 import { pullCloudIntoLocal } from './OfflineCloudPuller';
+import { getOfflinePhotoStorage } from './OfflinePhotoStorage';
+
+const EVIDENCE_BUCKET = 'wkb-evidence';
+
+/**
+ * Lift een lokale foto-URI (file:// of blob:) naar Supabase Storage.
+ * Returns de publieke remote URL die in evidence.photo_uri komt te staan.
+ */
+async function uploadLocalPhotoToCloud(
+  uuid: string,
+  localUri: string | null,
+): Promise<string | null> {
+  if (!localUri) return null;
+  // Als al een remote URL is (na eerdere mislukte sync) — niet opnieuw uploaden
+  if (localUri.startsWith('http')) return localUri;
+
+  try {
+    const photoStore = await getOfflinePhotoStorage();
+    // Laad als blob/file
+    let blob: Blob;
+    if (localUri.startsWith('blob:') || localUri.startsWith('file://') || localUri.startsWith('data:')) {
+      const r = await fetch(localUri);
+      blob = await r.blob();
+    } else {
+      // Onbekend pad — probeer photoStore lookup als fallback
+      const refreshed = await photoStore.loadPhoto(uuid);
+      if (!refreshed) return null;
+      const r = await fetch(refreshed);
+      blob = await r.blob();
+    }
+
+    const fileName = `wkb_foto_${uuid}_${Date.now()}.jpg`;
+    const { error: uploadError } = await supabase.storage
+      .from(EVIDENCE_BUCKET)
+      .upload(fileName, blob, {
+        contentType: blob.type || 'image/jpeg',
+        upsert: false,
+      });
+    if (uploadError) {
+      // Conflict op filename (zeldzaam) → genereer nieuwe naam en retry
+      throw uploadError;
+    }
+    const { data: publicData } = supabase.storage
+      .from(EVIDENCE_BUCKET)
+      .getPublicUrl(fileName);
+    return publicData.publicUrl ?? null;
+  } catch (err) {
+    console.warn('[OfflineSyncEngine] photo-upload faalt:', err);
+    return null;
+  }
+}
 
 // ─── Public state types ──────────────────────────────────────────────────────
 
@@ -90,13 +141,24 @@ async function pushOperation(op: SyncQueueRow): Promise<void> {
   }
 
   if (op.operation === 'create') {
+    // Stap 1: foto naar Supabase Storage uploaden (als 'ie nog lokaal is)
+    const remotePhotoUrl = await uploadLocalPhotoToCloud(
+      localRow.uuid,
+      localRow.photo_uri,
+    );
+    const remoteMediaUrl =
+      localRow.media_uri && localRow.media_uri !== localRow.photo_uri
+        ? await uploadLocalPhotoToCloud(localRow.uuid + '-media', localRow.media_uri)
+        : remotePhotoUrl;
+
+    // Stap 2: evidence-row insert met de remote URLs
     const { data, error } = await supabase
       .from('evidence')
       .insert({
         project_id: localRow.project_id,
         inspection_point_id: localRow.inspection_point_id,
-        photo_uri: localRow.photo_uri,
-        media_uri: localRow.media_uri,
+        photo_uri: remotePhotoUrl ?? localRow.photo_uri,
+        media_uri: remoteMediaUrl ?? localRow.media_uri,
         timestamp: localRow.timestamp,
         latitude: localRow.latitude,
         longitude: localRow.longitude,
@@ -117,8 +179,12 @@ async function pushOperation(op: SyncQueueRow): Promise<void> {
     if (error) throw error;
     if (!data?.id) throw new Error('Geen ID terug van Supabase na insert');
 
+    // Stap 3: lokale row update met remote_id + remote URL's (vrij maken
+    // van de lokale photo-cache mag — sync is voltooid)
     await store.updateEvidence(op.evidence_uuid, {
       remote_id: data.id,
+      photo_uri: remotePhotoUrl ?? localRow.photo_uri,
+      media_uri: remoteMediaUrl ?? localRow.media_uri,
       sync_status: 'synced',
       last_sync_at: new Date().toISOString(),
     });
