@@ -37,6 +37,7 @@ export type OfflineSyncListener = (state: OfflineSyncState) => void;
 
 const MAX_ATTEMPTS = 5;
 const BASE_BACKOFF_MS = 2_000;
+const PERIODIC_SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5 minuten — bewust niet agressiever
 
 function backoffMs(attempt: number): number {
   // Exponential met 60s cap: 2s, 4s, 8s, 16s, 32s, 60s
@@ -54,6 +55,7 @@ const listeners = new Set<OfflineSyncListener>();
 let isOnline = true;
 let isSyncing = false;
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
+let periodicTimer: ReturnType<typeof setInterval> | null = null;
 let netInfoUnsub: (() => void) | null = null;
 let started = false;
 
@@ -316,13 +318,24 @@ function attachBrowserOnlineEvents(): void {
 /**
  * Start de OfflineSyncEngine. Idempotent — herhaalde aanroep is no-op.
  * Aanroepen vanuit een top-level provider zodra offline-mode actief wordt.
+ *
+ * Periodic auto-sync: een setInterval van PERIODIC_SYNC_INTERVAL_MS (5 min)
+ * triggert een sync-cycle wanneer het netwerk online is — ook als de
+ * gebruiker geen actie heeft ondernomen. Past idle/syncing/error netjes
+ * door het subscribe-pattern.
  */
 export function startOfflineSyncEngine(): void {
   if (started) return;
   started = true;
   attachNetInfo();
   attachBrowserOnlineEvents();
+  // Eerste sync direct
   void processOfflineSyncQueue();
+  // Periodic auto-sync
+  if (periodicTimer) clearInterval(periodicTimer);
+  periodicTimer = setInterval(() => {
+    if (isOnline) void processOfflineSyncQueue();
+  }, PERIODIC_SYNC_INTERVAL_MS);
 }
 
 /**
@@ -338,6 +351,10 @@ export function stopOfflineSyncEngine(): void {
   if (retryTimer) {
     clearTimeout(retryTimer);
     retryTimer = null;
+  }
+  if (periodicTimer) {
+    clearInterval(periodicTimer);
+    periodicTimer = null;
   }
   setState({ status: 'idle', lastSyncAt: null, pendingCount: 0 });
 }
