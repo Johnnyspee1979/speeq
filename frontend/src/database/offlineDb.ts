@@ -18,6 +18,7 @@
 
 import { Platform } from 'react-native';
 import localforage from 'localforage';
+import { runOfflineMigrations } from './offlineMigrations';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -139,6 +140,20 @@ async function createNativeStorage(): Promise<OfflineStorage> {
     );
     CREATE INDEX IF NOT EXISTS sync_queue_evidence_idx ON sync_queue(evidence_uuid);
   `);
+
+  // Voer pending migrations uit (versie > user_version). Bestaande v1-DBs
+  // worden niet opnieuw aangemaakt — alleen delta-migrations naar v2+.
+  try {
+    const migrationResult = await runOfflineMigrations(db);
+    if (migrationResult.applied.length > 0) {
+      console.info(
+        `[offlineDb] migrations toegepast: v${migrationResult.startedAtVersion} → v${migrationResult.finishedAtVersion} ` +
+          `(${migrationResult.applied.length} stappen)`,
+      );
+    }
+  } catch (err) {
+    console.warn('[offlineDb] migration-runner fout:', err);
+  }
 
   return {
     async init() {
