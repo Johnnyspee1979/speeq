@@ -78,6 +78,7 @@ import OfflineSyncBanner from '../components/OfflineSyncBanner';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useTranslation } from '../i18n';
+import { EmptyProjectWizard } from '../components/ui/EmptyProjectWizard';
 import {
   generateKeuringsrapportHtml,
   printKeuringsrapport,
@@ -1683,11 +1684,7 @@ function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview,
   if (borgingspuntGrid.length === 0) {
     return (
       <View style={tabSt.emptyBox}>
-        <Text style={{ fontSize: 48 }}>🏗</Text>
-        <Text style={[tabSt.emptyTitle, { color: theme.colors.textPrimary }]}>Nog geen bewijsstukken</Text>
-        <Text style={[tabSt.emptyBody, { color: theme.colors.textSecondary }]}>
-          Zodra vaklieden foto's uploaden verschijnen de borgingspunten hier met hun status.
-        </Text>
+        <EmptyProjectWizard />
       </View>
     );
   }
