@@ -60,6 +60,7 @@ import {
 } from '../services/NotificationService';
 import { useTheme } from '../theme/ThemeProvider';
 import type { Theme } from '../theme/theme';
+import { useVoicePlayback } from '../hooks/useVoicePlayback';
 import CaptureSuccessCard from './CaptureSuccessCard';
 import FloorPlanPinPicker from './FloorPlanPinPicker';
 import { getFloorPlansForProject, type FloorPlan } from '../services/FloorPlanService';
@@ -293,6 +294,7 @@ export default function CameraView({
   onBackToMain,
 }: CameraViewProps) {
   const { theme } = useTheme();
+  const { playVoice } = useVoicePlayback();
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<ExpoCameraView | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
@@ -1246,6 +1248,7 @@ export default function CameraView({
 
       if (!isSharp) {
         await triggerBlurryPhotoAlert();
+        void playVoice('Foto te wazig. Maak een nieuwe foto.');
         Alert.alert('Kwaliteitswaarschuwing', BLURRY_PHOTO_MESSAGE);
         return null;
       }
@@ -1254,6 +1257,7 @@ export default function CameraView({
 
       if (aiResult.status === 'FAILED') {
         await triggerBlurryPhotoAlert();
+        void playVoice('Foto afgekeurd. Maak een nieuwe foto.');
         Alert.alert('Kwaliteitswaarschuwing', aiResult.notes ?? BLURRY_PHOTO_MESSAGE);
         return null;
       }
@@ -1317,6 +1321,16 @@ export default function CameraView({
 
       if (!options?.preserveFieldNote) {
         setFieldNote('');
+      }
+
+      // Voice-feedback: kort hands-free bevestiging voor de vakman.
+      // No-op als voice uit staat (zie #60).
+      if (aiResult.status === 'PASSED') {
+        void playVoice('Foto goedgekeurd.');
+      } else if (aiResult.status === 'PENDING') {
+        void playVoice('Foto opgeslagen, gaat naar handmatige review.');
+      } else {
+        void playVoice('Foto opgeslagen.');
       }
 
       return {
