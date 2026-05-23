@@ -17,6 +17,8 @@ import { OfflineSyncFloatingBadge } from '../components/ui/OfflineSyncFloatingBa
 import { OfflineConflictTrigger } from '../components/ui/OfflineConflictTrigger';
 import { OfflineRetryInsightsTrigger } from '../components/ui/OfflineRetryInsightsTrigger';
 import { OfflineSyncBootstrap } from '../components/OfflineSyncBootstrap';
+import { VoicePreferencesProvider } from '../context/VoicePreferencesContext';
+import { VoiceQuickToggle } from '../components/ui/VoiceQuickToggle';
 
 interface TenantProviderProps {
   children: React.ReactNode;
@@ -94,11 +96,14 @@ export const TenantProvider = ({ children, activeTenantId }: TenantProviderProps
     // Behoud visuele rust — ThemeProvider met designTokens-fallback.
     return (
       <ThemeProvider tenantFeatures={null}>
-        {children}
-        <OfflineSyncBootstrap />
-        <OfflineSyncFloatingBadge />
-        <OfflineConflictTrigger />
-        <OfflineRetryInsightsTrigger />
+        <VoicePreferencesProvider>
+          {children}
+          <OfflineSyncBootstrap />
+          <OfflineSyncFloatingBadge />
+          <OfflineConflictTrigger />
+          <OfflineRetryInsightsTrigger />
+          <VoiceQuickToggle />
+        </VoicePreferencesProvider>
       </ThemeProvider>
     );
   }
@@ -106,9 +111,12 @@ export const TenantProvider = ({ children, activeTenantId }: TenantProviderProps
   // 3. Injecteer de cloud-gebaseerde data in de ThemeProvider.
   return (
     <ThemeProvider tenantFeatures={tenantFeatures}>
-      {children}
-      <OfflineSyncFloatingBadge />
-      <OfflineConflictTrigger />
+      <VoicePreferencesProvider>
+        {children}
+        <OfflineSyncFloatingBadge />
+        <OfflineConflictTrigger />
+        <VoiceQuickToggle />
+      </VoicePreferencesProvider>
     </ThemeProvider>
   );
 };
