@@ -29,6 +29,7 @@ const bimRoutes = require('./routes/bimRoutes');
 const ocrRoutes = require('./routes/ocrRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const voiceRoutes = require('./routes/voiceRoutes');
 const { startKiKRetryJob } = require('./jobs/kikRetryCron');
 const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
@@ -81,6 +82,7 @@ app.use('/api/integrations/bim', requireAuth, bimRoutes);
 app.use('/api/wkb-ai/ocr', requireAuth, ocrRoutes);
 app.use('/api/review', requireAuth, reviewRoutes);
 app.use('/api/notifications', requireAuth, notificationRoutes);
+app.use('/api/voice', voiceRoutes);
 
 const getSupabaseAdminClient = () => {
   if (!hasSupabaseConfig()) {
