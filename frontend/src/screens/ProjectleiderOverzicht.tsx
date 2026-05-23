@@ -28,6 +28,7 @@ import { supabase } from '../lib/supabase';
 import { useProject, type Project } from '../context/ProjectContext';
 import { useTheme } from '../theme/ThemeProvider';
 import TenantBrandMark from '../components/TenantBrandMark';
+import { EmptyProjectWizard } from '../components/ui/EmptyProjectWizard';
 // SpeeQ-assets (alleen nog gebruikt op entry-screens; in-app draait op klant-branding).
 const speeqLogoFull = require('../assets/speeq-logo-full.png');
 const speeqQLogo    = require('../assets/speeq-q-logo.png');
@@ -759,11 +760,7 @@ function BewijsTab({ evidence, theme, isDark }: { evidence: EvidenceRow[]; theme
   if (evidence.length === 0) {
     return (
       <View style={tabSt.emptyBox}>
-        <Text style={{ fontSize: 40 }}>📭</Text>
-        <Text style={[tabSt.emptyTitle, { color: theme.colors.textPrimary }]}>Nog geen bewijsstukken</Text>
-        <Text style={[tabSt.emptyBody, { color: theme.colors.textSecondary }]}>
-          Vaklieden uploaden foto's via de app op hun mobiel. Zodra er beelden binnenkomen verschijnen ze hier.
-        </Text>
+        <EmptyProjectWizard />
       </View>
     );
   }
