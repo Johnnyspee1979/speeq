@@ -26,8 +26,14 @@
 | 56 | feat | OfflineTelemetryAggregator + health-score | 14 |
 | 57 | feat | OfflineTelemetryBootstrap — wire-up van #56 | 11 |
 | 58 | docs | Verslag + dual-mode-architectuur.md bijgewerkt | — |
+| 59 | feat | **Backend ElevenLabs TTS service + cache + route** | 9 |
+| 60 | feat | VoicePreferencesContext + persistence | 9 |
+| 61 | feat | useVoicePlayback (TTS + speechSynth fallback) | 11 |
+| 62 | feat | VoiceQuickToggle UI + Provider wiring | — |
+| 63 | feat | playVoice op rejection in RejectionBanner | — |
+| 64 | feat | voice-feedback in CameraView capture-flow | — |
 
-**17 PR's. 166 nieuwe tests. Volledige suite: 248/248 groen.**
+**23 PR's. 195 nieuwe tests. Volledige suite: 268/268 groen.**
 
 ---
 
@@ -38,7 +44,9 @@
 3. `speeq-8nssgubfd-spee-solutions.vercel.app` — conflict-UI
 4. `speeq-14wjqdxij-spee-solutions.vercel.app` — MobileNet AI-categorisatie
 5. `speeq-m20tg5rf5-spee-solutions.vercel.app` — RetryInsights UI + telemetry
-6. **(volgende deploy)** — Telemetry-bootstrap wired + docs (huidige productie)
+6. `speeq-bawt49qln-spee-solutions.vercel.app` — Telemetry-bootstrap wired + docs
+7. `speeq-qlg5wmh8r-spee-solutions.vercel.app` — Voice integratie (TTS + context + hook + toggle)
+8. **(volgende deploy)** — Voice wiring in RejectionBanner + CameraView + docs (huidige productie)
 
 ---
 
@@ -92,7 +100,7 @@ Weken 1-8 van `offline-mode-roadmap.md` zijn opgeleverd:
 - **Week 7** PDF-borgingsdossier lokaal ✅
 - **Week 8** UI toggle, klant-onboarding, tests ✅
 
-**Plus post-roadmap:** migration-runner, SW bridge, retry insights, telemetry-aggregator.
+**Plus post-roadmap:** migration-runner, SW bridge, retry insights, telemetry-aggregator, **ElevenLabs voice-integratie** (TTS + context + hook + toggle + wiring in 2 schermen).
 
 ---
 
@@ -102,6 +110,10 @@ Weken 1-8 van `offline-mode-roadmap.md` zijn opgeleverd:
 frontend/src/
 ├── database/
 │   └── offlineMigrations.ts             (#42)
+├── context/
+│   └── VoicePreferencesContext.ts       (#60)
+├── hooks/
+│   └── useVoicePlayback.ts              (#61)
 ├── services/
 │   ├── OfflineServiceWorkerBridge.ts    (#49)
 │   ├── OfflineConflictResolver.ts       (#50)
@@ -113,7 +125,16 @@ frontend/src/
     ├── OfflineConflictResolutionModal.tsx  (#51)
     ├── OfflineConflictTrigger.tsx          (#51)
     ├── OfflineRetryInsightsPanel.tsx       (#54)
-    └── OfflineRetryInsightsTrigger.tsx     (#54)
+    ├── OfflineRetryInsightsTrigger.tsx     (#54)
+    └── VoiceQuickToggle.tsx                (#62)
+
+backend/src/
+├── routes/
+│   └── voiceRoutes.ts                   (#59)
+├── scripts/
+│   └── setupVoiceBucket.ts              (#59)
+└── services/
+    └── elevenLabsService.ts             (#59)
 ```
 
 Geen bestaande publieke API's gebroken. Alle wijzigingen volgen het additive-only patroon.
@@ -122,20 +143,29 @@ Geen bestaande publieke API's gebroken. Alle wijzigingen volgen het additive-onl
 
 ## Wat expliciet niet gedaan
 
-- **Voice TTS/STT offline** — vereist 50MB+ modellen, blijft op `feature/voice-poc` (NIET MERGEN)
+- **Voice STT (transcriptie)** — `feature/voice-poc` backup heeft een Whisper-route maar die is niet gemerged. Buiten scope voor nu — opt-in voor latere sprint.
 - **KiK-koppeling offline** — extern systeem, fundamenteel onmogelijk
 - **AI semantisch begrip offline** — te zwaar voor mobiel, blijft cloud-only
 - **Cross-device sync** ("jan kijkt mee terwijl ik fotografeer") — buiten scope week 1-8
 - **Native (iOS/Android) MobileNet** — vereist `@tensorflow/tfjs-react-native` + native rebuild. Web werkt nu, native valt netjes terug op 'unknown'.
+- **Native voice playback** — `expo-av` + `expo-speech` zijn niet geïnstalleerd. Web werkt; native = stil tot native-rebuild.
+
+## Productie-checklist voor voice
+
+| Item | Wie |
+|---|---|
+| `ELEVENLABS_API_KEY` env-var op Vercel zetten | Johnny (handmatig) |
+| `speeq-voice-cache` Supabase bucket aanmaken | Johnny: `npx ts-node backend/src/scripts/setupVoiceBucket.ts` |
+| Eerste klant-test: voice op rejection + capture | Johnny |
 
 ---
 
 ## Cijfers
 
-- **17 pull requests** gemerged (#42 t/m #58)
-- **166 nieuwe tests** geschreven
-- **6 productie-deploys** uitgevoerd
-- **248/248 testsuite groen**
+- **23 pull requests** gemerged (#42 t/m #64)
+- **195 nieuwe tests** geschreven
+- **8 productie-deploys** uitgevoerd
+- **268/268 testsuite groen**
 - **0 regressies** op bestaande tests
 - **2× TS-bugfixes** ontdekt + opgelost onderweg
 
