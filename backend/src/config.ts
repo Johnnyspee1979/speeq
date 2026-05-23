@@ -62,6 +62,7 @@ const backendConfig = {
   openaiApiKey: process.env.OPENAI_API_KEY ?? '',
   resendApiKey: process.env.RESEND_API_KEY ?? '',
   notificationFromEmail: process.env.NOTIFICATION_FROM_EMAIL ?? 'noreply@wkb.speesolutions.nl',
+  elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? '',
 };
 
 const hasSupabaseConfig = () =>
