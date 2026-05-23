@@ -56,8 +56,8 @@ interface EvidenceRow {
   ai_notes: string | null;
   sync_status: string | null;
   field_note: string | null;
-  gps_lat: number | null;
-  gps_lng: number | null;
+  latitude: number | null;
+  longitude: number | null;
   review_status: ReviewStatus | null;
   reviewed_at: string | null;
   review_note: string | null;
@@ -124,7 +124,7 @@ export default function VakmanWorkspace({
     try {
       let query = supabase
         .from('evidence')
-        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, field_note, gps_lat, gps_lng, review_status, reviewed_at, review_note')
+        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, field_note, latitude, longitude, review_status, reviewed_at, review_note')
         .eq('project_id', projectId)
         .order('timestamp', { ascending: false })
         .limit(200);
@@ -832,9 +832,9 @@ function EvidenceCard({
             </View>
           ) : null}
 
-          {item.gps_lat != null && (
+          {item.latitude != null && (
             <Text style={{ color: theme.colors.textSecondary, fontSize: 11, marginTop: 4 }}>
-              📍 {item.gps_lat.toFixed(4)}, {item.gps_lng?.toFixed(4)}
+              📍 {item.latitude.toFixed(4)}, {item.longitude?.toFixed(4)}
             </Text>
           )}
 

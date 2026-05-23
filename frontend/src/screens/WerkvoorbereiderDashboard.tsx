@@ -118,8 +118,8 @@ interface EvidenceRow {
   ai_notes: string | null;
   sync_status: string | null;
   user_id: string | null;
-  gps_lat: number | null;
-  gps_lng: number | null;
+  latitude: number | null;
+  longitude: number | null;
   field_note: string | null;
   floor_plan_id: string | null;
   pin_x: number | null;
@@ -306,7 +306,7 @@ export default function WerkvoorbereiderDashboard({
     try {
       const { data } = await supabase
         .from('evidence')
-        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, user_id, gps_lat, gps_lng, field_note, floor_plan_id, pin_x, pin_y, review_status, reviewed_by, reviewed_at, review_note')
+        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, user_id, latitude, longitude, field_note, floor_plan_id, pin_x, pin_y, review_status, reviewed_by, reviewed_at, review_note')
         .eq('project_id', projectId)
         .order('timestamp', { ascending: false })
         .limit(300);
@@ -591,8 +591,8 @@ export default function WerkvoorbereiderDashboard({
         mediaUri: e.media_uri ?? e.photo_uri ?? '',
         inspectionPointId: e.inspection_point_id ?? 'onbekend',
         timestamp: e.timestamp ?? '',
-        latitude: e.gps_lat ?? undefined,
-        longitude: e.gps_lng ?? undefined,
+        latitude: e.latitude ?? undefined,
+        longitude: e.longitude ?? undefined,
         aiStatus: e.ai_status ?? undefined,
         aiNotes: e.ai_notes ?? undefined,
         syncStatus: (e.sync_status ?? 'SYNCED') as 'SYNCED' | 'PENDING' | 'FAILED',
@@ -645,8 +645,8 @@ export default function WerkvoorbereiderDashboard({
         mediaUri: e.media_uri ?? e.photo_uri ?? '',
         inspectionPointId: e.inspection_point_id ?? 'onbekend',
         timestamp: e.timestamp ?? '',
-        latitude: e.gps_lat ?? undefined,
-        longitude: e.gps_lng ?? undefined,
+        latitude: e.latitude ?? undefined,
+        longitude: e.longitude ?? undefined,
         aiStatus: e.ai_status ?? undefined,
         aiNotes: e.ai_notes ?? undefined,
         syncStatus: (e.sync_status ?? 'SYNCED') as 'SYNCED' | 'PENDING' | 'FAILED',
@@ -670,8 +670,8 @@ export default function WerkvoorbereiderDashboard({
       aiNotes: e.ai_notes,
       fieldNote: e.field_note,
       userId: e.user_id,
-      latitude: e.gps_lat,
-      longitude: e.gps_lng,
+      latitude: e.latitude,
+      longitude: e.longitude,
     }));
     const html = generateKeuringsrapportHtml({
       projectName,
@@ -1199,8 +1199,8 @@ export default function WerkvoorbereiderDashboard({
             inspectionPointId: e.inspection_point_id ?? '',
             mediaUri: e.media_uri ?? e.photo_uri ?? '',
             timestamp: e.timestamp ?? new Date().toISOString(),
-            latitude: e.gps_lat ?? 0,
-            longitude: e.gps_lng ?? 0,
+            latitude: e.latitude ?? 0,
+            longitude: e.longitude ?? 0,
             gpsAccuracy: null,
             exifHash: '',
             exifVerified: false,
@@ -1632,8 +1632,8 @@ export default function WerkvoorbereiderDashboard({
           inspectionPointId: e.inspection_point_id ?? 'onbekend',
           mediaUri: e.media_uri ?? e.photo_uri ?? '',
           timestamp: e.timestamp ?? '',
-          latitude: e.gps_lat ?? null,
-          longitude: e.gps_lng ?? null,
+          latitude: e.latitude ?? null,
+          longitude: e.longitude ?? null,
           gpsAccuracy: e.gps_accuracy ?? null,
           exifHash: e.exif_hash ?? null,
           exifVerified: e.exif_verified ?? null,
@@ -1866,8 +1866,8 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
       : bucket === 'afgekeurd' ? 'Afgekeurd'
       : 'Openstaand';
     const gps =
-      selectedEvidence.gps_lat != null && selectedEvidence.gps_lng != null
-        ? `${selectedEvidence.gps_lat.toFixed(5)}, ${selectedEvidence.gps_lng.toFixed(5)}`
+      selectedEvidence.latitude != null && selectedEvidence.longitude != null
+        ? `${selectedEvidence.latitude.toFixed(5)}, ${selectedEvidence.longitude.toFixed(5)}`
         : null;
     return {
       status,
@@ -1937,8 +1937,8 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
       aiNotes: e.ai_notes,
       fieldNote: e.field_note,
       userId: e.user_id,
-      latitude: e.gps_lat,
-      longitude: e.gps_lng,
+      latitude: e.latitude,
+      longitude: e.longitude,
       mediaUri: e.media_uri ?? e.photo_uri,
       floorPlanId: e.floor_plan_id,
       pinX: e.pin_x,
@@ -2207,9 +2207,9 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                     <Text style={[tabSt.evidenceMeta, { color: theme.colors.textSecondary }]}>
                       🕐 {fmtDate(item.timestamp)}
                     </Text>
-                    {item.gps_lat != null && (
+                    {item.latitude != null && (
                       <Text style={[tabSt.evidenceMeta, { color: theme.colors.textSecondary }]}>
-                        📍 {item.gps_lat.toFixed(4)}, {item.gps_lng?.toFixed(4)}
+                        📍 {item.latitude.toFixed(4)}, {item.longitude?.toFixed(4)}
                       </Text>
                     )}
                     {item.field_note ? (
@@ -2272,8 +2272,8 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                       taskTitle: item.inspection_point_id ?? 'Borgingspunt',
                       inspectionPointId: item.inspection_point_id ?? item.id,
                       timestamp: item.timestamp ?? new Date().toISOString(),
-                      latitude: item.gps_lat ?? 0,
-                      longitude: item.gps_lng ?? 0,
+                      latitude: item.latitude ?? 0,
+                      longitude: item.longitude ?? 0,
                       evidenceId: item.id,
                     })}
                     activeOpacity={0.8}
@@ -2370,11 +2370,11 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                           <Text style={[tabSt.infoValue, { color: theme.colors.textPrimary }]}>{item.user_id}</Text>
                         </View>
                       ) : null}
-                      {item.gps_lat != null && item.gps_lng != null && (
+                      {item.latitude != null && item.longitude != null && (
                         <View style={tabSt.infoRow}>
                           <Text style={[tabSt.infoLabel, { color: theme.colors.textSecondary }]}>GPS</Text>
                           <Text style={[tabSt.infoValue, { color: theme.colors.textPrimary }]}>
-                            {item.gps_lat.toFixed(5)}, {item.gps_lng.toFixed(5)}
+                            {item.latitude.toFixed(5)}, {item.longitude.toFixed(5)}
                           </Text>
                         </View>
                       )}

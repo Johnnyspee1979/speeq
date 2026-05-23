@@ -27,8 +27,8 @@ interface EvidenceRow {
   ai_notes: string | null;
   field_note: string | null;
   user_id: string | null;
-  gps_lat: number | null;
-  gps_lng: number | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface ZipExportProgress {
@@ -98,7 +98,7 @@ export async function exportProjectAsZip(
 
   const { data: rows, error } = await supabase
     .from('evidence')
-    .select('id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, field_note, user_id, gps_lat, gps_lng')
+    .select('id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, field_note, user_id, latitude, longitude')
     .eq('project_id', projectId)
     .order('timestamp', { ascending: true });
 
@@ -176,7 +176,7 @@ export async function exportProjectAsZip(
         item.field_note ||
         item.ai_notes ||
         item.ai_status ||
-        item.gps_lat;
+        item.latitude;
 
       if (hasContent) {
         let note = `Borgingspunt : ${pointId}\n`;
@@ -184,9 +184,9 @@ export async function exportProjectAsZip(
         note += `Status       : ${statusLabel(item.ai_status)}\n`;
         if (item.field_note)  note += `\nNotitie vakman:\n${item.field_note}\n`;
         if (item.ai_notes)    note += `\nAI beoordeling:\n${item.ai_notes}\n`;
-        if (item.gps_lat && item.gps_lng) {
-          note += `\nGPS locatie: ${item.gps_lat.toFixed(6)}, ${item.gps_lng.toFixed(6)}\n`;
-          note += `Maps: https://maps.google.com/?q=${item.gps_lat},${item.gps_lng}\n`;
+        if (item.latitude && item.longitude) {
+          note += `\nGPS locatie: ${item.latitude.toFixed(6)}, ${item.longitude.toFixed(6)}\n`;
+          note += `Maps: https://maps.google.com/?q=${item.latitude},${item.longitude}\n`;
         }
         folder.file(`${stamp}_notitie_${shortId}.txt`, note);
       }

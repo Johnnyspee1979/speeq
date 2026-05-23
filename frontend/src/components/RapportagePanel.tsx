@@ -36,8 +36,8 @@ interface EvidenceRow {
   ai_notes: string | null;
   field_note: string | null;
   user_id: string | null;
-  gps_lat: number | null;
-  gps_lng: number | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 interface Props {
@@ -109,8 +109,8 @@ export default function RapportagePanel({ projectId, projectName, evidence, them
       aiNotes: e.ai_notes,
       fieldNote: e.field_note,
       userId: e.user_id,
-      latitude: e.gps_lat,
-      longitude: e.gps_lng,
+      latitude: e.latitude,
+      longitude: e.longitude,
     })), [evidence]);
 
   const handleGenerate = useCallback((action: 'print' | 'download') => {

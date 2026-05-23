@@ -248,8 +248,8 @@ export interface OneDriveEvidenceRow {
   ai_status: string | null;
   ai_notes: string | null;
   field_note: string | null;
-  gps_lat: number | null;
-  gps_lng: number | null;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface OneDriveSyncResult {
@@ -325,8 +325,8 @@ export async function syncToOneDrive(
         txt += `Status       : ${statusLabel(item.ai_status)}\n`;
         if (item.field_note)  txt += `\nNotitie vakman:\n${item.field_note}\n`;
         if (item.ai_notes)    txt += `\nAI beoordeling:\n${item.ai_notes}\n`;
-        if (item.gps_lat && item.gps_lng) {
-          txt += `\nGPS: https://maps.google.com/?q=${item.gps_lat},${item.gps_lng}\n`;
+        if (item.latitude && item.longitude) {
+          txt += `\nGPS: https://maps.google.com/?q=${item.latitude},${item.longitude}\n`;
         }
 
         await uploadFile(

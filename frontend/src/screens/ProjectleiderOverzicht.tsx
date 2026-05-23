@@ -47,8 +47,8 @@ interface EvidenceRow {
   sync_status: string | null;
   user_id: string | null;
   field_note?: string | null;
-  gps_lat?: number | null;
-  gps_lng?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 interface Bon {
@@ -133,7 +133,7 @@ export default function ProjectleiderOverzicht() {
     try {
       const { data } = await supabase
         .from('evidence')
-        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, sync_status, user_id, field_note, gps_lat, gps_lng')
+        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, sync_status, user_id, field_note, latitude, longitude')
         .in('project_id', projectIds)
         .order('created_at', { ascending: false })
         .limit(500);
@@ -822,8 +822,8 @@ function BewijsTab({ evidence, theme, isDark }: { evidence: EvidenceRow[]; theme
               <View style={[tabSt.expanded, { borderTopColor: theme.colors.border }]}>
                 {uri && <Image source={{ uri }} style={tabSt.thumbLarge} resizeMode="cover" />}
                 <View style={{ gap: 4, marginTop: 8 }}>
-                  {item.gps_lat != null && item.gps_lng != null && (
-                    <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>📍 GPS: {item.gps_lat.toFixed(5)}, {item.gps_lng.toFixed(5)}</Text>
+                  {item.latitude != null && item.longitude != null && (
+                    <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>📍 GPS: {item.latitude.toFixed(5)}, {item.longitude.toFixed(5)}</Text>
                   )}
                   {item.user_id && (
                     <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>👤 {item.user_id}</Text>
