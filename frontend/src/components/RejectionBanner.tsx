@@ -15,6 +15,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { RejectedEvidence } from '../services/VakmanFeedbackService';
 import { useTheme } from '../theme/ThemeProvider';
+import { useVoicePlayback } from '../hooks/useVoicePlayback';
 
 const REASON_LABELS: Record<RejectedEvidence['reason'], string> = {
   AI_FAILED: 'AI heeft je foto afgekeurd',
@@ -25,6 +26,7 @@ const REASON_LABELS: Record<RejectedEvidence['reason'], string> = {
 export default function RejectionBanner() {
   const { theme } = useTheme();
   const [queue, setQueue] = useState<RejectedEvidence[]>([]);
+  const { playVoice } = useVoicePlayback();
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
@@ -33,14 +35,18 @@ export default function RejectionBanner() {
       const detail = (e as CustomEvent<RejectedEvidence>).detail;
       if (!detail) return;
       // Voorkom duplicaten (zelfde evidenceId binnen huidige queue)
-      setQueue(prev =>
-        prev.some(p => p.evidenceId === detail.evidenceId) ? prev : [...prev, detail]
-      );
+      setQueue(prev => {
+        if (prev.some(p => p.evidenceId === detail.evidenceId)) return prev;
+        // Spreek alleen uit voor NIEUWE afkeuringen, niet voor duplicaten.
+        // Voice is no-op als de gebruiker 'm uit heeft staan (zie #60).
+        void playVoice(REASON_LABELS[detail.reason]);
+        return [...prev, detail];
+      });
     };
 
     window.addEventListener('wkb:rejection', handler as EventListener);
     return () => window.removeEventListener('wkb:rejection', handler as EventListener);
-  }, []);
+  }, [playVoice]);
 
   const dismissCurrent = useCallback(() => {
     setQueue(prev => prev.slice(1));
