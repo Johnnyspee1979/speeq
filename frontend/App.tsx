@@ -912,6 +912,8 @@ function AppShell() {
                 onBackToTasks={handleBackFromCamera}
                 onBackToProject={startFlowResumeContext ? handleBackToProject : undefined}
                 onBackToMain={handleBackToMain}
+                userFirstName={user?.displayName ? user.displayName.split(' ')[0] : undefined}
+                currentProjectName={activeProject?.name}
               />
             ) : (
               <StartFlow onSelectTask={handleSelectTask} resumeContext={startFlowResumeContext} />
