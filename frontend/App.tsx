@@ -47,6 +47,7 @@ import { useWkbAuth } from './src/hooks/useWkbAuth';
 import { useTheme } from './src/theme/ThemeProvider';
 import { TenantProvider } from './src/providers/TenantProvider';
 import { useActiveTenantId } from './src/hooks/useActiveTenantId';
+import { useSimpleMode } from './src/hooks/useSimpleMode';
 import type { CaptureTask } from './src/types/CaptureTask';
 import { findNenCaptureTaskByInspectionPointId } from './src/constants/NenStandards';
 import { wkbTaskTemplates } from './src/data/WkbTemplates';
@@ -97,6 +98,26 @@ type CameraEntryContext = 'selector' | 'oplevering';
 type OpleveringView = 'checklist' | 'consumentendossier';
 type ReviewView = 'werkvoorbereider' | 'kwaliteitsborger' | 'ai-dashboard';
 type CameraFocusRequest = InspectionRouteIntent & { nonce: number };
+
+/**
+ * Welke nav-items zichtbaar blijven wanneer `simple_mode` aanstaat.
+ *
+ * Beslist met Johnny op 23 mei 2026:
+ *  - Tonen: Projectoverzicht, Mijn werkruimte, Punchlist (foto-flow),
+ *           Dossier, Kwaliteitsborger.
+ *  - Verbergen: Camera-item (apart — foto's lopen via Punchlist),
+ *           GPS Kaart, Opdrachtgever, Team Beheer, Bedrijfsbranding,
+ *           Modules, Presets, DSO, Info.
+ *
+ * Zie docs/strategie/speeq-simple.md.
+ */
+const SIMPLE_MODE_ALLOWED_KEYS = new Set([
+  'overzicht',
+  'vakman',
+  'oplevering',
+  'dossier',
+  'review',
+]);
 
 const NAV_ITEMS: ResponsiveLayoutItem[] = [
   { key: 'overzicht', label: 'Overzicht', desktopLabel: 'Projectoverzicht', icon: BarChart2 },
@@ -331,47 +352,59 @@ function AppShell() {
     return '🕒 Klaar voor sync';
   }, [syncStatus]);
 
+  const simpleMode = useSimpleMode();
+
   const navItems = useMemo(() => {
     const role = user?.role;
     const isDesktop = !isMobile;
 
-    if (role === 'OPDRACHTGEVER') {
-      return NAV_ITEMS.filter((item) => item.key === 'portal');
+    // Stap 1: bepaal welke items voor deze rol relevant zijn
+    const roleFiltered = ((): ResponsiveLayoutItem[] => {
+      if (role === 'OPDRACHTGEVER') {
+        return NAV_ITEMS.filter((item) => item.key === 'portal');
+      }
+      return [];
+    })();
+    if (roleFiltered.length > 0 || role === 'OPDRACHTGEVER') {
+      // Opdrachtgever-portaal blijft altijd 1 item, niet verder filteren
+      return roleFiltered;
     }
-    if (role === 'ADMIN' || role === 'KEYUSER') {
-      // Desktop: geen camera — start op review/dossier; krijgt alle admin-tools
-      if (isDesktop) return NAV_ITEMS.filter((item) => item.key !== 'camera');
-      // Mobiel: camera + kaart (geen team op telefoon)
-      return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+
+    // ─── helper om role-filter resultaat te krijgen ──────────────────────
+    const getRoleItems = (): ResponsiveLayoutItem[] => {
+      if (role === 'ADMIN' || role === 'KEYUSER') {
+        if (isDesktop) return NAV_ITEMS.filter((item) => item.key !== 'camera');
+        return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+      }
+      if (role === 'PROJECTLEIDER') {
+        if (isDesktop) return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart', 'team', 'branding'].includes(item.key));
+        return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart'].includes(item.key));
+      }
+      if (role === 'WERKVOORBEREIDER') {
+        if (isDesktop) return NAV_ITEMS.filter((item) => ['review', 'dossier', 'kaart', 'branding'].includes(item.key));
+        return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+      }
+      if (role === 'VOORMAN') {
+        if (isDesktop) return NAV_ITEMS.filter((item) => ['vakman', 'kaart'].includes(item.key));
+        return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+      }
+      if (role === 'VAKMAN') {
+        if (isDesktop) return NAV_ITEMS.filter((item) => item.key === 'vakman');
+        return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+      }
+      // Overige rollen
+      if (isDesktop) return NAV_ITEMS.filter((item) => !['camera', 'review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
+      return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
+    };
+
+    const items = getRoleItems();
+
+    // Stap 2: simple-modus filter — verberg admin/dev-items
+    if (simpleMode) {
+      return items.filter((item) => SIMPLE_MODE_ALLOWED_KEYS.has(item.key));
     }
-    if (role === 'PROJECTLEIDER') {
-      // Desktop: overzicht + dossier + kaart + team + branding
-      if (isDesktop) return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart', 'team', 'branding'].includes(item.key));
-      // Mobiel: geen team
-      return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart'].includes(item.key));
-    }
-    if (role === 'WERKVOORBEREIDER') {
-      // Desktop: review (dashboard) + dossier + kaart + branding — geen camera
-      if (isDesktop) return NAV_ITEMS.filter((item) => ['review', 'dossier', 'kaart', 'branding'].includes(item.key));
-      // Mobiel: camera + kaart
-      return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
-    }
-    if (role === 'VOORMAN') {
-      // Desktop: vakman workspace + kaart — geen camera
-      if (isDesktop) return NAV_ITEMS.filter((item) => ['vakman', 'kaart'].includes(item.key));
-      // Mobiel: camera + kaart
-      return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
-    }
-    if (role === 'VAKMAN') {
-      // Desktop: eigen werkruimte
-      if (isDesktop) return NAV_ITEMS.filter((item) => item.key === 'vakman');
-      // Mobiel: camera + kaart
-      return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
-    }
-    // Overige rollen (ONDERAANNEMER, AANNEMER, KWALITEITSBORGER) — geen modules
-    if (isDesktop) return NAV_ITEMS.filter((item) => !['camera', 'review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
-    return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
-  }, [user, isMobile]);
+    return items;
+  }, [user, isMobile, simpleMode]);
 
   const handleSelectTask = (task: CaptureTask, context?: StartFlowResumeContext) => {
     setCameraEntryContext('selector');
@@ -529,75 +562,79 @@ function AppShell() {
       );
     }
     if (activeTab === 'review') {
+      // Simple-modus: forceer Werkvoorbereider-view, verberg switch-knoppen
+      const effectiveReviewView = simpleMode ? 'werkvoorbereider' : reviewView;
       return (
         <View style={opleveringStyles.container}>
           <ProjectPicker />
-          <View style={opleveringStyles.switchRow}>
-            <TouchableOpacity
-              style={[
-                opleveringStyles.switchButton,
-                reviewView === 'werkvoorbereider' &&
-                  opleveringStyles.switchButtonActive,
-              ]}
-              onPress={() => setReviewView('werkvoorbereider')}
-              activeOpacity={0.85}
-            >
-              <Text
+          {!simpleMode && (
+            <View style={opleveringStyles.switchRow}>
+              <TouchableOpacity
                 style={[
-                  opleveringStyles.switchButtonText,
+                  opleveringStyles.switchButton,
                   reviewView === 'werkvoorbereider' &&
-                    opleveringStyles.switchButtonTextActive,
+                    opleveringStyles.switchButtonActive,
                 ]}
+                onPress={() => setReviewView('werkvoorbereider')}
+                activeOpacity={0.85}
               >
-                Werkvoorbereider
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                opleveringStyles.switchButton,
-                reviewView === 'kwaliteitsborger' &&
-                  opleveringStyles.switchButtonActive,
-              ]}
-              onPress={() => setReviewView('kwaliteitsborger')}
-              activeOpacity={0.85}
-            >
-              <Text
+                <Text
+                  style={[
+                    opleveringStyles.switchButtonText,
+                    reviewView === 'werkvoorbereider' &&
+                      opleveringStyles.switchButtonTextActive,
+                  ]}
+                >
+                  Werkvoorbereider
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[
-                  opleveringStyles.switchButtonText,
+                  opleveringStyles.switchButton,
                   reviewView === 'kwaliteitsborger' &&
-                    opleveringStyles.switchButtonTextActive,
+                    opleveringStyles.switchButtonActive,
                 ]}
+                onPress={() => setReviewView('kwaliteitsborger')}
+                activeOpacity={0.85}
               >
-                Kwaliteitsborger
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                opleveringStyles.switchButton,
-                reviewView === 'ai-dashboard' &&
-                  opleveringStyles.switchButtonActive,
-              ]}
-              onPress={() => setReviewView('ai-dashboard')}
-              activeOpacity={0.85}
-            >
-              <Text
+                <Text
+                  style={[
+                    opleveringStyles.switchButtonText,
+                    reviewView === 'kwaliteitsborger' &&
+                      opleveringStyles.switchButtonTextActive,
+                  ]}
+                >
+                  Kwaliteitsborger
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={[
-                  opleveringStyles.switchButtonText,
+                  opleveringStyles.switchButton,
                   reviewView === 'ai-dashboard' &&
-                    opleveringStyles.switchButtonTextActive,
+                    opleveringStyles.switchButtonActive,
                 ]}
+                onPress={() => setReviewView('ai-dashboard')}
+                activeOpacity={0.85}
               >
-                AI Model
-              </Text>
-            </TouchableOpacity>
-          </View>
+                <Text
+                  style={[
+                    opleveringStyles.switchButtonText,
+                    reviewView === 'ai-dashboard' &&
+                      opleveringStyles.switchButtonTextActive,
+                  ]}
+                >
+                  AI Model
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
           <View style={opleveringStyles.content}>
-            {reviewView === 'werkvoorbereider' ? (
+            {effectiveReviewView === 'werkvoorbereider' ? (
               <WerkvoorbereiderDashboard
                 projectId={activeProject.id}
                 projectName={activeProject.name}
               />
-            ) : reviewView === 'kwaliteitsborger' ? (
+            ) : effectiveReviewView === 'kwaliteitsborger' ? (
               <QualityDashboard />
             ) : (
               <AiValidationDashboard />
