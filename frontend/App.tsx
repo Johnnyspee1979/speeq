@@ -18,6 +18,7 @@ import CameraView from './src/components/CameraView';
 import EvidenceList from './src/components/EvidenceList';
 import RejectionBanner from './src/components/RejectionBanner';
 import VakmanTutorialModal from './src/components/VakmanTutorialModal';
+import MobileVakmanQuickCapture from './src/components/MobileVakmanQuickCapture';
 import PresetsManager from './src/components/PresetsManager';
 import DsoLog from './src/components/DsoLog';
 import About from './src/components/About';
@@ -878,6 +879,21 @@ function AppShell() {
 
   if (!user) {
     return <LoginScreen onDevBypass={enableDevBypass} />;
+  }
+
+  // ── VAKMAN op mobiel: ultra-minimale view ────────────────────────────────
+  // 4 context-chips + 1 grote camera-knop. Geen tabs, geen header, geen menu.
+  // Per Johnny 24 mei: "vakman ziet WAAR / KLANT / PROJECT / WAT — meer niet.
+  // Onder de motor mag alles draaien, daar moet 'ie niets van merken."
+  if (user.role === 'VAKMAN' && isMobile) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <StatusBar style={theme.name === 'dark' ? 'light' : 'dark'} />
+        <RejectionBanner />
+        <VakmanTutorialModal />
+        <MobileVakmanQuickCapture />
+      </SafeAreaView>
+    );
   }
 
   return (
