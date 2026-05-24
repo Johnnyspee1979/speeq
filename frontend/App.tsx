@@ -102,21 +102,29 @@ type CameraFocusRequest = InspectionRouteIntent & { nonce: number };
 /**
  * Welke nav-items zichtbaar blijven wanneer `simple_mode` aanstaat.
  *
- * Beslist met Johnny op 23 mei 2026:
- *  - Tonen: Projectoverzicht, Mijn werkruimte, Punchlist (foto-flow),
- *           Dossier, Kwaliteitsborger.
- *  - Verbergen: Camera-item (apart — foto's lopen via Punchlist),
- *           GPS Kaart, Opdrachtgever, Team Beheer, Bedrijfsbranding,
- *           Modules, Presets, DSO, Info.
+ * Beslist met Johnny op 23 mei 2026 (12-vragen sessie, ronde 2):
+ *  - Vakman kiest ZELF wat hij fotografeert → Camera-item terug,
+ *    Punchlist eruit (lijst-flow is overdaad voor MVP).
+ *  - Branding = KERN (verkoopargument 'jouw logo in dossier').
+ *  - Team Beheer direct nodig (collega's uitnodigen).
+ *  - Opdrachtgever-portaal: rol bestaat dus moet zichtbaar zijn.
+ *  - Alle 4 rollen actief (Vakman, WV, PL, Opdrachtgever, KIK).
+ *
+ * Resultaat: 8 zijbalk-items in Simple-modus.
+ *
+ * Verborgen: Punchlist, GPS Kaart, Modules, Presets, DSO, Info.
  *
  * Zie docs/strategie/speeq-simple.md.
  */
 const SIMPLE_MODE_ALLOWED_KEYS = new Set([
   'overzicht',
   'vakman',
-  'oplevering',
+  'camera',
   'dossier',
   'review',
+  'team',
+  'branding',
+  'portal',
 ]);
 
 const NAV_ITEMS: ResponsiveLayoutItem[] = [
