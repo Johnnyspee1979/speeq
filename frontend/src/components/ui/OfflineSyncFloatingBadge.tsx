@@ -19,11 +19,20 @@ import React from 'react';
 import { View, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { SyncStatusBadge } from './SyncStatusBadge';
 import { useOfflineMode } from '../../hooks/useOfflineMode';
+import { useWkbAuth } from '../../hooks/useWkbAuth';
 
 export const OfflineSyncFloatingBadge: React.FC = () => {
   const offline = useOfflineMode();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  /**
+   * Vakman op mobiel mag NOOIT sync-statussen zien — Johnny's "backdoor"-principe:
+   * de vakman moet niet weten dat de tool synct, dat hoort onzichtbaar te gebeuren.
+   * Werkvoorbereider/projectleider zien het nog wel (zij beheren de data).
+   */
+  const { user } = useWkbAuth();
+  const isVakmanMobile = user?.role === 'VAKMAN' && isMobile;
+  if (isVakmanMobile) return null;
 
   if (!offline) return null;
 

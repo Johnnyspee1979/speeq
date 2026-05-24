@@ -15,6 +15,7 @@ import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from
 import { designTokens } from '../../theme/designTokens';
 import { useVoicePreferencesOptional } from '../../context/VoicePreferencesContext';
 import { useTenantFeature } from '../../hooks/useTenantFeature';
+import { useWkbAuth } from '../../hooks/useWkbAuth';
 
 const theme = designTokens;
 
@@ -28,6 +29,14 @@ export const VoiceQuickToggle: React.FC = () => {
    * niks doet (Johnny 24 mei: "speaker-icoon is ruis voor vakman").
    */
   const voiceTenantOn = useTenantFeature('voice_assistant');
+  /**
+   * Vakman op mobiel hoort spraakfeedback automatisch — een toggle om 't
+   * uit te zetten is onnodige complexiteit. Backdoor-principe: stilletjes
+   * werken zonder dat de gebruiker iets hoeft te configureren.
+   */
+  const { user } = useWkbAuth();
+  const isVakmanMobile = user?.role === 'VAKMAN' && isMobile;
+  if (isVakmanMobile) return null;
   if (!voiceTenantOn) return null;
   if (!prefs || !prefs.isLoaded) return null;
 
