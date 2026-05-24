@@ -794,10 +794,20 @@ function AppShell() {
     }
   }, [user, activeTab]);
 
-  // Op web: automatisch dev bypass activeren zodat de tool meteen werkt
+  // Op web: alleen op LOCALHOST automatisch dev bypass activeren.
+  // Op productie moet de echte Supabase login worden gebruikt
+  // (vakman@combivo.nl etc.) — anders kan een vakman geen foto's
+  // uploaden omdat dev-bypass geen JWT-token heeft en daardoor
+  // geen schrijfrechten op de evidence-tabel.
   useEffect(() => {
     if (!user && !authLoading && typeof window !== 'undefined') {
-      enableDevBypass();
+      const isLocalhost =
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.endsWith('.local');
+      if (isLocalhost) {
+        enableDevBypass();
+      }
     }
   }, [user, authLoading]);
 
