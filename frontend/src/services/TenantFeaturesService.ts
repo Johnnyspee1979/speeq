@@ -23,6 +23,7 @@ export const FEATURE_KEYS = [
   'multilang',
   'offline_mode',
   'simple_mode',
+  'voice_assistant',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -92,6 +93,14 @@ export const FEATURE_META: Record<FeatureKey, FeatureMeta> = {
     description:
       'Verbergt geavanceerde features (modules, presets, AI-dashboard, voice, etc.) en toont alleen de kern: foto maken, beoordelen, dossier exporteren. Voor klanten die het simpel willen houden.',
     icon: '🎯',
+    defaultOn: false,
+  },
+  voice_assistant: {
+    key: 'voice_assistant',
+    label: 'Spraakfeedback (ElevenLabs)',
+    description:
+      'Vakman hoort kort gesproken feedback na elke foto — bv. "Foto opgeslagen, AI denkt wapening". Helpt op de bouwplaats waar je tegen het scherm in de zon kijkt of vieze handen hebt. Vereist user-toestemming om audio af te spelen (browser-policy).',
+    icon: '🔊',
     defaultOn: false,
   },
 };

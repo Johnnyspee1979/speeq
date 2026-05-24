@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Image,
@@ -61,6 +61,7 @@ import {
 import { useTheme } from '../theme/ThemeProvider';
 import type { Theme } from '../theme/theme';
 import { useVoicePlayback } from '../hooks/useVoicePlayback';
+import { useTenantFeature } from '../hooks/useTenantFeature';
 import CaptureSuccessCard from './CaptureSuccessCard';
 import { AiSuggestionCard } from './AiSuggestionCard';
 import FloorPlanPinPicker from './FloorPlanPinPicker';
@@ -302,6 +303,27 @@ export default function CameraView({
 }: CameraViewProps) {
   const { theme } = useTheme();
   const { playVoice } = useVoicePlayback();
+  /**
+   * Tenant-gate voor spraakfeedback (ElevenLabs).
+   * Keyuser bepaalt per organisatie of vakmannen TTS te horen krijgen.
+   * Default uit — zie FEATURE_META.voice_assistant.
+   */
+  const voiceTenantOn = useTenantFeature('voice_assistant');
+  /**
+   * Laatste AI-categorie van de huidige foto (uit AiSuggestionCard.onAccept).
+   * Wordt gebruikt om in de "Foto opgeslagen" spraak de categorie te noemen.
+   * Reset bij elke nieuwe foto in de wizard.
+   */
+  const lastAiCategoryLabelRef = useRef<string | null>(null);
+  /** Wrapper rond playVoice die tenant-gate respecteert + null-text negeert. */
+  const speak = useCallback(
+    (text: string | null | undefined) => {
+      if (!voiceTenantOn) return;
+      if (!text || !text.trim()) return;
+      void playVoice(text);
+    },
+    [voiceTenantOn, playVoice],
+  );
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const cameraRef = useRef<ExpoCameraView | null>(null);
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
@@ -1290,7 +1312,7 @@ export default function CameraView({
 
       if (!isSharp) {
         await triggerBlurryPhotoAlert();
-        void playVoice('Foto te wazig. Maak een nieuwe foto.');
+        speak('Foto onscherp. Probeer het opnieuw.');
         Alert.alert('Kwaliteitswaarschuwing', BLURRY_PHOTO_MESSAGE);
         return null;
       }
@@ -1299,7 +1321,7 @@ export default function CameraView({
 
       if (aiResult.status === 'FAILED') {
         await triggerBlurryPhotoAlert();
-        void playVoice('Foto afgekeurd. Maak een nieuwe foto.');
+        speak('Foto afgekeurd door AI. Maak een nieuwe foto.');
         Alert.alert('Kwaliteitswaarschuwing', aiResult.notes ?? BLURRY_PHOTO_MESSAGE);
         return null;
       }
@@ -1366,14 +1388,20 @@ export default function CameraView({
       }
 
       // Voice-feedback: kort hands-free bevestiging voor de vakman.
-      // No-op als voice uit staat (zie #60).
+      // No-op als tenant-feature 'voice_assistant' uit staat OF voicePref off.
+      // Bevat AI-categorie van AiSuggestionCard wanneer beschikbaar (Super Registratie).
+      const aiCatSuffix = lastAiCategoryLabelRef.current
+        ? ` AI denkt: ${lastAiCategoryLabelRef.current}.`
+        : '';
       if (aiResult.status === 'PASSED') {
-        void playVoice('Foto goedgekeurd.');
+        speak(`Foto opgeslagen.${aiCatSuffix}`);
       } else if (aiResult.status === 'PENDING') {
-        void playVoice('Foto opgeslagen, gaat naar handmatige review.');
+        speak(`Foto opgeslagen, gaat naar handmatige review.${aiCatSuffix}`);
       } else {
-        void playVoice('Foto opgeslagen.');
+        speak(`Foto opgeslagen.${aiCatSuffix}`);
       }
+      // Reset categorie zodat 'm niet bij volgende foto blijft hangen
+      lastAiCategoryLabelRef.current = null;
 
       return {
         timestamp,
@@ -1798,6 +1826,8 @@ export default function CameraView({
               if (!fieldNote.trim()) {
                 setFieldNote(aiNote);
               }
+              // Bewaar voor spraakfeedback na succesvolle upload
+              lastAiCategoryLabelRef.current = prediction.category;
               // Trigger de bestaande save-flow (gaat door alle checks heen)
               handleMobileSavePress();
             }}
