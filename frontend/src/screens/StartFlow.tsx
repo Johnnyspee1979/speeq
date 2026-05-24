@@ -143,6 +143,8 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
   // ── Flow state (initialiseer vanuit resumeContext als beschikbaar) ───────────
   const [step, setStep] = useState<FlowStep>(() => resumeContext ? 'borgingspunt' : 'welkom');
   const [showBonScanner, setShowBonScanner] = useState(false);
+  /** Default dicht — vakman ziet op homescreen alleen 1 primary "Foto maken" knop. */
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [selectedKlant, setSelectedKlant] = useState<Klant | null>(() =>
     resumeContext ? { name: resumeContext.project.initiatorName ?? resumeContext.project.name, projectCount: 1 } : null
   );
@@ -309,11 +311,20 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
     onSelectTask(task, context);
   }, [onSelectTask, selectedProject, selectedDiscipline, selectedLocatie, selectedVerdieping, selectedHuisnummer]);
 
-  // Voornaam: display_name → eerste deel van email
+  // Voornaam: display_name → eerste deel van email.
+  // Filtert rolnamen weg ("vakman", "admin", etc.) zodat we niet
+  // "Hallo vakman" tonen — dat voelt onpersoonlijk en fout (Johnny 24 mei).
   const firstName = useMemo(() => {
     if (!user) return null;
-    if (user.displayName) return user.displayName.split(' ')[0];
-    return user.email.split('@')[0];
+    const ROLE_NAMES = new Set([
+      'vakman', 'voorman', 'projectleider', 'werkvoorbereider',
+      'admin', 'keyuser', 'opdrachtgever', 'user', 'gebruiker',
+    ]);
+    const candidate = (user.displayName?.split(' ')[0] ?? user.email.split('@')[0] ?? '').trim();
+    if (!candidate) return null;
+    if (ROLE_NAMES.has(candidate.toLowerCase())) return null;
+    // Eerste letter hoofdletter voor net aanzicht
+    return candidate.charAt(0).toUpperCase() + candidate.slice(1);
   }, [user]);
 
   // ─── Render stap: Welkom ────────────────────────────────────────────────────
@@ -337,48 +348,69 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
 
           {firstName ? (
             <Text style={[styles.welcomeGreeting, { color: theme.colors.textPrimary }]}>
-              Hallo {firstName},
+              Hallo {firstName} 👋
             </Text>
-          ) : null}
+          ) : (
+            <Text style={[styles.welcomeGreeting, { color: theme.colors.textPrimary }]}>
+              Hallo 👋
+            </Text>
+          )}
           <Text style={[styles.welcomeSubline, { color: theme.colors.textSecondary }]}>
-            {firstName ? 'Gaan we documenteren vandaag?' : 'Gaan we documenteren vandaag?'}
+            Gaan we documenteren vandaag?
           </Text>
 
-          {/* Primary button */}
+          {/* Primary: foto maken — direct naar borgingspunt-keuze (de
+              snelste route naar de camera). Was eerst "Naar mijn werkruimte"
+              wat klant-keuze betekende en zelden hoeft per foto. */}
           <TouchableOpacity
             style={[styles.welcomeMainBtn, { backgroundColor: theme.colors.accent }]}
-            onPress={() => goTo('klant')}
+            onPress={() => goTo('discipline')}
             activeOpacity={0.85}
           >
-            <Text style={styles.welcomeMainBtnText}>Naar mijn werkruimte →</Text>
+            <Text style={styles.welcomeMainBtnText}>📷 Foto maken</Text>
           </TouchableOpacity>
 
-          {/* Shortcut */}
+          {/* Meer-opties collapse — werkruimte en bon-scanner zijn niet
+              de hoofdactie van de vakman, maar wel bereikbaar in 1 tap. */}
           <TouchableOpacity
-            style={[styles.welcomeShortcut, { borderColor: theme.colors.border }]}
-            onPress={() => goTo('discipline')}
-            activeOpacity={0.8}
+            style={[styles.welcomeMoreToggle, { borderColor: theme.colors.border }]}
+            onPress={() => setShowMoreOptions((v) => !v)}
+            activeOpacity={0.75}
+            accessibilityLabel={showMoreOptions ? 'Meer opties verbergen' : 'Meer opties tonen'}
           >
-            <Text style={[styles.welcomeShortcutText, { color: theme.colors.accent }]}>
-              ⚡ Direct een borgingspunt kiezen
+            <Text style={[styles.welcomeMoreToggleText, { color: theme.colors.textSecondary }]}>
+              {showMoreOptions ? '▲ Minder opties' : '▼ Meer opties'}
             </Text>
           </TouchableOpacity>
 
-          {/* Bon → PDF snel-actie */}
-          <TouchableOpacity
-            style={[
-              styles.welcomeBonBtn,
-              { backgroundColor: '#f97316', borderColor: '#ea580c' },
-            ]}
-            onPress={() => {
-              console.log('[BonScanner] homescreen tap');
-              setShowBonScanner(true);
-            }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.welcomeBonBtnText}>📄 Bon naar PDF (direct)</Text>
-            <Text style={styles.welcomeBonBtnSub}>Foto → tekst lezen → in dossier op desktop</Text>
-          </TouchableOpacity>
+          {showMoreOptions ? (
+            <>
+              <TouchableOpacity
+                style={[styles.welcomeShortcut, { borderColor: theme.colors.border }]}
+                onPress={() => goTo('klant')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.welcomeShortcutText, { color: theme.colors.accent }]}>
+                  📋 Naar mijn werkruimte
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.welcomeBonBtn,
+                  { backgroundColor: '#f97316', borderColor: '#ea580c' },
+                ]}
+                onPress={() => {
+                  console.log('[BonScanner] homescreen tap');
+                  setShowBonScanner(true);
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.welcomeBonBtnText}>📄 Bon naar PDF</Text>
+                <Text style={styles.welcomeBonBtnSub}>Foto → tekst lezen → in dossier op desktop</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
         </View>
 
         {/* Bon-scanner modal (project-picker komt eerst) */}
@@ -896,6 +928,19 @@ const createStyles = (
       color: '#fff',
       fontSize: 18,
       fontWeight: '800',
+    },
+    welcomeMoreToggle: {
+      width: '100%',
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: 'center',
+      marginBottom: 10,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+    },
+    welcomeMoreToggleText: {
+      fontSize: 13,
+      fontWeight: '600',
     },
     welcomeShortcut: {
       width: '100%',

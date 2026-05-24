@@ -398,7 +398,10 @@ function AppShell() {
       }
       if (role === 'VAKMAN') {
         if (isDesktop) return NAV_ITEMS.filter((item) => item.key === 'vakman');
-        return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+        // Mobiel: alleen camera + mijn werk. GPS-kaart, oplevering, voorinstellingen
+        // en info verbergen — vakman op de bouw heeft hier niets aan tijdens fotograferen.
+        // (Johnny 24 mei: zeven items in bottom-bar = keuze-stress)
+        return NAV_ITEMS.filter((item) => ['camera', 'vakman'].includes(item.key));
       }
       // Overige rollen
       if (isDesktop) return NAV_ITEMS.filter((item) => !['camera', 'review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));

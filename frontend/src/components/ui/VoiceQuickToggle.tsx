@@ -14,6 +14,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from 'react-native';
 import { designTokens } from '../../theme/designTokens';
 import { useVoicePreferencesOptional } from '../../context/VoicePreferencesContext';
+import { useTenantFeature } from '../../hooks/useTenantFeature';
 
 const theme = designTokens;
 
@@ -21,6 +22,13 @@ export const VoiceQuickToggle: React.FC = () => {
   const prefs = useVoicePreferencesOptional();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  /**
+   * Verberg de zwevende toggle volledig wanneer de tenant 'voice_assistant'
+   * niet heeft aanstaan — anders ziet de vakman een verwarrend icoon dat
+   * niks doet (Johnny 24 mei: "speaker-icoon is ruis voor vakman").
+   */
+  const voiceTenantOn = useTenantFeature('voice_assistant');
+  if (!voiceTenantOn) return null;
   if (!prefs || !prefs.isLoaded) return null;
 
   const { voiceEnabled, toggleVoice } = prefs;
