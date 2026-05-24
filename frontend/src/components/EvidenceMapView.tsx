@@ -410,6 +410,14 @@ export default function EvidenceMapView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mapSrc, setMapSrc] = useState<string | null>(null);
+  /**
+   * Toon ALLE evidence in deze tenant ipv alleen huidig project.
+   * Lost het probleem op dat een nieuw project zonder foto's
+   * een lege kaart toont terwijl andere projecten wel pins hebben.
+   * Johnny 24 mei: "ik zie geen pins op de kaart" — bleek dat actieve
+   * project geen foto's had, andere projecten wel.
+   */
+  const [showAllProjects, setShowAllProjects] = useState(false);
 
   // Locatie-instellen modal
   const [locationModal, setLocationModal] = useState(false);
@@ -457,23 +465,27 @@ export default function EvidenceMapView() {
 
   const fetchEvidence = () => {
     setLoading(true);
-    supabase
+    let q = supabase
       .from('evidence')
-      .select('id, inspection_point_id, latitude, longitude, gps_accuracy, timestamp, ai_status, sync_status')
-      .eq('project_id', activeProject.id)
+      .select('id, inspection_point_id, latitude, longitude, gps_accuracy, timestamp, ai_status, sync_status, project_id')
       .order('timestamp', { ascending: false })
-      .limit(500)
-      .then(({ data, error: err }) => {
-        if (err) { setError(err.message); }
-        else { setEvidence((data ?? []) as unknown as MapEvidence[]); }
-        setLoading(false);
-      });
+      .limit(500);
+    if (!showAllProjects) {
+      q = q.eq('project_id', activeProject.id);
+    }
+    // (Bij showAllProjects laat RLS alleen rows zien waarvoor de user
+    // toegang heeft — geen aparte tenant-filter nodig hier.)
+    q.then(({ data, error: err }) => {
+      if (err) { setError(err.message); }
+      else { setEvidence((data ?? []) as unknown as MapEvidence[]); }
+      setLoading(false);
+    });
   };
 
   useEffect(() => {
     fetchEvidence();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProject.id]);
+  }, [activeProject.id, showAllProjects]);
 
   const mapHtml = useMemo(
     () => buildMapHtml(evidence, isDark, projectLat, projectLng, PROJECT_RADIUS_METERS),
@@ -511,12 +523,34 @@ export default function EvidenceMapView() {
       {/* Header balk */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>GPS Kaart — {activeProject.name}</Text>
+          <Text style={styles.headerTitle}>
+            GPS Kaart — {showAllProjects ? 'alle projecten' : activeProject.name}
+          </Text>
           <Text style={styles.headerSub}>
             {withGps} locaties · {synced} cloud · {pending} lokaal
           </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {/* Alle-projecten toggle — handig wanneer 1 project leeg is */}
+          <TouchableOpacity
+            onPress={() => setShowAllProjects((v) => !v)}
+            style={[
+              styles.refreshBtn,
+              {
+                paddingHorizontal: 10,
+                borderRadius: 8,
+                backgroundColor: showAllProjects ? 'rgba(29,78,216,0.12)' : 'transparent',
+                borderWidth: 1,
+                borderColor: showAllProjects ? '#1d4ed8' : theme.colors.border,
+              },
+            ]}
+            activeOpacity={0.75}
+            accessibilityLabel={showAllProjects ? 'Toon alleen huidig project' : 'Toon alle projecten op de kaart'}
+          >
+            <Text style={{ fontSize: 11, fontWeight: '700', color: showAllProjects ? '#1d4ed8' : theme.colors.textSecondary }}>
+              {showAllProjects ? '🌍 Alle projecten' : '📂 Alle projecten'}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setLocationModal(true)}
             style={[styles.refreshBtn, { paddingHorizontal: 10, borderRadius: 8, backgroundColor: projectLat ? 'rgba(5,150,105,0.1)' : 'rgba(217,119,6,0.12)' }]}
@@ -568,7 +602,9 @@ export default function EvidenceMapView() {
           {withGps === 0 && (
             <View style={[styles.emptyBanner, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
-                📍 Nog geen GPS-locaties — maak een foto om een pin te plaatsen.
+                {showAllProjects
+                  ? '📍 Geen foto\'s met GPS gevonden in deze tenant.'
+                  : `📍 Geen pins voor ${activeProject.name}. Tip: tik "📂 Alle projecten" om foto's uit andere projecten te tonen.`}
               </Text>
             </View>
           )}
