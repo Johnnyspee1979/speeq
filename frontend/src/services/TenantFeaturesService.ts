@@ -22,6 +22,7 @@ export const FEATURE_KEYS = [
   'floor_plan',
   'multilang',
   'offline_mode',
+  'simple_mode',
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -83,6 +84,14 @@ export const FEATURE_META: Record<FeatureKey, FeatureMeta> = {
     description:
       'Werkt zonder netwerk — foto\'s, GPS en lokale AI-precheck draaien op het toestel. Sync zodra het netwerk er weer is. Vereist eenmalige download van AI-modellen (~40 MB).',
     icon: '📡',
+    defaultOn: false,
+  },
+  simple_mode: {
+    key: 'simple_mode',
+    label: 'Eenvoudige weergave',
+    description:
+      'Verbergt geavanceerde features (modules, presets, AI-dashboard, voice, etc.) en toont alleen de kern: foto maken, beoordelen, dossier exporteren. Voor klanten die het simpel willen houden.',
+    icon: '🎯',
     defaultOn: false,
   },
 };
