@@ -1834,6 +1834,13 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
   const [reviewBusyId, setReviewBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [commentsOpenId, setCommentsOpenId] = useState<string | null>(null);
+  /**
+   * 5-Card Rule (Johnny 24 mei): minstens 5 evidence-kaarten zichtbaar zonder
+   * scrollen. Daarom verbergen we secundaire acties (WhatsApp, Beoordelen,
+   * Comments, Edit) standaard achter "⋯ Meer". Alleen ✓ Goed + ✗ Afkeur + ⋯
+   * staan inline. Per-card toggle: open/sluit met dezelfde knop.
+   */
+  const [moreActionsId, setMoreActionsId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchBusy, setBatchBusy] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -2243,7 +2250,11 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                   </View>
                 </TouchableOpacity>
 
-                {/* Approve / Reject knoppen (altijd zichtbaar) */}
+                {/* Primary actierij — alleen ✓ Goed + ✗ Afkeur + ⋯ Meer.
+                    Per "5-Card Rule" (Johnny 24 mei): kleine inline rij zodat
+                    minimaal 5 evidence-kaarten zichtbaar zijn zonder scrollen.
+                    Secundaire acties (WhatsApp / Beoordelen / 💬 / ✏️) zitten
+                    achter ⋯ Meer (default dicht). */}
                 <View style={[tabSt.actionRow, { borderTopColor: theme.colors.borderWarm }]}>
                   <TouchableOpacity
                     style={[tabSt.approveBtn, { opacity: bucket === 'akkoord' ? 0.45 : 1 }]}
@@ -2261,94 +2272,109 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
                   >
                     <Text style={[tabSt.rejectBtnText, { color: theme.colors.statusWarning }]}>✗ Afkeur</Text>
                   </TouchableOpacity>
-                  {/* WhatsApp delen */}
-                  <TouchableOpacity
-                    style={[tabSt.rejectBtn, { borderColor: 'rgba(37,211,102,0.4)', backgroundColor: 'rgba(37,211,102,0.08)' }]}
-                    onPress={() => shareViaWhatsApp({
-                      projectId,
-                      taskTitle: item.inspection_point_id ?? 'Borgingspunt',
-                      inspectionPointId: item.inspection_point_id ?? item.id,
-                      timestamp: item.timestamp ?? new Date().toISOString(),
-                      latitude: item.latitude ?? 0,
-                      longitude: item.longitude ?? 0,
-                      evidenceId: item.id,
-                    })}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ color: '#25D366', fontSize: 12, fontWeight: '800' }}>📱</Text>
-                  </TouchableOpacity>
-                  {/* Diagnose zijpaneel — Laag 2 Progressive Disclosure */}
                   <TouchableOpacity
                     style={[tabSt.rejectBtn, {
-                      borderColor: theme.colors.borderWarm,
-                      backgroundColor: 'transparent',
+                      borderColor: moreActionsId === item.id ? theme.colors.accent + '60' : theme.colors.borderWarm,
+                      backgroundColor: moreActionsId === item.id ? theme.colors.accent + '10' : 'transparent',
                     }]}
-                    onPress={() => setSelectedEvidence(item)}
+                    onPress={() => setMoreActionsId(prev => prev === item.id ? null : item.id)}
                     activeOpacity={0.8}
+                    accessibilityLabel={moreActionsId === item.id ? 'Meer acties verbergen' : 'Meer acties tonen'}
                   >
-                    <Text style={{ fontSize: 12, color: theme.colors.textPrimary, fontWeight: '700' }}>
-                      🔍 Diagnose
+                    <Text style={{ fontSize: 12, color: moreActionsId === item.id ? theme.colors.accent : theme.colors.textSecondary, fontWeight: '800' }}>
+                      ⋯ Meer
                     </Text>
-                  </TouchableOpacity>
-                  {/* Beoordeling-modal — Laag 3 Progressive Disclosure */}
-                  <TouchableOpacity
-                    style={[tabSt.rejectBtn, {
-                      borderColor: theme.colors.borderWarm,
-                      backgroundColor: 'transparent',
-                    }]}
-                    onPress={() => setActionTarget(item)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ fontSize: 12, color: theme.colors.textPrimary, fontWeight: '700' }}>
-                      🔨 Beoordelen
-                    </Text>
-                  </TouchableOpacity>
-                  {/* Opmerkingen toggle */}
-                  <TouchableOpacity
-                    style={[tabSt.rejectBtn, {
-                      borderColor: commentsOpenId === item.id ? theme.colors.accent + '60' : theme.colors.borderWarm,
-                      backgroundColor: commentsOpenId === item.id ? theme.colors.accent + '10' : 'transparent',
-                    }]}
-                    onPress={() => {
-                      setCommentsOpenId(prev => prev === item.id ? null : item.id);
-                      if (expandedId !== item.id) setExpandedId(item.id);
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ fontSize: 12, color: commentsOpenId === item.id ? theme.colors.accent : theme.colors.textSecondary, fontWeight: '800' }}>
-                      💬{(commentCountMap.get(item.id) ?? 0) > 0 ? ` ${commentCountMap.get(item.id)}` : ''}
-                    </Text>
-                  </TouchableOpacity>
-                  {/* Bewerken — keyuser / projectleider / WV */}
-                  <TouchableOpacity
-                    style={[tabSt.rejectBtn, {
-                      borderColor: editingId === item.id ? theme.colors.accent + '60' : theme.colors.borderWarm,
-                      backgroundColor: editingId === item.id ? theme.colors.accent + '10' : 'transparent',
-                    }]}
-                    onPress={() => {
-                      if (editingId === item.id) {
-                        setEditingId(null);
-                      } else {
-                        setEditingId(item.id);
-                        setEditFieldNote(item.field_note ?? '');
-                        setEditPointId(item.inspection_point_id ?? '');
-                        setEditStatus(item.ai_status ?? 'PENDING');
-                        if (expandedId !== item.id) setExpandedId(item.id);
-                      }
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ fontSize: 12, color: editingId === item.id ? theme.colors.accent : theme.colors.textSecondary }}>✏️</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={{ marginLeft: 'auto' as unknown as number, padding: 8 }}
                     onPress={() => setExpandedId(isOpen ? null : item.id)}
+                    accessibilityLabel={isOpen ? 'Details inklappen' : 'Details uitklappen'}
                   >
                     <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>
                       {isOpen ? '▲' : '▼'}
                     </Text>
                   </TouchableOpacity>
                 </View>
+
+                {/* Secundaire actierij — alleen zichtbaar via "⋯ Meer" toggle */}
+                {moreActionsId === item.id ? (
+                  <View style={[tabSt.actionRow, { borderTopColor: theme.colors.borderWarm }]}>
+                    <TouchableOpacity
+                      style={[tabSt.rejectBtn, { borderColor: 'rgba(37,211,102,0.4)', backgroundColor: 'rgba(37,211,102,0.08)' }]}
+                      onPress={() => shareViaWhatsApp({
+                        projectId,
+                        taskTitle: item.inspection_point_id ?? 'Borgingspunt',
+                        inspectionPointId: item.inspection_point_id ?? item.id,
+                        timestamp: item.timestamp ?? new Date().toISOString(),
+                        latitude: item.latitude ?? 0,
+                        longitude: item.longitude ?? 0,
+                        evidenceId: item.id,
+                      })}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ color: '#25D366', fontSize: 12, fontWeight: '800' }}>📱 WhatsApp</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[tabSt.rejectBtn, {
+                        borderColor: theme.colors.borderWarm,
+                        backgroundColor: 'transparent',
+                      }]}
+                      onPress={() => setSelectedEvidence(item)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontSize: 12, color: theme.colors.textPrimary, fontWeight: '700' }}>
+                        🔍 Diagnose
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[tabSt.rejectBtn, {
+                        borderColor: theme.colors.borderWarm,
+                        backgroundColor: 'transparent',
+                      }]}
+                      onPress={() => setActionTarget(item)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontSize: 12, color: theme.colors.textPrimary, fontWeight: '700' }}>
+                        🔨 Beoordelen
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[tabSt.rejectBtn, {
+                        borderColor: commentsOpenId === item.id ? theme.colors.accent + '60' : theme.colors.borderWarm,
+                        backgroundColor: commentsOpenId === item.id ? theme.colors.accent + '10' : 'transparent',
+                      }]}
+                      onPress={() => {
+                        setCommentsOpenId(prev => prev === item.id ? null : item.id);
+                        if (expandedId !== item.id) setExpandedId(item.id);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontSize: 12, color: commentsOpenId === item.id ? theme.colors.accent : theme.colors.textSecondary, fontWeight: '800' }}>
+                        💬{(commentCountMap.get(item.id) ?? 0) > 0 ? ` ${commentCountMap.get(item.id)}` : ''}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[tabSt.rejectBtn, {
+                        borderColor: editingId === item.id ? theme.colors.accent + '60' : theme.colors.borderWarm,
+                        backgroundColor: editingId === item.id ? theme.colors.accent + '10' : 'transparent',
+                      }]}
+                      onPress={() => {
+                        if (editingId === item.id) {
+                          setEditingId(null);
+                        } else {
+                          setEditingId(item.id);
+                          setEditFieldNote(item.field_note ?? '');
+                          setEditPointId(item.inspection_point_id ?? '');
+                          setEditStatus(item.ai_status ?? 'PENDING');
+                          if (expandedId !== item.id) setExpandedId(item.id);
+                        }
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontSize: 12, color: editingId === item.id ? theme.colors.accent : theme.colors.textSecondary }}>✏️ Bewerk</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
 
                 {/* Uitgebreid */}
                 {isOpen && (
