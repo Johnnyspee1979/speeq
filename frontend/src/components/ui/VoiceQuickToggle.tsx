@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Platform, useWindowDimensions } from 'react-native';
 import { designTokens } from '../../theme/designTokens';
 import { useVoicePreferencesOptional } from '../../context/VoicePreferencesContext';
 
@@ -19,6 +19,8 @@ const theme = designTokens;
 
 export const VoiceQuickToggle: React.FC = () => {
   const prefs = useVoicePreferencesOptional();
+  const { width } = useWindowDimensions();
+  const isMobile = width < 768;
   if (!prefs || !prefs.isLoaded) return null;
 
   const { voiceEnabled, toggleVoice } = prefs;
@@ -26,7 +28,10 @@ export const VoiceQuickToggle: React.FC = () => {
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.floating, styles.position]}
+      style={[
+        styles.floating,
+        isMobile ? styles.mobilePosition : styles.desktopPosition,
+      ]}
     >
       <Pressable
         onPress={() => {
@@ -60,9 +65,15 @@ const styles = StyleSheet.create({
     position: Platform.OS === 'web' ? ('fixed' as 'absolute') : 'absolute',
     zIndex: 9997,
   },
-  position: {
+  desktopPosition: {
     right: 80, // links van OfflineSyncFloatingBadge (rechts: 20, breedte ~50)
     bottom: 20,
+  },
+  mobilePosition: {
+    // Boven de bottom-nav zweven, niet erover. Bottom-nav is ~80px hoog
+    // op iOS, plus safe-area marge.
+    right: 16,
+    bottom: 110,
   },
   btn: {
     width: 48,
