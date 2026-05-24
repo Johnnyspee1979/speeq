@@ -53,7 +53,6 @@ import { findNenCaptureTaskByInspectionPointId } from './src/constants/NenStanda
 import { wkbTaskTemplates } from './src/data/WkbTemplates';
 import type { InspectionRouteIntent } from './src/services/deepLinking';
 import StartFlow, { type StartFlowResumeContext } from './src/screens/StartFlow';
-import { QuickCaptureSplash } from './src/screens/QuickCaptureSplash';
 import ConsumentenDossierScherm from './src/screens/ConsumentenDossierScherm';
 import WerkvoorbereiderDashboard from './src/screens/WerkvoorbereiderDashboard';
 import LoginScreen from './src/screens/LoginScreen';
@@ -903,16 +902,6 @@ function AppShell() {
                 onBackToTasks={handleBackFromCamera}
                 onBackToProject={startFlowResumeContext ? handleBackToProject : undefined}
                 onBackToMain={handleBackToMain}
-              />
-            ) : isMobile && !startFlowResumeContext ? (
-              // MOBIEL ALTIJD: 1-knop "Maak foto" zonder Opdrachtgever-
-              // keten. Lost de "Geen opdrachtgevers gevonden"-doodlopende
-              // straat op die vakman zonder pre-aangemaakt project blokte.
-              // Feedback Johnny 23 mei — strict simpleMode-check verwijderd
-              // omdat tenant-cache te traag laadt op mobiel.
-              <QuickCaptureSplash
-                userFirstName={user?.displayName?.split(' ')[0]}
-                onMakeQuickPhoto={(task) => handleSelectTask(task)}
               />
             ) : (
               <StartFlow onSelectTask={handleSelectTask} resumeContext={startFlowResumeContext} />
