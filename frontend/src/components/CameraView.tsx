@@ -199,6 +199,10 @@ interface CameraViewProps {
   onBackToTasks?: () => void;
   onBackToProject?: () => void;  // ↩️ Ander borgingspunt in zelfde project
   onBackToMain?: () => void;     // 🏠 Terug naar hoofdmenu
+  /** Voornaam voor mobiele begroeting (Hallo X). Optioneel. */
+  userFirstName?: string;
+  /** Projectnaam voor mobiele header. Optioneel. */
+  currentProjectName?: string;
 }
 
 // ─── Discipline-specifieke locatie opties ─────────────────────────────────────
@@ -293,6 +297,8 @@ export default function CameraView({
   onBackToTasks,
   onBackToProject,
   onBackToMain,
+  userFirstName,
+  currentProjectName,
 }: CameraViewProps) {
   const { theme } = useTheme();
   const { playVoice } = useVoicePlayback();
@@ -343,6 +349,14 @@ export default function CameraView({
   const lastGpsUpdateRef = useRef<number>(0);
   const lastWeatherFetchRef = useRef<number>(0);
   const [mobileWizardStep, setMobileWizardStep] = useState<'photo' | 'confirm'>('photo');
+  /**
+   * Of de "geavanceerde" velden op het mobiele confirm-scherm zichtbaar zijn
+   * (verdieping/huisnummer/locatie-chips/weerkaart/wkb-checks).
+   * Default dicht — vakman ziet alleen foto + AI-suggestie + GPS + notitie + opslaan.
+   * Per "Warm Minimal" + Progressive Disclosure (Johnny 24 mei: "vakman heeft vieze handen").
+   */
+  const [mobileDetailsExpanded, setMobileDetailsExpanded] = useState(false);
+  // (Bon-scanner shortcut is verplaatst naar de details-collapse op confirm-step.)
   const [mobileAddress, setMobileAddress] = useState<string | null>(null);
   const [desktopLatitude, setDesktopLatitude] = useState('52.36760');
   const [desktopLongitude, setDesktopLongitude] = useState('4.90410');
@@ -1637,7 +1651,23 @@ export default function CameraView({
             </TouchableOpacity>
           ) : null}
 
-          {/* Task info */}
+          {/* ── Warm Minimal hallo-header ─────────────────────────────────
+              Vakman ziet bij open: groet, project, taak. Niets meer.
+              Bon-scanner verplaatst naar 'Details' op confirm-scherm. */}
+          <View style={[styles.mobileHelloHeader, { borderBottomColor: theme.colors.border }]}>
+            {userFirstName ? (
+              <Text style={[styles.mobileHelloGreet, { color: theme.colors.textPrimary }]}>
+                Hallo {userFirstName} 👋
+              </Text>
+            ) : null}
+            {currentProjectName ? (
+              <Text style={[styles.mobileHelloProject, { color: theme.colors.textSecondary }]}>
+                📁 {currentProjectName}
+              </Text>
+            ) : null}
+          </View>
+
+          {/* Taak — wat moet er gefotografeerd worden */}
           {activeTask ? (
             <View style={[styles.mobileTaskHeader, { borderBottomColor: theme.colors.border }]}>
               <Text style={[styles.mobileTaskId, { color: theme.colors.accent }]}>
@@ -1648,23 +1678,6 @@ export default function CameraView({
               </Text>
             </View>
           ) : null}
-
-          {/* 📄 Bon-scanner shortcut — altijd zichtbaar tijdens foto-stap */}
-          <TouchableOpacity
-            style={[
-              styles.mobileBonBtn,
-              { backgroundColor: '#f97316', borderColor: '#ea580c' },
-            ]}
-            onPress={() => {
-              console.log('[BonScanner] knop tap');
-              setShowBonScanner(true);
-            }}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.mobileBonBtnText, { color: '#fff' }]}>
-              📄 Bon / leveringsbrief scannen
-            </Text>
-          </TouchableOpacity>
 
           {/* Timer overlays */}
           {usesNen1006TimerOverlay ? (
@@ -1829,7 +1842,49 @@ export default function CameraView({
             ) : null}
           </View>
 
-          {/* Exacte locatie */}
+          {/* ── Details-collapse ──────────────────────────────────────────
+              Default dicht — vakman heeft alleen AI-suggestie + GPS + notitie nodig.
+              Voor uitzonderingen (verdieping, weer, bon) één tap om te openen. */}
+          <TouchableOpacity
+            style={[
+              styles.mobileDetailsToggle,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.border,
+              },
+            ]}
+            onPress={() => setMobileDetailsExpanded((v) => !v)}
+            activeOpacity={0.75}
+            accessibilityLabel={
+              mobileDetailsExpanded ? 'Details inklappen' : 'Details aanpassen'
+            }
+          >
+            <Text style={[styles.mobileDetailsToggleText, { color: theme.colors.textPrimary }]}>
+              {mobileDetailsExpanded ? '▲ Details verbergen' : '▼ Details aanpassen (verdieping, weer, bon)'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Bon-shortcut — alleen zichtbaar bij open details */}
+          {mobileDetailsExpanded ? (
+            <TouchableOpacity
+              style={[
+                styles.mobileBonBtn,
+                { backgroundColor: '#f97316', borderColor: '#ea580c' },
+              ]}
+              onPress={() => {
+                console.log('[BonScanner] knop tap');
+                setShowBonScanner(true);
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.mobileBonBtnText, { color: '#fff' }]}>
+                📄 Bon / leveringsbrief scannen
+              </Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {/* Exacte locatie — verborgen tenzij details open */}
+          {mobileDetailsExpanded ? (
           <View style={[styles.mobileLocatieCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
             <Text style={[styles.mobileLocatieTitle, { color: theme.colors.textSecondary }]}>
               📍 Exacte locatie
@@ -1925,9 +1980,10 @@ export default function CameraView({
               autoCapitalize="words"
             />
           </View>
+          ) : null}
 
-          {/* Task confirmation */}
-          {activeTask ? (
+          {/* Task confirmation — verborgen tenzij details open */}
+          {mobileDetailsExpanded && activeTask ? (
             <View style={[styles.mobileConfirmTask, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               <Text style={[styles.mobileConfirmTaskId, { color: theme.colors.accent }]}>
                 {activeTask.inspectionPointId}
@@ -1938,7 +1994,8 @@ export default function CameraView({
             </View>
           ) : null}
 
-          {/* WKB confirmations */}
+          {/* WKB confirmations — altijd zichtbaar als de taak het verplicht
+              (bevestigingen zijn juridisch nodig vóór opslaan) */}
           {activeTask?.stopMoment || activeTask?.requiresMeasurementTool ? (
             <View style={styles.webChecklistRow}>
               {activeTask.stopMoment ? (
@@ -1964,8 +2021,8 @@ export default function CameraView({
             </View>
           ) : null}
 
-          {/* Weerkaart */}
-          {weatherSnapshot ? (
+          {/* Weerkaart — verborgen tenzij details open (vakman ziet 't zelf wel) */}
+          {mobileDetailsExpanded && weatherSnapshot ? (
             <View style={[styles.mobileWeatherCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               <Text style={[styles.mobileWeatherTitle, { color: theme.colors.textSecondary }]}>🌤️ Weer op dit moment</Text>
               <View style={styles.mobileWeatherGrid}>
@@ -2011,7 +2068,7 @@ export default function CameraView({
                 </View>
               </View>
             </View>
-          ) : hasGps ? (
+          ) : mobileDetailsExpanded && hasGps ? (
             <View style={[styles.mobileWeatherCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
               <Text style={[styles.mobileWeatherTitle, { color: theme.colors.textSecondary }]}>🌤️ Weer ophalen…</Text>
             </View>
@@ -4101,6 +4158,33 @@ const createStyles = (theme: { name?: string; colors: Record<string, string> }) 
     mobileWizardBackText: {
       fontSize: 14,
       fontWeight: '700',
+    },
+    mobileHelloHeader: {
+      borderBottomWidth: 1,
+      paddingBottom: 10,
+      marginBottom: 4,
+    },
+    mobileHelloGreet: {
+      fontSize: 20,
+      fontWeight: '700',
+      marginBottom: 2,
+    },
+    mobileHelloProject: {
+      fontSize: 13,
+      opacity: 0.85,
+    },
+    mobileDetailsToggle: {
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 14,
+      marginVertical: 8,
+      alignItems: 'center',
+    },
+    mobileDetailsToggleText: {
+      fontSize: 14,
+      fontWeight: '600',
     },
     mobileTaskHeader: {
       borderBottomWidth: 1,
