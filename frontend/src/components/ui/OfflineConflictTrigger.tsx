@@ -25,6 +25,7 @@ import { designTokens } from '../../theme/designTokens';
 
 const theme = designTokens;
 import { useOfflineMode } from '../../hooks/useOfflineMode';
+import { useSimpleMode } from '../../hooks/useSimpleMode';
 import { countConflicts } from '../../services/OfflineConflictResolver';
 import { OfflineConflictResolutionModal } from './OfflineConflictResolutionModal';
 
@@ -32,6 +33,7 @@ const POLL_INTERVAL_MS = 15_000;
 
 export const OfflineConflictTrigger: React.FC = () => {
   const offline = useOfflineMode();
+  const simpleMode = useSimpleMode();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
   const [count, setCount] = useState(0);
@@ -55,6 +57,7 @@ export const OfflineConflictTrigger: React.FC = () => {
     return () => clearInterval(id);
   }, [offline, refresh]);
 
+  if (simpleMode) return null;
   if (!offline) return null;
   if (count === 0 && !modalOpen) return null;
 

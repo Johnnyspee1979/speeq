@@ -14,11 +14,14 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { designTokens } from '../../theme/designTokens';
 import { useVoicePreferencesOptional } from '../../context/VoicePreferencesContext';
+import { useSimpleMode } from '../../hooks/useSimpleMode';
 
 const theme = designTokens;
 
 export const VoiceQuickToggle: React.FC = () => {
+  const simpleMode = useSimpleMode();
   const prefs = useVoicePreferencesOptional();
+  if (simpleMode) return null;
   if (!prefs || !prefs.isLoaded) return null;
 
   const { voiceEnabled, toggleVoice } = prefs;

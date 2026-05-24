@@ -14,10 +14,12 @@
 import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import { useOfflineMode } from '../../hooks/useOfflineMode';
+import { useSimpleMode } from '../../hooks/useSimpleMode';
 import { OfflineRetryInsightsPanel } from './OfflineRetryInsightsPanel';
 
 export const OfflineRetryInsightsTrigger: React.FC = () => {
   const offline = useOfflineMode();
+  const simpleMode = useSimpleMode();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export const OfflineRetryInsightsTrigger: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [offline]);
 
+  if (simpleMode) return null;
   if (!offline) return null;
 
   return (
