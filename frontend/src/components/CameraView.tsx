@@ -338,6 +338,7 @@ export default function CameraView({
   const [desktopLatitude, setDesktopLatitude] = useState('52.36760');
   const [desktopLongitude, setDesktopLongitude] = useState('4.90410');
   const [desktopAccuracy, setDesktopAccuracy] = useState('5.0');
+  const [desktopAltitude, setDesktopAltitude] = useState<string | null>(null);
   const [projectPresets, setProjectPresets] = useState<string[]>([]);
   const [inspectionPresets, setInspectionPresets] = useState<string[]>([]);
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -429,8 +430,14 @@ export default function CameraView({
               setDesktopLatitude(pos.coords.latitude.toFixed(6));
               setDesktopLongitude(pos.coords.longitude.toFixed(6));
               setDesktopAccuracy(String(Math.round(pos.coords.accuracy)));
-              // GPS altitude wordt niet gebruikt — onbetrouwbaar door WGS84 offset (~40-50m in NL)
-              // Verdieping wordt handmatig ingesteld via StartFlow
+              // Toon ruwe altitude voor indicatie. WGS84-offset is in NL
+              // ~40-50m, dus we tonen 'm met disclaimer-aantekening.
+              // Verdieping blijft handmatig instelbaar via StartFlow.
+              if (pos.coords.altitude != null && Number.isFinite(pos.coords.altitude)) {
+                setDesktopAltitude(pos.coords.altitude.toFixed(0));
+              } else {
+                setDesktopAltitude(null);
+              }
               fetchWeather(pos.coords.latitude, pos.coords.longitude)
                 .then((w) => { if (isMounted && w) setWeatherSnapshot(w); })
                 .catch(() => {});
@@ -1773,6 +1780,11 @@ export default function CameraView({
             {hasGps ? (
               <Text style={[styles.mobileGpsCoords, { color: theme.colors.textSecondary }]}>
                 {lat.toFixed(5)}, {lng.toFixed(5)} · ±{Math.round(acc)}m
+              </Text>
+            ) : null}
+            {hasGps && desktopAltitude != null ? (
+              <Text style={[styles.mobileGpsCoords, { color: theme.colors.textSecondary }]}>
+                ⛰ Hoogte: {desktopAltitude}m boven NAP (± WGS84-offset ~45m in NL)
               </Text>
             ) : null}
           </View>

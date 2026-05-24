@@ -108,15 +108,19 @@ function buildMapHtml(
     })
     .filter((m): m is MarkerData => m !== null);
 
-  // Gemiddeld centrum berekenen
+  // Gemiddeld centrum berekenen.
+  // Fallback: Den Haag (52.075 / 4.300) i.p.v. Amsterdam — Spee Solutions
+  // zit in Den Haag en de meeste eerste klanten ook. Een Amsterdam-default
+  // verwarrt de vakman als z'n eigen project op een andere plek staat.
+  // 'Mijn locatie'-knop blijft beschikbaar als override.
   const avgLat =
     markers.length > 0
       ? markers.reduce((s, m) => s + m.lat, 0) / markers.length
-      : projectLat ?? 52.3676;
+      : projectLat ?? 52.075;
   const avgLon =
     markers.length > 0
       ? markers.reduce((s, m) => s + m.lon, 0) / markers.length
-      : projectLng ?? 4.904;
+      : projectLng ?? 4.3;
 
   const markersJson = JSON.stringify(markers);
   const hasProject = projectLat !== null && projectLng !== null;
