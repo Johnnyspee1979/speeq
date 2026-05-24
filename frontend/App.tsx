@@ -47,6 +47,7 @@ import { useWkbAuth } from './src/hooks/useWkbAuth';
 import { useTheme } from './src/theme/ThemeProvider';
 import { TenantProvider } from './src/providers/TenantProvider';
 import { useActiveTenantId } from './src/hooks/useActiveTenantId';
+import { useSimpleMode } from './src/hooks/useSimpleMode';
 import type { CaptureTask } from './src/types/CaptureTask';
 import { findNenCaptureTaskByInspectionPointId } from './src/constants/NenStandards';
 import { wkbTaskTemplates } from './src/data/WkbTemplates';
@@ -114,6 +115,54 @@ const NAV_ITEMS: ResponsiveLayoutItem[] = [
   { key: 'dso', label: 'DSO', desktopLabel: 'DSO', icon: Building2 },
   { key: 'about', label: 'Info', desktopLabel: 'Info', icon: Info },
 ];
+
+// In simple-modus tonen we alleen de kern-flow (zie useSimpleMode +
+// docs/strategie/speeq-simple.md): foto maken, beoordelen, dossier, kaart.
+// Admin/dev-schermen (modules, presets, dso, branding, team, portal, overzicht,
+// oplevering, info) blijven verborgen — ongeacht rol.
+const SIMPLE_NAV_KEYS = ['vakman', 'camera', 'review', 'dossier', 'kaart'];
+
+function getRoleNavItems(
+  role: string | undefined,
+  isDesktop: boolean
+): ResponsiveLayoutItem[] {
+  if (role === 'OPDRACHTGEVER') {
+    return NAV_ITEMS.filter((item) => item.key === 'portal');
+  }
+  if (role === 'ADMIN' || role === 'KEYUSER') {
+    // Desktop: geen camera — start op review/dossier; krijgt alle admin-tools
+    if (isDesktop) return NAV_ITEMS.filter((item) => item.key !== 'camera');
+    // Mobiel: camera + kaart (geen team op telefoon)
+    return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+  }
+  if (role === 'PROJECTLEIDER') {
+    // Desktop: overzicht + dossier + kaart + team + branding
+    if (isDesktop) return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart', 'team', 'branding'].includes(item.key));
+    // Mobiel: geen team
+    return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart'].includes(item.key));
+  }
+  if (role === 'WERKVOORBEREIDER') {
+    // Desktop: review (dashboard) + dossier + kaart + branding — geen camera
+    if (isDesktop) return NAV_ITEMS.filter((item) => ['review', 'dossier', 'kaart', 'branding'].includes(item.key));
+    // Mobiel: camera + kaart
+    return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+  }
+  if (role === 'VOORMAN') {
+    // Desktop: vakman workspace + kaart — geen camera
+    if (isDesktop) return NAV_ITEMS.filter((item) => ['vakman', 'kaart'].includes(item.key));
+    // Mobiel: camera + kaart
+    return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+  }
+  if (role === 'VAKMAN') {
+    // Desktop: eigen werkruimte
+    if (isDesktop) return NAV_ITEMS.filter((item) => item.key === 'vakman');
+    // Mobiel: camera + kaart
+    return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
+  }
+  // Overige rollen (ONDERAANNEMER, AANNEMER, KWALITEITSBORGER) — geen modules
+  if (isDesktop) return NAV_ITEMS.filter((item) => !['camera', 'review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
+  return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
+}
 
 class AppErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -311,6 +360,7 @@ function AppShell() {
   });
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
+  const simpleMode = useSimpleMode();
   const opleveringStyles = useMemo(
     () => createOpleveringStyles(theme),
     [theme]
@@ -332,46 +382,13 @@ function AppShell() {
   }, [syncStatus]);
 
   const navItems = useMemo(() => {
-    const role = user?.role;
-    const isDesktop = !isMobile;
-
-    if (role === 'OPDRACHTGEVER') {
-      return NAV_ITEMS.filter((item) => item.key === 'portal');
+    const roleItems = getRoleNavItems(user?.role, !isMobile);
+    // Simple-modus: knip de rol-set terug tot de kern-flow.
+    if (simpleMode) {
+      return roleItems.filter((item) => SIMPLE_NAV_KEYS.includes(item.key));
     }
-    if (role === 'ADMIN' || role === 'KEYUSER') {
-      // Desktop: geen camera — start op review/dossier; krijgt alle admin-tools
-      if (isDesktop) return NAV_ITEMS.filter((item) => item.key !== 'camera');
-      // Mobiel: camera + kaart (geen team op telefoon)
-      return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
-    }
-    if (role === 'PROJECTLEIDER') {
-      // Desktop: overzicht + dossier + kaart + team + branding
-      if (isDesktop) return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart', 'team', 'branding'].includes(item.key));
-      // Mobiel: geen team
-      return NAV_ITEMS.filter((item) => ['overzicht', 'dossier', 'kaart'].includes(item.key));
-    }
-    if (role === 'WERKVOORBEREIDER') {
-      // Desktop: review (dashboard) + dossier + kaart + branding — geen camera
-      if (isDesktop) return NAV_ITEMS.filter((item) => ['review', 'dossier', 'kaart', 'branding'].includes(item.key));
-      // Mobiel: camera + kaart
-      return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
-    }
-    if (role === 'VOORMAN') {
-      // Desktop: vakman workspace + kaart — geen camera
-      if (isDesktop) return NAV_ITEMS.filter((item) => ['vakman', 'kaart'].includes(item.key));
-      // Mobiel: camera + kaart
-      return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
-    }
-    if (role === 'VAKMAN') {
-      // Desktop: eigen werkruimte
-      if (isDesktop) return NAV_ITEMS.filter((item) => item.key === 'vakman');
-      // Mobiel: camera + kaart
-      return NAV_ITEMS.filter((item) => ['camera', 'kaart'].includes(item.key));
-    }
-    // Overige rollen (ONDERAANNEMER, AANNEMER, KWALITEITSBORGER) — geen modules
-    if (isDesktop) return NAV_ITEMS.filter((item) => !['camera', 'review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
-    return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
-  }, [user, isMobile]);
+    return roleItems;
+  }, [user, isMobile, simpleMode]);
 
   const handleSelectTask = (task: CaptureTask, context?: StartFlowResumeContext) => {
     setCameraEntryContext('selector');
