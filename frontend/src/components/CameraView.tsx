@@ -333,6 +333,14 @@ export default function CameraView({
   const [desktopPhoto, setDesktopPhoto] = useState<File | null>(null);
   const [mobileWebPhotoUri, setMobileWebPhotoUri] = useState<string | null>(null);
   const mobileWebInputRef = useRef<HTMLInputElement | null>(null);
+  /**
+   * Throttle voor watchPosition updates op web. iOS Safari geeft GPS
+   * micro-fluctuaties (4.83 → 4.79 → 4.81) die elke keer 4 setStates
+   * triggerden — resultaat: continu re-rendering loop die het scherm
+   * liet 'springen' en knoppen onaantikbaar maakte.
+   */
+  const lastGpsUpdateRef = useRef<number>(0);
+  const lastWeatherFetchRef = useRef<number>(0);
   const [mobileWizardStep, setMobileWizardStep] = useState<'photo' | 'confirm'>('photo');
   const [mobileAddress, setMobileAddress] = useState<string | null>(null);
   const [desktopLatitude, setDesktopLatitude] = useState('52.36760');
@@ -425,6 +433,14 @@ export default function CameraView({
           const watchId = navigator.geolocation.watchPosition(
             (pos) => {
               if (!isMounted) return;
+              // Throttle: max 1 GPS-update per 3 seconden. iOS Safari
+              // geeft micro-fluctuaties (4.83→4.79→4.81→...) waardoor
+              // het scherm continu re-renderde en knoppen onaantikbaar
+              // werden ('halve cm springen' — bug-rapport Johnny 24 mei).
+              const now = Date.now();
+              if (now - lastGpsUpdateRef.current < 3000) return;
+              lastGpsUpdateRef.current = now;
+
               setWebGeoErrorCode(null);
               setLocationPermission(true);
               setDesktopLatitude(pos.coords.latitude.toFixed(6));
@@ -438,9 +454,13 @@ export default function CameraView({
               } else {
                 setDesktopAltitude(null);
               }
-              fetchWeather(pos.coords.latitude, pos.coords.longitude)
-                .then((w) => { if (isMounted && w) setWeatherSnapshot(w); })
-                .catch(() => {});
+              // Weer alleen 1× per 5 min ophalen — voorheen elke GPS-tick
+              if (now - lastWeatherFetchRef.current > 5 * 60 * 1000) {
+                lastWeatherFetchRef.current = now;
+                fetchWeather(pos.coords.latitude, pos.coords.longitude)
+                  .then((w) => { if (isMounted && w) setWeatherSnapshot(w); })
+                  .catch(() => {});
+              }
             },
             (err) => {
               if (!isMounted) return;
