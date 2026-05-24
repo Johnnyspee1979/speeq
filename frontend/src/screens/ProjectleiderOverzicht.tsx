@@ -566,6 +566,10 @@ interface DetailPanelProps {
 }
 
 function DetailPanel({ project, stats, evidence, onBack, onProjectUpdated, theme, isDark, isDesktop }: DetailPanelProps) {
+  // Gebruik centrale rename-helper voor consistente UI updates over alle
+  // schermen (projectlijst + header + picker). Fix voor "rename werkt in
+  // header maar niet in projectenlijst" (Johnny 24 mei).
+  const { renameProject, refreshProjects } = useProject();
   const [activeTab, setActiveTab] = useState<DetailTab>('bewijs');
 
   // Edit header state
@@ -588,11 +592,19 @@ function DetailPanel({ project, stats, evidence, onBack, onProjectUpdated, theme
     setHeaderSaving(true);
     setHeaderError(null);
     try {
-      const { error } = await supabase
-        .from('projects')
-        .update({ name: editName, address: editAddress })
-        .eq('id', project.id);
-      if (error) throw error;
+      // Naam → via centrale renameProject (optimistic + DB + refresh)
+      // zodat ProjectPicker, kop-header en projectenlijst allemaal updaten.
+      const ok = await renameProject(project.id, editName);
+      if (!ok) throw new Error('rename mislukt');
+      // Adres apart updaten (geen aparte helper) en refresh
+      if (editAddress !== project.address) {
+        const { error } = await supabase
+          .from('projects')
+          .update({ address: editAddress })
+          .eq('id', project.id);
+        if (error) throw error;
+        await refreshProjects();
+      }
       onProjectUpdated({ ...project, name: editName, address: editAddress });
       setEditing(false);
     } catch {
