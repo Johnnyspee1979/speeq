@@ -53,6 +53,7 @@ import { findNenCaptureTaskByInspectionPointId } from './src/constants/NenStanda
 import { wkbTaskTemplates } from './src/data/WkbTemplates';
 import type { InspectionRouteIntent } from './src/services/deepLinking';
 import StartFlow, { type StartFlowResumeContext } from './src/screens/StartFlow';
+import { QuickCaptureSplash } from './src/screens/QuickCaptureSplash';
 import ConsumentenDossierScherm from './src/screens/ConsumentenDossierScherm';
 import WerkvoorbereiderDashboard from './src/screens/WerkvoorbereiderDashboard';
 import LoginScreen from './src/screens/LoginScreen';
@@ -902,6 +903,14 @@ function AppShell() {
                 onBackToTasks={handleBackFromCamera}
                 onBackToProject={startFlowResumeContext ? handleBackToProject : undefined}
                 onBackToMain={handleBackToMain}
+              />
+            ) : simpleMode && isMobile && !startFlowResumeContext ? (
+              // Simple-modus mobiel: 1-knop "Maak foto" i.p.v. de
+              // Opdrachtgever→Project→Borgingspunt-keten.
+              // Feedback Johnny 23 mei.
+              <QuickCaptureSplash
+                userFirstName={user?.displayName?.split(' ')[0]}
+                onMakeQuickPhoto={(task) => handleSelectTask(task)}
               />
             ) : (
               <StartFlow onSelectTask={handleSelectTask} resumeContext={startFlowResumeContext} />
