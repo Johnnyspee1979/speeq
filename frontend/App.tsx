@@ -904,10 +904,12 @@ function AppShell() {
                 onBackToProject={startFlowResumeContext ? handleBackToProject : undefined}
                 onBackToMain={handleBackToMain}
               />
-            ) : simpleMode && isMobile && !startFlowResumeContext ? (
-              // Simple-modus mobiel: 1-knop "Maak foto" i.p.v. de
-              // Opdrachtgever→Project→Borgingspunt-keten.
-              // Feedback Johnny 23 mei.
+            ) : isMobile && !startFlowResumeContext ? (
+              // MOBIEL ALTIJD: 1-knop "Maak foto" zonder Opdrachtgever-
+              // keten. Lost de "Geen opdrachtgevers gevonden"-doodlopende
+              // straat op die vakman zonder pre-aangemaakt project blokte.
+              // Feedback Johnny 23 mei — strict simpleMode-check verwijderd
+              // omdat tenant-cache te traag laadt op mobiel.
               <QuickCaptureSplash
                 userFirstName={user?.displayName?.split(' ')[0]}
                 onMakeQuickPhoto={(task) => handleSelectTask(task)}
