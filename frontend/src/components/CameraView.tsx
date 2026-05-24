@@ -62,6 +62,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import type { Theme } from '../theme/theme';
 import { useVoicePlayback } from '../hooks/useVoicePlayback';
 import CaptureSuccessCard from './CaptureSuccessCard';
+import { AiSuggestionCard } from './AiSuggestionCard';
 import FloorPlanPinPicker from './FloorPlanPinPicker';
 import { getFloorPlansForProject, type FloorPlan } from '../services/FloorPlanService';
 import BonScannerModal from './BonScannerModal';
@@ -1772,6 +1773,25 @@ export default function CameraView({
           <TouchableOpacity style={styles.mobileWizardBack} onPress={() => setMobileWizardStep('photo')} activeOpacity={0.75}>
             <Text style={[styles.mobileWizardBackText, { color: theme.colors.accent }]}>← Foto opnieuw</Text>
           </TouchableOpacity>
+
+          {/* AI-suggestie — vakman tikt 'klopt' = direct opslaan, geen velden invullen */}
+          <AiSuggestionCard
+            photoUri={photoUri}
+            onAccept={(prediction) => {
+              // Vul AI-categorie als field-note vooraf en sla direct op
+              const aiNote = `AI: ${prediction.category} (${Math.round(
+                prediction.confidence * 100
+              )}%)${prediction.rawLabel ? ` — ${prediction.rawLabel}` : ''}`;
+              if (!fieldNote.trim()) {
+                setFieldNote(aiNote);
+              }
+              // Trigger de bestaande save-flow (gaat door alle checks heen)
+              handleMobileSavePress();
+            }}
+            onReject={() => {
+              // Niets doen — bestaande UI met velden blijft staan
+            }}
+          />
 
           {/* Photo thumbnail */}
           {photoUri ? (
