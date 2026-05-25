@@ -25,26 +25,26 @@ const INTER_FAMILY = Platform.OS === 'web'
 
 export const designTokens = {
   colors: {
-    // Basis en Oppervlakten
-    background:    '#FBF6EE',       // Primaire crèmetint voor root views (voorkomt verblinding)
-    backgroundAlt: '#F3EDE2',       // Alternatieve warme 'Oatmeal' tint
-    surface:       '#EADBC7',       // Zacht beige voor evidence-cards en modals
-    surfaceAlt:    '#D8D1C7',       // Gestructureerd warm grijs voor tabbladen
+    // Claude Design tokens v2 (Johnny 25 mei) — SpeeQ WKB Design System 001.zip
+    // Navy + green + zinc neutrals. Geen Warm Minimal beige meer.
+    // EÉN systeem voor alle schermen — als ik iets verander, verandert het overal.
+    background:    '#FFFFFF',
+    backgroundAlt: '#FAFAFA',
+    surface:       '#FFFFFF',
+    surfaceAlt:    '#F4F4F5',       // zinc-100
 
-    // Typografie
-    textPrimary:   '#2B2B2B',       // Diep antraciet voor hoofdtekst en data
-    textSecondary: '#2F2A25',       // Espresso-kleur voor secundaire tekst
-    textMuted:     '#575B5F',       // Gedempt grijs voor timestamps en kleine labels
+    textPrimary:   '#18181B',       // zinc-900
+    textSecondary: '#52525B',       // zinc-600
+    textMuted:     '#71717A',       // zinc-500
 
-    // Status Indicatoren (Pills)
-    statusSuccess:    '#1F4D3A',    // Gedempt bosgroen voor 'Goedgekeurd'
-    statusSuccessAlt: '#568203',    // Alternatief groen
-    statusWarning:    '#F88363',    // Zonsondergang-oranje / Terracotta voor 'Actie vereist'
-    statusWarningAlt: '#FF5733',    // Alternatief oranje
+    // Success = brand green, warning = red-600 (modern)
+    statusSuccess:    '#16A34A',    // green-600 (matches brand-green #5BAA3A)
+    statusSuccessAlt: '#5BAA3A',    // brand-green exact (logo accent)
+    statusWarning:    '#DC2626',    // red-600
+    statusWarningAlt: '#D97706',    // orange-600 (voor "openstaand" / pending)
 
-    // Randen en Scheidingslijnen
-    borderWarm:    '#C9B099',       // Subtiele warme randen voor outlines van cards
-    borderWarmAlt: '#D7C2AA',       // Alternatieve warme border voor divider lijnen
+    borderWarm:    '#E4E4E7',       // zinc-200 — naam behouden voor compat
+    borderWarmAlt: '#D4D4D8',       // zinc-300
   },
 
   // Two-Font System implementatie
