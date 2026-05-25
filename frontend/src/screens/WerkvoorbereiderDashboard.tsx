@@ -830,9 +830,8 @@ export default function WerkvoorbereiderDashboard({
               >
                 {projectName}
               </Text>
-              <Text style={[st.projectRole, { color: theme.colors.textSecondary }]}>
-                Werkvoorbereider / Uitvoerder
-              </Text>
+              {/* "Werkvoorbereider / Uitvoerder" subtitle verwijderd —
+                  rol staat al in de actieve tab erboven (Johnny 25 mei). */}
             </View>
             {/* Notificatie centrum */}
             <NotificatiePanel projectId={projectId} theme={theme} />
