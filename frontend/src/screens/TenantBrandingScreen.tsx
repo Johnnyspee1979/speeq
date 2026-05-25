@@ -144,14 +144,6 @@ export default function TenantBrandingScreen({ onBack }: Props) {
 
       <PageHeader title="Bedrijfsbranding" />
 
-      <View style={[s.headerMeta, { borderBottomColor: theme.colors.borderWarm }]}>
-        <Text style={[s.eyebrow, { color: theme.colors.textMuted }]}>BRANDING</Text>
-        <Text style={[s.subtitle, { color: theme.colors.textSecondary }]}>
-          Pas het logo, de bedrijfsnaam en de accentkleur aan. Dit vervangt SpeeQ in de tool en in alle
-          PDF-exports — zodat het er uitziet als jouw tool.
-        </Text>
-      </View>
-
       {message && (
         <View
           style={[
@@ -177,9 +169,6 @@ export default function TenantBrandingScreen({ onBack }: Props) {
       {/* ─── Logo ─────────────────────────────────────────────────────────── */}
       <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
         <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Logo</Text>
-        <Text style={[s.help, { color: theme.colors.textSecondary }]}>
-          PNG, JPG of SVG. Vierkant werkt het beste. Max 2 MB.
-        </Text>
 
         <View style={s.logoRow}>
           <View style={[s.logoPreview, { borderColor: theme.colors.borderWarm, backgroundColor: theme.colors.background }]}>
@@ -220,9 +209,6 @@ export default function TenantBrandingScreen({ onBack }: Props) {
       {/* ─── Bedrijfsnaam ─────────────────────────────────────────────────── */}
       <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
         <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Bedrijfsnaam</Text>
-        <Text style={[s.help, { color: theme.colors.textSecondary }]}>
-          Verschijnt naast het logo en in de PDF-cover en -footer.
-        </Text>
         <TextInput
           value={name}
           onChangeText={setName}
@@ -244,9 +230,6 @@ export default function TenantBrandingScreen({ onBack }: Props) {
       {/* ─── Accentkleur ─────────────────────────────────────────────────── */}
       <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
         <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Accentkleur (optioneel)</Text>
-        <Text style={[s.help, { color: theme.colors.textSecondary }]}>
-          Hex-code, bv. <Text style={{ fontFamily: 'Menlo' }}>#0ea5e9</Text>. Wordt gebruikt voor CTA's en PDF-titels.
-        </Text>
         <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
           <View
             style={[
@@ -290,10 +273,6 @@ export default function TenantBrandingScreen({ onBack }: Props) {
         <Text style={{ color: theme.colors.statusWarning, fontWeight: '800' }}>Reset alle branding</Text>
       </TouchableOpacity>
 
-      <Text style={[s.footnote, { color: theme.colors.textSecondary }]}>
-        Tip: Hou het logo eenvoudig — een vierkante PNG met transparante achtergrond werkt het beste op zowel licht
-        als donker thema.
-      </Text>
     </ScrollView>
   );
 }
