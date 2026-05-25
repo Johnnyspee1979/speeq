@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Image,
   Platform,
@@ -33,6 +33,20 @@ interface ResponsiveLayoutProps {
 // Web-only shadow helper
 const webStyle = (styles: Record<string, unknown>) =>
   Platform.OS === 'web' ? (styles as any) : {};
+
+/**
+ * Per Johnny 25 mei: sidebar van 12 items voelt "te veel". Werk-items
+ * dagelijks zichtbaar, instellingen achter "▼ Instellingen" collapse.
+ * Niets verwijderd — alleen verborgen tot nodig.
+ */
+const SETTINGS_KEYS = new Set([
+  'team',
+  'branding',
+  'modules',
+  'presets',
+  'dso',
+  'about',
+]);
 
 export function ResponsiveLayout({
   activeTab,
@@ -153,14 +167,18 @@ export function ResponsiveLayout({
 
           <View style={styles.headerRight}>
             {statusLabel ? (
-              <View style={styles.statusPill}>
+              <View
+                style={styles.statusPill}
+                // Volle tekst zichtbaar op hover via title-attribute (web)
+                {...(Platform.OS === 'web' ? { title: statusLabel } as object : {})}
+              >
                 <View style={[styles.statusDot, { backgroundColor: syncDotColor }]} />
-                <Text style={styles.statusPillText} numberOfLines={1}>
-                  {statusLabel.replace(/^[✅❌⚠️🕒]\s*/, '')}
-                </Text>
+                {/* Tekst verborgen op desktop — alleen bolletje. Tooltip toont
+                    de volle melding. Per Johnny 25 mei: "Geen nieuwe uplo..." was
+                    afgekapt en onduidelijk. */}
               </View>
             ) : null}
-            <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
+            <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme} accessibilityLabel="Wissel licht/donker thema">
               <Text style={styles.themeToggleText}>
                 {theme.name === 'dark' ? '☀' : '◑'}
               </Text>
@@ -175,7 +193,12 @@ export function ResponsiveLayout({
           <View style={styles.sidebar}>
             <Text style={styles.sidebarLabel}>WERKMODUS</Text>
             <View style={styles.sidebarDivider} />
-            {items.map((item) => renderNavButton(item, 'sidebar'))}
+            <SidebarItems
+              items={items}
+              activeTab={activeTab}
+              renderNavButton={renderNavButton}
+              styles={styles}
+            />
 
             {/* Bottom brand mark */}
             <View style={styles.sidebarFooter}>
@@ -221,6 +244,57 @@ export function ResponsiveLayout({
         </View>
       )}
     </SafeAreaView>
+  );
+}
+
+/**
+ * SidebarItems — splits items in werk (zichtbaar) + instellingen (collapse).
+ * Settings auto-expanded wanneer een settings-item actief is.
+ */
+interface SidebarItemsProps {
+  items: ResponsiveLayoutItem[];
+  activeTab: string;
+  renderNavButton: (item: ResponsiveLayoutItem, mode: 'sidebar' | 'bottom') => React.ReactNode;
+  styles: ReturnType<typeof createStyles>;
+}
+function SidebarItems({ items, activeTab, renderNavButton, styles }: SidebarItemsProps) {
+  const workItems = items.filter((it) => !SETTINGS_KEYS.has(it.key));
+  const settingsItems = items.filter((it) => SETTINGS_KEYS.has(it.key));
+  const activeIsSettings = settingsItems.some((it) => it.key === activeTab);
+  const [showSettings, setShowSettings] = useState(false);
+  const visible = showSettings || activeIsSettings;
+
+  return (
+    <>
+      {workItems.map((item) => renderNavButton(item, 'sidebar'))}
+
+      {settingsItems.length > 0 ? (
+        <>
+          <TouchableOpacity
+            style={[styles.sidebarButton]}
+            onPress={() => setShowSettings((v) => !v)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={visible ? 'Instellingen verbergen' : 'Instellingen tonen'}
+            accessibilityState={{ expanded: visible }}
+          >
+            <View style={styles.sidebarButtonInner}>
+              <Text
+                style={[
+                  styles.sidebarButtonText,
+                  { opacity: 0.7, fontStyle: 'italic', fontSize: 13 },
+                ]}
+              >
+                {visible ? '▲ Instellingen' : '▼ Instellingen'}
+              </Text>
+            </View>
+          </TouchableOpacity>
+          {visible
+            ? settingsItems.map((item) => renderNavButton(item, 'sidebar'))
+            : null}
+        </>
+      ) : null}
+    </>
   );
 }
 

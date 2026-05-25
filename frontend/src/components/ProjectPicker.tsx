@@ -122,10 +122,10 @@ export default function ProjectPicker() {
   }
 
   // ── Enkel project — geen switcher ─────────────────────────────────────────
+  // "PROJECT" eyebrow verwijderd — projectnaam spreekt voor zich (Johnny 25 mei).
   if (projects.length <= 1) {
     return (
       <View style={styles.header}>
-        <Text style={styles.headerLabel}>PROJECT</Text>
         <Text style={styles.headerName} numberOfLines={1}>
           {activeProject.name}
         </Text>
@@ -143,7 +143,6 @@ export default function ProjectPicker() {
       >
         <View style={styles.headerInner}>
           <View style={styles.headerText}>
-            <Text style={styles.headerLabel}>PROJECT</Text>
             <Text style={styles.headerName} numberOfLines={1}>
               {activeProject.name}
             </Text>
