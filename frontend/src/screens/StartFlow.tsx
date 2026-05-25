@@ -327,58 +327,109 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
     return candidate.charAt(0).toUpperCase() + candidate.slice(1);
   }, [user]);
 
-  // ─── Render stap: Welkom ────────────────────────────────────────────────────
+  // ─── Render stap: Welkom — Claude Design v2 (navy/green/Bricolage) ──────────
   if (step === 'welkom') {
+    // Hardcoded Claude Design palette — bewust losgekoppeld van theme-toggle.
+    const CD = {
+      bg:           '#FFFFFF',
+      navy:         '#1B3A5C',
+      navyHover:    '#15304B',
+      green:        '#5BAA3A',
+      textStrong:   '#09090B',
+      textMuted:    '#52525B',
+      textSubtle:   '#71717A',
+      border:       '#E4E4E7',
+      bonOrange:    '#F97316',
+      fontDisplay:  '"Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif',
+      fontSans:     '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+    };
     return (
-      <View style={styles.screen}>
-        <View style={styles.welcomeInner}>
-          {/* Logo */}
-          <View style={styles.welcomeLogoRow}>
-            <Text style={[styles.welcomeLogoText, { color: theme.colors.textPrimary }]}>WKB</Text>
-            <View style={[styles.welcomeLogoBadge, { backgroundColor: theme.colors.accent }]}>
-              <Text style={styles.welcomeLogoBadgeText}>Snap & Sync</Text>
-            </View>
-          </View>
-
-          {tenantBranding.companyName ? (
-            <Text style={[styles.welcomeMadeBy, { color: theme.colors.textSecondary }]}>
-              {tenantBranding.companyName}
-            </Text>
-          ) : null}
-
-          {firstName ? (
-            <Text style={[styles.welcomeGreeting, { color: theme.colors.textPrimary }]}>
-              Hallo {firstName} 👋
-            </Text>
-          ) : (
-            <Text style={[styles.welcomeGreeting, { color: theme.colors.textPrimary }]}>
-              Hallo 👋
-            </Text>
-          )}
-          <Text style={[styles.welcomeSubline, { color: theme.colors.textSecondary }]}>
-            Gaan we documenteren vandaag?
+      <View style={[styles.screen, { backgroundColor: CD.bg, paddingHorizontal: 22 }]}>
+        <View style={[styles.welcomeInner, { paddingTop: 32 }]}>
+          {/* Eyebrow */}
+          <Text style={{
+            fontFamily: CD.fontSans,
+            fontSize: 11,
+            fontWeight: '700',
+            letterSpacing: 1.8,
+            textTransform: 'uppercase',
+            color: CD.navy,
+            marginBottom: 8,
+          }}>
+            {firstName ? `Hé ${firstName}` : 'Welkom'}
           </Text>
 
-          {/* Primary: foto maken — direct naar borgingspunt-keuze (de
-              snelste route naar de camera). Was eerst "Naar mijn werkruimte"
-              wat klant-keuze betekende en zelden hoeft per foto. */}
+          {/* Bricolage headline met groen accent */}
+          <Text style={{
+            fontFamily: CD.fontDisplay,
+            fontSize: 32,
+            fontWeight: '700',
+            color: CD.textStrong,
+            letterSpacing: -1.2,
+            lineHeight: 36,
+            marginBottom: 10,
+          }}>
+            Klaar voor{'\n'}
+            <Text style={{ color: CD.green }}>het werk?</Text>
+          </Text>
+
+          <Text style={{
+            fontFamily: CD.fontSans,
+            fontSize: 14,
+            color: CD.textMuted,
+            lineHeight: 21,
+            marginBottom: 26,
+          }}>
+            Maak een foto, deel met je werkvoorbereider of open je werkruimte.
+          </Text>
+
+          {/* Primary: foto maken — navy CTA */}
           <TouchableOpacity
-            style={[styles.welcomeMainBtn, { backgroundColor: theme.colors.accent }]}
+            style={{
+              width: '100%',
+              backgroundColor: CD.navy,
+              borderRadius: 12,
+              paddingVertical: 18,
+              alignItems: 'center',
+              marginBottom: 12,
+            }}
             onPress={() => goTo('discipline')}
-            activeOpacity={0.85}
+            activeOpacity={0.88}
+            accessibilityLabel="Naar borgingspunt-keuze om foto te maken"
           >
-            <Text style={styles.welcomeMainBtnText}>📷 Foto maken</Text>
+            <Text style={{
+              fontFamily: CD.fontSans,
+              color: '#FFFFFF',
+              fontSize: 16,
+              fontWeight: '700',
+              letterSpacing: -0.3,
+            }}>
+              📷 Foto maken
+            </Text>
           </TouchableOpacity>
 
-          {/* Meer-opties collapse — werkruimte en bon-scanner zijn niet
-              de hoofdactie van de vakman, maar wel bereikbaar in 1 tap. */}
+          {/* Meer-opties toggle */}
           <TouchableOpacity
-            style={[styles.welcomeMoreToggle, { borderColor: theme.colors.border }]}
+            style={{
+              width: '100%',
+              borderRadius: 10,
+              paddingVertical: 12,
+              alignItems: 'center',
+              marginBottom: 10,
+              borderWidth: 1,
+              borderColor: CD.border,
+              borderStyle: 'dashed',
+            }}
             onPress={() => setShowMoreOptions((v) => !v)}
             activeOpacity={0.75}
             accessibilityLabel={showMoreOptions ? 'Meer opties verbergen' : 'Meer opties tonen'}
           >
-            <Text style={[styles.welcomeMoreToggleText, { color: theme.colors.textSecondary }]}>
+            <Text style={{
+              fontFamily: CD.fontSans,
+              fontSize: 13,
+              fontWeight: '600',
+              color: CD.textSubtle,
+            }}>
               {showMoreOptions ? '▲ Minder opties' : '▼ Meer opties'}
             </Text>
           </TouchableOpacity>
@@ -386,28 +437,61 @@ export default function StartFlow({ onSelectTask, resumeContext }: StartFlowProp
           {showMoreOptions ? (
             <>
               <TouchableOpacity
-                style={[styles.welcomeShortcut, { borderColor: theme.colors.border }]}
+                style={{
+                  width: '100%',
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  alignItems: 'center',
+                  marginBottom: 10,
+                  borderWidth: 1,
+                  borderColor: CD.border,
+                  backgroundColor: CD.bg,
+                }}
                 onPress={() => goTo('klant')}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.welcomeShortcutText, { color: theme.colors.accent }]}>
+                <Text style={{
+                  fontFamily: CD.fontSans,
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: CD.navy,
+                }}>
                   📋 Naar mijn werkruimte
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[
-                  styles.welcomeBonBtn,
-                  { backgroundColor: '#f97316', borderColor: '#ea580c' },
-                ]}
+                style={{
+                  width: '100%',
+                  backgroundColor: CD.bonOrange,
+                  borderRadius: 12,
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  alignItems: 'center',
+                }}
                 onPress={() => {
                   console.log('[BonScanner] homescreen tap');
                   setShowBonScanner(true);
                 }}
                 activeOpacity={0.85}
               >
-                <Text style={styles.welcomeBonBtnText}>📄 Bon naar PDF</Text>
-                <Text style={styles.welcomeBonBtnSub}>Foto → tekst lezen → in dossier op desktop</Text>
+                <Text style={{
+                  fontFamily: CD.fontSans,
+                  color: '#FFFFFF',
+                  fontSize: 14,
+                  fontWeight: '700',
+                }}>
+                  📄 Bon naar PDF
+                </Text>
+                <Text style={{
+                  fontFamily: CD.fontSans,
+                  color: '#FFFFFF',
+                  fontSize: 11,
+                  opacity: 0.9,
+                  marginTop: 2,
+                }}>
+                  Foto → tekst lezen → in dossier op desktop
+                </Text>
               </TouchableOpacity>
             </>
           ) : null}
