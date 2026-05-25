@@ -13,29 +13,10 @@ import { Platform } from 'react-native';
 
 import { designTokens, type DesignTokens, type ColorTokens } from './designTokens';
 
-/**
- * Modern theme variant — Claude Design tokens v2 (Johnny 25 mei).
- * "Raven Health-aesthetic" met SpeeQ-merkkleuren: navy #1B3A5C + green #5BAA3A.
- * Bron: .claude/claude-design-import/colors_and_type.css (Claude Design output).
- * Toggle in de header cyclet door: warm → modern → dark.
- */
-const MODERN_LIGHT_OVERRIDES: Partial<ColorTokens> = {
-  background:    '#FFFFFF',
-  backgroundAlt: '#FAFAFA',
-  surface:       '#FFFFFF',
-  surfaceAlt:    '#F4F4F5',  // zinc-100
-  textPrimary:   '#18181B',  // zinc-900
-  textSecondary: '#52525B',  // zinc-600
-  textMuted:     '#71717A',  // zinc-500
-  statusSuccess: '#16A34A',  // green-600 (matches brand-green)
-  statusWarning: '#DC2626',  // red-600
-  borderWarm:    '#E4E4E7',  // zinc-200
-  borderWarmAlt: '#D4D4D8',  // zinc-300
-};
-
 // Primary action = navy uit SpeeQ logo (Q-mark + wordmark).
-const MODERN_ACCENT       = '#1B3A5C';
-const MODERN_ACCENT_MUTED = 'rgba(27,58,92,0.10)';
+// Claude Design tokens zitten nu in designTokens.colors (één bron van waarheid).
+const BRAND_NAVY        = '#1B3A5C';
+const BRAND_NAVY_MUTED  = 'rgba(27,58,92,0.10)';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -53,6 +34,8 @@ export type TenantFeaturesPayload = {
 // Bevat de Warm Minimal designTokens + legacy-aliasen op `colors` zodat
 // bestaande schermen die `theme.colors.{accent, danger, success, surfaceAlt, border, ...}`
 // gebruiken naadloos meelopen.
+// Type behoudt 'modern' voor backwards-compat met code die het noemt,
+// maar runtime gebruikt alleen 'light' (= Claude Design) en 'dark'.
 export type ThemeMode = 'light' | 'modern' | 'dark';
 
 export type ActiveTheme = DesignTokens & {
@@ -90,36 +73,24 @@ function buildActiveTheme(
   // Merge de vaste basis met de dynamische klant-branding.
   const mergedColors: ColorTokens = { ...base.colors, ...tenantColors };
 
+  // Light + modern delen dezelfde tokens (Claude Design v2 als default).
+  // Dark: zinc-900 background met wit textPrimary, brand-kleuren behouden.
   let colorsForMode: ColorTokens;
-  let accent: string;
-  let accentMuted: string;
-
   if (mode === 'dark') {
-    // Dark-mode: behoud Warm Minimal-karakter, alleen background/surface dimmen.
     colorsForMode = {
       ...mergedColors,
-      background:    '#1B1A17',
-      backgroundAlt: '#26241F',
-      surface:       '#2F2A25',
-      surfaceAlt:    '#3A332D',
-      textPrimary:   '#F3EDE2',
-      textSecondary: '#D7C2AA',
-      textMuted:     '#9A8F84',
-      borderWarm:    '#5A4F43',
-      borderWarmAlt: '#6B5D4F',
+      background:    '#09090B',     // zinc-950
+      backgroundAlt: '#18181B',     // zinc-900
+      surface:       '#18181B',
+      surfaceAlt:    '#27272A',     // zinc-800
+      textPrimary:   '#FAFAFA',     // zinc-50
+      textSecondary: '#A1A1AA',     // zinc-400
+      textMuted:     '#71717A',     // zinc-500
+      borderWarm:    '#27272A',     // zinc-800
+      borderWarmAlt: '#3F3F46',     // zinc-700
     };
-    accent = colorsForMode.statusSuccess;
-    accentMuted = 'rgba(31,77,58,0.10)';
-  } else if (mode === 'modern') {
-    // Modern: wit/slate/violet — losgekoppeld van Warm Minimal beige.
-    colorsForMode = { ...mergedColors, ...MODERN_LIGHT_OVERRIDES };
-    accent = MODERN_ACCENT;
-    accentMuted = MODERN_ACCENT_MUTED;
   } else {
-    // Warm Minimal light (default).
     colorsForMode = mergedColors;
-    accent = colorsForMode.statusSuccess;
-    accentMuted = 'rgba(31,77,58,0.10)';
   }
 
   return {
@@ -127,10 +98,11 @@ function buildActiveTheme(
     name: mode,
     colors: {
       ...colorsForMode,
-      accent,
-      accentMuted,
+      // Primary CTA = navy (Claude Design). Was statusSuccess in Warm Minimal.
+      accent:       BRAND_NAVY,
+      accentMuted:  BRAND_NAVY_MUTED,
       success:      colorsForMode.statusSuccess,
-      warning:      mode === 'modern' ? '#D97706' : '#9A6C1C',
+      warning:      '#D97706',
       danger:       colorsForMode.statusWarning,
       border:       colorsForMode.borderWarm,
       chip:         colorsForMode.textPrimary,
@@ -181,13 +153,9 @@ export const ThemeProvider = ({ children, tenantFeatures = null }: Props) => {
     persistMode(mode);
   }, [mode]);
 
-  /** 3-mode cycle: light (Warm Minimal) → modern (slate/violet) → dark → light. */
+  /** 2-mode toggle: light (Claude Design v2 default) ↔ dark. */
   const toggleTheme = useCallback(() => {
-    setMode((current) => {
-      if (current === 'light') return 'modern';
-      if (current === 'modern') return 'dark';
-      return 'light';
-    });
+    setMode((current) => (current === 'dark' ? 'light' : 'dark'));
   }, []);
 
   // Merge de vaste basis (designTokens) met de dynamische klant-branding uit Supabase.

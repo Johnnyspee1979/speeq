@@ -187,8 +187,8 @@ export function ResponsiveLayout({
                 : {})}
             >
               <Text style={styles.themeToggleText}>
-                {/* 3-mode cycle indicator: ◑ warm / ✦ modern / ☾ dark */}
-                {theme.name === 'dark' ? '☾' : theme.name === 'modern' ? '✦' : '◑'}
+                {/* 2-mode toggle: ☀ light / ☾ dark */}
+                {theme.name === 'dark' ? '☀' : '☾'}
               </Text>
             </TouchableOpacity>
           </View>
