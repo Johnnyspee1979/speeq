@@ -175,7 +175,23 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   );
 };
 
-function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
+// shadcn-stijl tokens (hardcoded — identiek aan Radix Menubar voorbeeld:
+// white popover, slate border, slate text, slate accent op hover.)
+const SHADCN = {
+  triggerBg:        '#FFFFFF',
+  triggerBorder:    '#E2E8F0', // slate-200
+  triggerBgOpen:    '#F1F5F9', // slate-100 (accent in shadcn)
+  triggerText:      '#0F172A', // slate-900
+  popoverBg:        '#FFFFFF',
+  popoverBorder:    '#E2E8F0',
+  itemText:         '#0F172A',
+  itemTextMuted:    '#64748B', // slate-500
+  itemHoverBg:      '#F1F5F9', // slate-100
+  destructive:      '#DC2626',
+  divider:          '#E2E8F0',
+};
+
+function createStyles(_theme: ReturnType<typeof useTheme>['theme']) {
   return StyleSheet.create({
     wrapper: {
       position: 'relative',
@@ -183,17 +199,17 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
     trigger: {
       paddingVertical: 6,
       paddingHorizontal: 12,
-      borderRadius: 8,
+      borderRadius: 6,
       borderWidth: 1,
-      borderColor: theme.colors.borderWarm,
-      backgroundColor: theme.colors.surface,
+      borderColor: SHADCN.triggerBorder,
+      backgroundColor: SHADCN.triggerBg,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
     },
     triggerOpen: {
-      backgroundColor: theme.colors.borderWarm,
-      borderColor: theme.colors.borderWarm,
+      backgroundColor: SHADCN.triggerBgOpen,
+      borderColor: SHADCN.triggerBorder,
     },
     triggerPressed: {
       opacity: 0.85,
@@ -201,21 +217,21 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
     dropdown: {
       position: 'absolute',
       top: '100%',
-      marginTop: 6,
-      backgroundColor: theme.colors.surface,
+      marginTop: 8,
+      backgroundColor: SHADCN.popoverBg,
       borderWidth: 1,
-      borderColor: theme.colors.borderWarm,
-      borderRadius: 12,
-      paddingVertical: 6,
+      borderColor: SHADCN.popoverBorder,
+      borderRadius: 6,
+      paddingVertical: 4,
       zIndex: 9999,
       ...(Platform.OS === 'web'
-        ? ({ boxShadow: '0 12px 32px rgba(0,0,0,0.12)' } as unknown as ViewStyle)
+        ? ({ boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)' } as unknown as ViewStyle)
         : {
             shadowColor: '#000',
-            shadowOpacity: 0.15,
-            shadowRadius: 16,
-            shadowOffset: { width: 0, height: 8 },
-            elevation: 6,
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 4 },
+            elevation: 4,
           }),
     },
     backdrop: {
@@ -227,37 +243,38 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
     item: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 14,
-      gap: 10,
+      paddingVertical: 6,
+      paddingHorizontal: 8,
+      borderRadius: 2,
+      marginHorizontal: 4,
+      gap: 8,
     },
     itemPressed: {
-      backgroundColor:
-        theme.name === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+      backgroundColor: SHADCN.itemHoverBg,
     },
     itemDisabled: {
       opacity: 0.45,
     },
     itemIcon: {
-      fontSize: 16,
-      width: 22,
+      fontSize: 14,
+      width: 18,
       textAlign: 'center',
     },
     itemLabel: {
       flex: 1,
-      color: theme.colors.textPrimary,
+      color: SHADCN.itemText,
       fontSize: 14,
-      fontWeight: '500',
+      fontWeight: '400',
     },
     itemLabelDisabled: {
-      color: theme.colors.textSecondary,
+      color: SHADCN.itemTextMuted,
     },
     itemDestructive: {
-      color: '#dc2626',
+      color: SHADCN.destructive,
     },
     divider: {
       height: 1,
-      backgroundColor: theme.colors.borderWarm,
+      backgroundColor: SHADCN.divider,
       marginVertical: 4,
     },
   });
