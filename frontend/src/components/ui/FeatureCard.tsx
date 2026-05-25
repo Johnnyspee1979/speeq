@@ -105,21 +105,32 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
   );
 };
 
-function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
+// shadcn-stijl tokens (hardcoded — bewust losgekoppeld van Warm Minimal
+// theme zodat deze primitive er identiek uitziet als het 21st.dev voorbeeld
+// dat Johnny stuurde. Card = wit, border = slate-200, icon-bg = slate-100.)
+const SHADCN = {
+  cardBg:        '#FFFFFF',
+  cardBorder:    '#E2E8F0', // slate-200
+  iconBg:        '#F1F5F9', // slate-100
+  textPrimary:   '#0F172A', // slate-900
+  textMuted:     '#64748B', // slate-500
+};
+
+function createStyles(_theme: ReturnType<typeof useTheme>['theme']) {
   return StyleSheet.create({
     card: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 16,
+      backgroundColor: SHADCN.cardBg,
+      borderRadius: 12,
       borderWidth: 1,
-      borderColor: theme.colors.borderWarm,
-      padding: 24,
+      borderColor: SHADCN.cardBorder,
+      padding: 32,
       alignItems: 'center',
       gap: 16,
-      // Subtle elevation op web (RN native krijgt niets standaard)
       ...(Platform.OS === 'web'
         ? ({
             transitionProperty: 'transform, box-shadow, border-color',
-            transitionDuration: '180ms',
+            transitionDuration: '300ms',
+            transitionTimingFunction: 'ease-in-out',
           } as unknown as ViewStyle)
         : {}),
     },
@@ -130,42 +141,38 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
       gap: 14,
     },
     cardHovered: {
-      transform: [{ translateY: -2 }],
-      borderColor: theme.colors.borderWarm,
+      transform: [{ translateY: -8 }],
       ...(Platform.OS === 'web'
-        ? ({ boxShadow: '0 8px 24px rgba(0,0,0,0.08)' } as unknown as ViewStyle)
+        ? ({ boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)' } as unknown as ViewStyle)
         : {}),
     },
     cardPressed: {
-      opacity: 0.85,
-      transform: [{ scale: 0.99 }],
+      opacity: 0.92,
     },
     iconWrap: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor:
-        theme.name === 'dark'
-          ? 'rgba(255,255,255,0.06)'
-          : 'rgba(0,0,0,0.04)',
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: SHADCN.iconBg,
       alignItems: 'center',
       justifyContent: 'center',
+      marginBottom: 8,
     },
     iconText: {
-      fontSize: 26,
+      fontSize: 28,
     },
     title: {
-      color: theme.colors.textPrimary,
-      fontSize: 16,
-      fontWeight: '700',
-      letterSpacing: -0.2,
-      marginBottom: 4,
+      color: SHADCN.textPrimary,
+      fontSize: 18,
+      fontWeight: '600',
+      letterSpacing: -0.3,
+      marginBottom: 8,
       textAlign: 'center',
     },
     description: {
-      color: theme.colors.textSecondary,
-      fontSize: 13,
-      lineHeight: 19,
+      color: SHADCN.textMuted,
+      fontSize: 14,
+      lineHeight: 22,
       textAlign: 'center',
     },
     trailing: {
