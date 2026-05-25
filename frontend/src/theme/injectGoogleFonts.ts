@@ -22,8 +22,9 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLESHEET_ID)) 
   preconnect2.crossOrigin = '';
   document.head.appendChild(preconnect2);
 
-  // Playfair Display (variabel, 0-italic + 1-italic, gewichten 400-900) +
-  // Inter (gewichten 400, 500, 600, 700).
+  // Light/Dark (Warm Minimal): Playfair Display + Inter
+  // Modern (Claude Design): Bricolage Grotesque + Plus Jakarta Sans + JetBrains Mono
+  // Eén stylesheet laadt allebei zodat theme-toggle direct werkt zonder herlaad.
   const stylesheet = document.createElement('link');
   stylesheet.id = STYLESHEET_ID;
   stylesheet.rel = 'stylesheet';
@@ -31,6 +32,9 @@ if (typeof document !== 'undefined' && !document.getElementById(STYLESHEET_ID)) 
     'https://fonts.googleapis.com/css2' +
     '?family=Playfair+Display:ital,wght@0,400..900;1,400..900' +
     '&family=Inter:wght@400;500;600;700' +
+    '&family=Bricolage+Grotesque:opsz,wght@12..96,400..800' +
+    '&family=Plus+Jakarta+Sans:wght@400;500;600;700;800' +
+    '&family=JetBrains+Mono:wght@400;500' +
     '&display=swap';
   document.head.appendChild(stylesheet);
 }

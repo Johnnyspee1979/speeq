@@ -14,26 +14,28 @@ import { Platform } from 'react-native';
 import { designTokens, type DesignTokens, type ColorTokens } from './designTokens';
 
 /**
- * Modern theme variant (Johnny 25 mei: "ik wil van die oude look af").
- * Slate-50 / wit / violet-600 — losgekoppeld van Warm Minimal beige.
+ * Modern theme variant — Claude Design tokens v2 (Johnny 25 mei).
+ * "Raven Health-aesthetic" met SpeeQ-merkkleuren: navy #1B3A5C + green #5BAA3A.
+ * Bron: .claude/claude-design-import/colors_and_type.css (Claude Design output).
  * Toggle in de header cyclet door: warm → modern → dark.
  */
 const MODERN_LIGHT_OVERRIDES: Partial<ColorTokens> = {
-  background:    '#F8FAFC',  // slate-50
-  backgroundAlt: '#F1F5F9',  // slate-100
+  background:    '#FFFFFF',
+  backgroundAlt: '#FAFAFA',
   surface:       '#FFFFFF',
-  surfaceAlt:    '#F8FAFC',
-  textPrimary:   '#0F172A',  // slate-900
-  textSecondary: '#334155',  // slate-700
-  textMuted:     '#64748B',  // slate-500
-  statusSuccess: '#059669',  // emerald-600 (moderner dan bos-groen)
-  statusWarning: '#DC2626',  // red-600 (moderner dan terracotta)
-  borderWarm:    '#E2E8F0',  // slate-200
-  borderWarmAlt: '#CBD5E1',  // slate-300
+  surfaceAlt:    '#F4F4F5',  // zinc-100
+  textPrimary:   '#18181B',  // zinc-900
+  textSecondary: '#52525B',  // zinc-600
+  textMuted:     '#71717A',  // zinc-500
+  statusSuccess: '#16A34A',  // green-600 (matches brand-green)
+  statusWarning: '#DC2626',  // red-600
+  borderWarm:    '#E4E4E7',  // zinc-200
+  borderWarmAlt: '#D4D4D8',  // zinc-300
 };
 
-const MODERN_ACCENT      = '#7C3AED'; // violet-600
-const MODERN_ACCENT_MUTED = 'rgba(124,58,237,0.12)';
+// Primary action = navy uit SpeeQ logo (Q-mark + wordmark).
+const MODERN_ACCENT       = '#1B3A5C';
+const MODERN_ACCENT_MUTED = 'rgba(27,58,92,0.10)';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
