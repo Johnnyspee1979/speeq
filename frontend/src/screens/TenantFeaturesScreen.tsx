@@ -35,6 +35,7 @@ import { refreshTenantFeatures } from '../hooks/useTenantFeature';
 import { getActiveTenantId } from '../config/tenant';
 import { OfflineModeWizard } from '../components/ui/OfflineModeWizard';
 import { OfflineStorageMeter } from '../components/ui/OfflineStorageMeter';
+import FeatureCard from '../components/ui/FeatureCard';
 
 interface Props {
   onBack?: () => void;
@@ -144,33 +145,33 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
   const styles = createStyles(theme);
 
   /** Render één feature-rij — gebruikt door beide buckets. */
+  /**
+   * Render één feature als FeatureCard (Warm Minimal stijl per Johnny 25 mei).
+   * Horizontale layout: ronde icoon-bg links + label/beschrijving + Switch rechts.
+   */
   const renderFeatureRow = (key: FeatureKey) => {
     const meta = FEATURE_META[key];
     const enabled = !!features[key];
     const busy = busyKey === key;
     return (
-      <View key={key} style={styles.row}>
-        <View style={styles.rowLeft}>
-          <Text style={styles.icon}>{meta.icon}</Text>
-          <View style={styles.rowText}>
-            <Text style={styles.rowTitle}>{meta.label}</Text>
-            <Text style={styles.rowDesc}>{meta.description}</Text>
-          </View>
-        </View>
-        <View style={styles.rowRight}>
-          {busy ? (
-            <ActivityIndicator color={theme.colors.accent} />
-          ) : (
-            <Switch
-              value={enabled}
-              onValueChange={(v) => handleToggle(key, v)}
-              disabled={!canWrite}
-              trackColor={{ false: '#cbd5e1', true: theme.colors.accent }}
-              thumbColor="#ffffff"
-            />
-          )}
-        </View>
-      </View>
+      <FeatureCard
+        key={key}
+        icon={meta.icon}
+        title={meta.label}
+        description={meta.description}
+        trailing={busy ? (
+          <ActivityIndicator color={theme.colors.accent} />
+        ) : (
+          <Switch
+            value={enabled}
+            onValueChange={(v) => handleToggle(key, v)}
+            disabled={!canWrite}
+            trackColor={{ false: '#cbd5e1', true: theme.colors.accent }}
+            thumbColor="#ffffff"
+          />
+        )}
+        style={{ marginBottom: 10 }}
+      />
     );
   };
 
@@ -234,7 +235,7 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
               <Text style={styles.bucketTitle}>
                 ✓ Aan ({enabledKeys.length})
               </Text>
-              <View style={styles.list}>
+              <View>
                 {enabledKeys.map((key) => renderFeatureRow(key))}
               </View>
             </View>
@@ -246,7 +247,7 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
               <Text style={styles.bucketTitle}>
                 ○ Beschikbaar ({disabledKeys.length})
               </Text>
-              <View style={styles.list}>
+              <View>
                 {disabledKeys.map((key) => renderFeatureRow(key))}
               </View>
             </View>
