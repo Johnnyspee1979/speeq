@@ -526,25 +526,24 @@ function ProjectListItem({ project, stats, isActive, onPress, theme, compact }: 
           </View>
         )}
       </View>
-      <View style={[cardSt.statsRow, { borderTopColor: theme.colors.border }]}>
-        {[
-          { label: "foto's", value: stats.total,       color: theme.colors.textPrimary },
-          { label: 'akkoord', value: stats.goedgekeurd, color: '#059669' },
-          { label: 'review',  value: stats.review,      color: stats.review > 0 ? '#d97706' : theme.colors.textSecondary },
-          { label: 'vandaag', value: stats.vandaag,     color: theme.colors.accent },
-        ].map(s => (
-          <View key={s.label} style={cardSt.stat}>
-            <Text style={[cardSt.statNum, { color: s.color }]}>{s.value}</Text>
-            <Text style={[cardSt.statLabel, { color: theme.colors.textSecondary }]}>{s.label}</Text>
-          </View>
-        ))}
-      </View>
-      {stats.total > 0 && (
-        <View style={cardSt.progressWrap}>
+      {/* ── Eén-regel status — was 4-stats grid + progress bar.
+          Per Johnny ultraplan 25 mei: "naam + stoplicht + 1 knop".
+          Detail-paneel toont nog steeds alle stats — hier alleen kern. */}
+      {stats.total > 0 ? (
+        <View style={[cardSt.progressWrap, { borderTopColor: theme.colors.border, borderTopWidth: 1, paddingTop: 10 }]}>
           <View style={[cardSt.progressBg, { backgroundColor: theme.colors.border }]}>
             <View style={[cardSt.progressFill, { width: `${pct}%` as `${number}%` }]} />
           </View>
-          <Text style={[cardSt.progressLabel, { color: theme.colors.textSecondary }]}>{pct}% goedgekeurd</Text>
+          <Text style={[cardSt.progressLabel, { color: theme.colors.textSecondary }]}>
+            {stats.goedgekeurd} van {stats.total} goedgekeurd
+            {stats.review > 0 ? ` · ${stats.review} wachten op review` : ''}
+          </Text>
+        </View>
+      ) : (
+        <View style={[{ borderTopColor: theme.colors.border, borderTopWidth: 1, paddingTop: 10 }]}>
+          <Text style={[cardSt.progressLabel, { color: theme.colors.textSecondary }]}>
+            Nog geen foto's
+          </Text>
         </View>
       )}
       <Text style={[cardSt.arrow, { color: theme.colors.textSecondary }]}>Open project →</Text>
