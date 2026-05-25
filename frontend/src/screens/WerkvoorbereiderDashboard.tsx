@@ -218,6 +218,12 @@ export default function WerkvoorbereiderDashboard({
    * Geen feature verwijderd, alleen verborgen tot nodig.
    */
   const [showMoreTabs, setShowMoreTabs] = useState(false);
+  /**
+   * Action-bar header strip per Johnny 25 mei (screenshot review).
+   * Was: 10 knoppen naast elkaar (Sign / Lock / Rapport / ZIP / PC-map /
+   * OneDrive / Mail / NL / etc.). Nu: 3 zichtbaar + ⋯ Acties voor rest.
+   */
+  const [showHeaderActions, setShowHeaderActions] = useState(false);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
 
@@ -253,6 +259,16 @@ export default function WerkvoorbereiderDashboard({
 
   // ── ZIP export state ─────────────────────────────────────────────────────────
   const [zipProgress, setZipProgress] = useState<ZipExportProgress | null>(null);
+  /**
+   * Auto-dismiss van error/success ZIP-banner na 5 seconden — Johnny 25 mei:
+   * "Download mislukt" bleef permanent staan na fout. Vervelend in demo.
+   */
+  useEffect(() => {
+    if (zipProgress?.phase === 'fout' || zipProgress?.phase === 'klaar') {
+      const t = setTimeout(() => setZipProgress(null), 5000);
+      return () => clearTimeout(t);
+    }
+  }, [zipProgress?.phase]);
 
   // ── Email dossier modal ───────────────────────────────────────────────────────
   const [emailModal, setEmailModal]         = useState(false);
@@ -812,7 +828,8 @@ export default function WerkvoorbereiderDashboard({
                     letterSpacing: -0.5,
                   },
                 ]}
-                numberOfLines={1}
+                numberOfLines={2}
+                ellipsizeMode="tail"
               >
                 {projectName}
               </Text>
@@ -831,10 +848,7 @@ export default function WerkvoorbereiderDashboard({
               </Text>
             </View>
 
-            {/* Taalwisselaar */}
-            <LanguageSwitcher theme={theme} />
-
-            {/* 📧 Mail dossier knop */}
+            {/* 📧 Mail dossier knop — kerntaak: foto's delen → altijd zichtbaar */}
             <TouchableOpacity
               onPress={() => { setEmailModal(true); setEmailMsg(null); }}
               style={[st.zipBtn, { backgroundColor: 'rgba(37,99,235,0.1)', borderColor: 'rgba(37,99,235,0.35)' }]}
@@ -843,6 +857,25 @@ export default function WerkvoorbereiderDashboard({
               <Text style={[st.zipBtnText, { color: theme.colors.textPrimary }]}>{t('header.mail')}</Text>
             </TouchableOpacity>
 
+            {/* ⋯ Acties toggle — Sign / Lock / Rapport / ZIP / PC-map / OneDrive / Taal */}
+            <TouchableOpacity
+              onPress={() => setShowHeaderActions((v) => !v)}
+              style={[st.zipBtn, {
+                backgroundColor: showHeaderActions ? theme.colors.accent + '18' : theme.colors.surface,
+                borderColor: showHeaderActions ? theme.colors.accent + '40' : theme.colors.borderWarm,
+              }]}
+              activeOpacity={0.7}
+              accessibilityLabel={showHeaderActions ? 'Acties verbergen' : 'Meer acties tonen'}
+            >
+              <Text style={[st.zipBtnText, { color: showHeaderActions ? theme.colors.accent : theme.colors.textSecondary }]}>
+                {showHeaderActions ? '⋯ Minder' : '⋯ Acties'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* ─── Alle secundaire acties — fragment, toggled door showHeaderActions ─── */}
+            {showHeaderActions ? (
+            <>
+            <LanguageSwitcher theme={theme} />
             {/* ✍️ Ondertekenen knop */}
             <TouchableOpacity
               onPress={() => { setEmailModal(true); setEmailMsg(null); }}
@@ -1011,22 +1044,38 @@ export default function WerkvoorbereiderDashboard({
                 <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>✕</Text>
               </TouchableOpacity>
             )}
+            </>
+            ) : null}
           </View>
 
-          {/* Stats strip */}
+          {/* Stats strip — per Johnny ultraplan 25 mei.
+              Compact (5 cijfers → 1 regel) tenzij showHeaderActions aan.
+              Volle grid blijft beschikbaar voor wie 't echt wil zien. */}
           <View style={[st.statsStrip, { borderTopColor: theme.colors.borderWarm }]}>
-            {[
-              { label: t('dash.total'),    value: metrics.total,    color: theme.colors.textPrimary },
-              { label: t('dash.today'),    value: metrics.vandaag,  color: theme.colors.accent },
-              { label: t('dash.approved'), value: metrics.akkoord,  color: theme.colors.statusSuccess },
-              { label: t('dash.review'),   value: metrics.review,   color: metrics.review > 0 ? '#d97706' : theme.colors.textSecondary },
-              { label: t('dash.rejected'), value: metrics.afgekeurd,color: metrics.afgekeurd > 0 ? theme.colors.statusWarning : theme.colors.textSecondary },
-            ].map(s => (
-              <View key={s.label} style={st.statItem}>
-                <Text style={[st.statNum, { color: s.color }]}>{s.value}</Text>
-                <Text style={[st.statLabel, { color: theme.colors.textSecondary }]}>{s.label}</Text>
-              </View>
-            ))}
+            {showHeaderActions ? (
+              [
+                { label: t('dash.total'),    value: metrics.total,    color: theme.colors.textPrimary },
+                { label: t('dash.today'),    value: metrics.vandaag,  color: theme.colors.accent },
+                { label: t('dash.approved'), value: metrics.akkoord,  color: theme.colors.statusSuccess },
+                { label: t('dash.review'),   value: metrics.review,   color: metrics.review > 0 ? '#d97706' : theme.colors.textSecondary },
+                { label: t('dash.rejected'), value: metrics.afgekeurd,color: metrics.afgekeurd > 0 ? theme.colors.statusWarning : theme.colors.textSecondary },
+              ].map(s => (
+                <View key={s.label} style={st.statItem}>
+                  <Text style={[st.statNum, { color: s.color }]}>{s.value}</Text>
+                  <Text style={[st.statLabel, { color: theme.colors.textSecondary }]}>{s.label}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={{ color: theme.colors.textSecondary, fontSize: 13, paddingVertical: 8 }}>
+                <Text style={{ color: theme.colors.textPrimary, fontWeight: '700' }}>{metrics.total}</Text> foto's
+                {metrics.review > 0 ? (
+                  <> · <Text style={{ color: '#d97706', fontWeight: '700' }}>{metrics.review}</Text> wachten op review</>
+                ) : null}
+                {metrics.afgekeurd > 0 ? (
+                  <> · <Text style={{ color: theme.colors.statusWarning, fontWeight: '700' }}>{metrics.afgekeurd}</Text> afgekeurd</>
+                ) : null}
+              </Text>
+            )}
           </View>
         </View>
 

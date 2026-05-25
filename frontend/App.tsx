@@ -574,12 +574,18 @@ function AppShell() {
       );
     }
     if (activeTab === 'review') {
-      // Simple-modus: forceer Werkvoorbereider-view, verberg switch-knoppen
-      const effectiveReviewView = simpleMode ? 'werkvoorbereider' : reviewView;
+      // Simple-modus: forceer Werkvoorbereider-view, verberg switch-knoppen.
+      // Per Johnny 25 mei: review-switch (WV/KB/AI Model) is een maker-tool —
+      // gewone gebruikers zien altijd hun eigen rol-view. Verberg voor
+      // iedereen behalve ADMIN of maker-email.
+      const isMaker = user?.email === 'johnny@speesolutions.com'
+        || user?.email === 'johnny@speesolutions.nl';
+      const canSwitchReviewView = !simpleMode && (user?.role === 'ADMIN' || isMaker);
+      const effectiveReviewView = canSwitchReviewView ? reviewView : 'werkvoorbereider';
       return (
         <View style={opleveringStyles.container}>
           <ProjectPicker />
-          {!simpleMode && (
+          {canSwitchReviewView && (
             <View style={opleveringStyles.switchRow}>
               <TouchableOpacity
                 style={[
