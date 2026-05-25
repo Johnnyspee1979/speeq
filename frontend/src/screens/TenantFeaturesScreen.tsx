@@ -11,13 +11,14 @@
  * RLS in `tenant_features` regelt de toegang op DB-niveau.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -50,6 +51,8 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
   const [busyKey, setBusyKey] = useState<FeatureKey | null>(null);
   const [message, setMessage] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null);
   const [wizardVisible, setWizardVisible] = useState(false);
+  /** Zoek-filter — handig wanneer feature-lijst groeit. */
+  const [searchQuery, setSearchQuery] = useState('');
 
   const tenantId = getActiveTenantId();
   const role = user?.role ?? null;
@@ -73,6 +76,27 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  /**
+   * Splits features in 2 buckets: aan / beschikbaar. Per Johnny ultraplan
+   * 25 mei: één lange lijst is overweldigend. Buckets geven instant overzicht.
+   * Zoekveld filtert label + description.
+   */
+  const { enabledKeys, disabledKeys } = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchFilter = (key: FeatureKey) => {
+      if (!q) return true;
+      const m = FEATURE_META[key];
+      return m.label.toLowerCase().includes(q) || m.description.toLowerCase().includes(q);
+    };
+    const enabled: FeatureKey[] = [];
+    const disabled: FeatureKey[] = [];
+    for (const key of FEATURE_KEYS) {
+      if (!matchFilter(key)) continue;
+      (features[key] ? enabled : disabled).push(key);
+    }
+    return { enabledKeys: enabled, disabledKeys: disabled };
+  }, [features, searchQuery]);
 
   const persistToggle = useCallback(async (key: FeatureKey, next: boolean) => {
     setBusyKey(key);
@@ -119,6 +143,37 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
 
   const styles = createStyles(theme);
 
+  /** Render één feature-rij — gebruikt door beide buckets. */
+  const renderFeatureRow = (key: FeatureKey) => {
+    const meta = FEATURE_META[key];
+    const enabled = !!features[key];
+    const busy = busyKey === key;
+    return (
+      <View key={key} style={styles.row}>
+        <View style={styles.rowLeft}>
+          <Text style={styles.icon}>{meta.icon}</Text>
+          <View style={styles.rowText}>
+            <Text style={styles.rowTitle}>{meta.label}</Text>
+            <Text style={styles.rowDesc}>{meta.description}</Text>
+          </View>
+        </View>
+        <View style={styles.rowRight}>
+          {busy ? (
+            <ActivityIndicator color={theme.colors.accent} />
+          ) : (
+            <Switch
+              value={enabled}
+              onValueChange={(v) => handleToggle(key, v)}
+              disabled={!canWrite}
+              trackColor={{ false: '#cbd5e1', true: theme.colors.accent }}
+              thumbColor="#ffffff"
+            />
+          )}
+        </View>
+      </View>
+    );
+  };
+
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <View style={styles.header}>
@@ -161,37 +216,52 @@ export default function TenantFeaturesScreen({ onBack }: Props) {
           <Text style={styles.loadingText}>Modules laden...</Text>
         </View>
       ) : (
-        <View style={styles.list}>
-          {FEATURE_KEYS.map(key => {
-            const meta = FEATURE_META[key];
-            const enabled = !!features[key];
-            const busy = busyKey === key;
-            return (
-              <View key={key} style={styles.row}>
-                <View style={styles.rowLeft}>
-                  <Text style={styles.icon}>{meta.icon}</Text>
-                  <View style={styles.rowText}>
-                    <Text style={styles.rowTitle}>{meta.label}</Text>
-                    <Text style={styles.rowDesc}>{meta.description}</Text>
-                  </View>
-                </View>
-                <View style={styles.rowRight}>
-                  {busy ? (
-                    <ActivityIndicator color={theme.colors.accent} />
-                  ) : (
-                    <Switch
-                      value={enabled}
-                      onValueChange={v => handleToggle(key, v)}
-                      disabled={!canWrite}
-                      trackColor={{ false: '#cbd5e1', true: theme.colors.accent }}
-                      thumbColor="#ffffff"
-                    />
-                  )}
-                </View>
+        <>
+          {/* Zoek-filter — verschijnt zodra er meer dan 5 modules zijn */}
+          {FEATURE_KEYS.length > 5 ? (
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="🔍 Zoek module…"
+              placeholderTextColor={theme.colors.textSecondary}
+              style={styles.searchInput}
+            />
+          ) : null}
+
+          {/* ── Bucket 1: AAN ─────────────────────────────────────────── */}
+          {enabledKeys.length > 0 ? (
+            <View style={styles.bucket}>
+              <Text style={styles.bucketTitle}>
+                ✓ Aan ({enabledKeys.length})
+              </Text>
+              <View style={styles.list}>
+                {enabledKeys.map((key) => renderFeatureRow(key))}
               </View>
-            );
-          })}
-        </View>
+            </View>
+          ) : null}
+
+          {/* ── Bucket 2: BESCHIKBAAR ────────────────────────────────── */}
+          {disabledKeys.length > 0 ? (
+            <View style={styles.bucket}>
+              <Text style={styles.bucketTitle}>
+                ○ Beschikbaar ({disabledKeys.length})
+              </Text>
+              <View style={styles.list}>
+                {disabledKeys.map((key) => renderFeatureRow(key))}
+              </View>
+            </View>
+          ) : null}
+
+          {enabledKeys.length === 0 && disabledKeys.length === 0 ? (
+            <View style={styles.loadingBox}>
+              <Text style={styles.loadingText}>
+                {searchQuery
+                  ? `Geen module gevonden voor "${searchQuery}"`
+                  : 'Geen modules beschikbaar.'}
+              </Text>
+            </View>
+          ) : null}
+        </>
       )}
 
       {/* Storage-meter: hide-self wanneer offline_mode = false */}
@@ -280,6 +350,28 @@ function createStyles(theme: any) {
       borderWidth: 1,
       borderColor: theme.colors.border,
       overflow: 'hidden',
+    },
+    searchInput: {
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 14,
+      color: theme.colors.text,
+      backgroundColor: theme.colors.surface,
+      marginBottom: 18,
+    },
+    bucket: {
+      marginBottom: 20,
+    },
+    bucketTitle: {
+      fontSize: 12,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+      color: theme.colors.textSecondary,
+      marginBottom: 8,
     },
     row: {
       flexDirection: 'row',
