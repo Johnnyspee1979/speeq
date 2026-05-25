@@ -1,18 +1,14 @@
 /**
- * LoginScreen — Animated sign-in stijl per Johnny 25 mei.
+ * LoginScreen — Claude Design v2 (Raven Health-aesthetic).
  *
- * Geïnspireerd op 21st.dev animated-sign-in component (Johnny vindt die
- * mooier dan eerdere versies). Stack-vertaling naar React Native:
- *  • Floating labels via Animated.Value (label slidet omhoog bij focus)
- *  • Show/hide password met Eye/EyeOff uit lucide-react-native
- *  • Donker gradient-achtergrond (particle canvas overgeslagen — RN heeft
- *    geen <canvas>; statische gradient + dots heeft 90% van het effect)
- *  • Dark/light theme-toggle via Sun/Moon
- *  • Welcome / Please sign in header
- *  • "or continue with" separator (vervangen door "of demo" + quick-login knoppen)
+ * Bron mock: .claude/claude-design-import/ui_kits/desktop/LoginScreen.jsx
  *
- * Demo-quick-login knoppen behouden — Johnny gebruikt die in elke demo.
- * Echte Supabase signInWithPassword onveranderd.
+ * Layout:
+ *  • Desktop (>=900px): 2-koloms — soft-gradient hero links, wit login-card rechts
+ *  • Mobile (<900px):  alleen card (geen hero — vakman wil snel inloggen)
+ *
+ * Palette: hardcoded navy + green + zinc (Claude Design tokens v2).
+ * Bewust losgekoppeld van theme-toggle zodat eerste indruk altijd modern is.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -31,12 +27,12 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
-import { Eye, EyeOff, Sun, Moon } from 'lucide-react-native';
+import { Eye, EyeOff, ShieldCheck, Lock, CloudUpload } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
-import { useTheme } from '../theme/ThemeProvider';
 
-const speeqLogoFull = require('../assets/speeq-logo-full.png');
+const speeqQLogo = require('../assets/speeq-q-logo.png');
 
 interface LoginScreenProps {
   onDevBypass?: () => void;
@@ -49,10 +45,27 @@ const DEMO_ACCOUNTS: ReadonlyArray<{ role: string; emoji: string; email: string;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+// Claude Design tokens (hardcoded — Raven-aligned navy + green).
+const C = {
+  bg:            '#FFFFFF',
+  heroGradient:  'linear-gradient(120deg, #EEF2F7 0%, #F6F4EF 50%, #ECF6E5 100%)',
+  navy:          '#1B3A5C',
+  navyHover:     '#15304B',
+  green:         '#5BAA3A',
+  textStrong:    '#09090B',
+  text:          '#18181B',
+  textMuted:     '#52525B',
+  textSubtle:    '#71717A',
+  border:        '#E4E4E7',
+  borderStrong:  '#D4D4D8',
+  cardShadow:    '0 24px 48px -12px rgba(15,36,54,0.12), 0 4px 16px -4px rgba(9,9,11,0.04)',
+  fontDisplay:   '"Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif',
+  fontSans:      '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+};
+
 export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
-  const { theme, toggleTheme } = useTheme();
-  const isDark = theme.name === 'dark';
-  const styles = createStyles(isDark);
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 900;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -64,7 +77,6 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
   const [emailValid, setEmailValid] = useState(true);
   const [submitted, setSubmitted] = useState(false);
 
-  // ─── Floating-label animaties ─────────────────────────────────────────
   const emailLabelAnim = useRef(new Animated.Value(0)).current;
   const pwLabelAnim = useRef(new Animated.Value(0)).current;
 
@@ -127,436 +139,448 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
   const labelStyle = (anim: Animated.Value, hasError: boolean) => ({
     position: 'absolute' as const,
     left: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 12] }),
-    top: anim.interpolate({ inputRange: [0, 1], outputRange: [16, -8] }),
-    fontSize: anim.interpolate({ inputRange: [0, 1], outputRange: [15, 11] }),
+    top: anim.interpolate({ inputRange: [0, 1], outputRange: [14, -8] }),
+    fontSize: anim.interpolate({ inputRange: [0, 1], outputRange: [14, 11] }),
     color: hasError
-      ? '#ef4444'
-      : isDark
-        ? anim.interpolate({ inputRange: [0, 1], outputRange: ['#94a3b8', '#a78bfa'] })
-        : anim.interpolate({ inputRange: [0, 1], outputRange: ['#64748b', '#7c3aed'] }),
-    backgroundColor: isDark ? '#0f172a' : '#ffffff',
+      ? '#DC2626'
+      : anim.interpolate({ inputRange: [0, 1], outputRange: [C.textSubtle, C.navy] }),
+    backgroundColor: C.bg,
     paddingHorizontal: 4,
+    fontFamily: C.fontSans,
+    fontWeight: '600' as const,
     zIndex: 1,
   });
+
+  const Hero = (
+    <View style={[styles.hero, !isDesktop && styles.hidden]}>
+      <Text style={styles.heroEyebrow}>WKB · GEVOLGKLASSE 1</Text>
+      <Text style={styles.heroHeadline}>
+        Borging zonder{'\n'}
+        Excel-soep.{'\n'}
+        <Text style={{ color: C.green }}>Eén foto, klaar.</Text>
+      </Text>
+      <Text style={styles.heroBody}>
+        De vakman maakt een foto, SpeeQ doet de rest — AI-validatie,
+        GPS, dossier-opbouw, push naar KiK. Honderden bouwbedrijven
+        werken al met SpeeQ.
+      </Text>
+      <View style={styles.heroTrust}>
+        <View style={styles.trustItem}>
+          <ShieldCheck size={16} color={C.green} />
+          <Text style={styles.trustText}>Offline-first</Text>
+        </View>
+        <View style={styles.trustItem}>
+          <Lock size={16} color={C.green} />
+          <Text style={styles.trustText}>Supabase auth</Text>
+        </View>
+        <View style={styles.trustItem}>
+          <CloudUpload size={16} color={C.green} />
+          <Text style={styles.trustText}>Auto-sync</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const LoginCard = (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Welkom terug</Text>
+      <Text style={styles.cardSub}>Log in om verder te gaan.</Text>
+
+      <View style={[styles.field, { marginTop: 22 }]}>
+        <Animated.Text style={labelStyle(emailLabelAnim, !emailValid && !!email)}>
+          E-mailadres
+        </Animated.Text>
+        <TextInput
+          style={[styles.input, !emailValid && email ? styles.inputError : null]}
+          value={email}
+          onChangeText={handleEmailChange}
+          onFocus={() => setEmailFocused(true)}
+          onBlur={() => setEmailFocused(false)}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
+          editable={!loading}
+        />
+        {!emailValid && email ? (
+          <Text style={styles.errorText}>Vul een geldig e-mailadres in</Text>
+        ) : null}
+      </View>
+
+      <View style={styles.field}>
+        <Animated.Text style={labelStyle(pwLabelAnim, false)}>
+          Wachtwoord
+        </Animated.Text>
+        <TextInput
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
+          onFocus={() => setPwFocused(true)}
+          onBlur={() => setPwFocused(false)}
+          secureTextEntry={!showPassword}
+          editable={!loading}
+        />
+        <TouchableOpacity
+          style={styles.eyeBtn}
+          onPress={() => setShowPassword((v) => !v)}
+        >
+          {showPassword ? <EyeOff size={18} color={C.textSubtle} /> : <Eye size={18} color={C.textSubtle} />}
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.optionsRow}>
+        <Pressable onPress={() => setRememberMe(!rememberMe)} style={styles.remember}>
+          <View style={[styles.checkbox, rememberMe && styles.checkboxOn]}>
+            {rememberMe ? <Text style={styles.checkmark}>✓</Text> : null}
+          </View>
+          <Text style={styles.rememberText}>Onthoud mij</Text>
+        </Pressable>
+        <Pressable onPress={() => Alert.alert('Wachtwoord vergeten', 'Neem contact op met Spee Solutions.')}>
+          <Text style={styles.forgot}>Wachtwoord vergeten?</Text>
+        </Pressable>
+      </View>
+
+      <Pressable
+        style={({ pressed }) => [
+          styles.cta,
+          (loading || (submitted && (!email || !password || !emailValid))) && styles.ctaDisabled,
+          pressed && styles.ctaPressed,
+        ]}
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#ffffff" />
+        ) : (
+          <Text style={styles.ctaText}>Inloggen</Text>
+        )}
+      </Pressable>
+
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>of demo</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <View style={styles.demoRow}>
+        {DEMO_ACCOUNTS.map((acc) => (
+          <Pressable
+            key={acc.email}
+            style={({ pressed }) => [styles.demoBtn, pressed && { opacity: 0.7 }]}
+            onPress={() => handleQuickLogin(acc)}
+            disabled={loading}
+          >
+            <Text style={styles.demoEmoji}>{acc.emoji}</Text>
+            <Text style={styles.demoText}>{acc.role}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {onDevBypass ? (
+        <Pressable
+          style={({ pressed }) => [styles.devBtn, pressed && { opacity: 0.6 }]}
+          onPress={onDevBypass}
+          disabled={loading}
+        >
+          <Text style={styles.devBtnText}>
+            🛠 Lokale dev-bypass (localhost only) →
+          </Text>
+        </Pressable>
+      ) : null}
+
+      <Text style={styles.footer}>
+        Veilig via Supabase · Spee Solutions 2026
+      </Text>
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Dotted achtergrond — vervangt particle canvas */}
-      <View style={styles.bgDots} pointerEvents="none" />
-
-      {/* Theme toggle rechtsboven */}
-      <TouchableOpacity
-        style={styles.themeToggle}
-        onPress={toggleTheme}
-        accessibilityLabel="Licht/donker thema wisselen"
-        activeOpacity={0.7}
-      >
-        {isDark ? (
-          <Sun size={20} color="#fde68a" />
-        ) : (
-          <Moon size={20} color="#475569" />
-        )}
-      </TouchableOpacity>
+      <View style={styles.topBar}>
+        <View style={styles.brandRow}>
+          <Image source={speeqQLogo} style={styles.brandLogo} resizeMode="contain" />
+          <Text style={styles.brandText}>
+            Spee<Text style={{ color: C.green }}>Q</Text>
+          </Text>
+          <Text style={styles.brandSub}>WKB Tool</Text>
+        </View>
+      </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.card}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Image source={speeqLogoFull} style={styles.logo} resizeMode="contain" />
-            <Text style={styles.welcome}>Welkom</Text>
-            <Text style={styles.subWelcome}>Log in om verder te gaan</Text>
-          </View>
-
-          {/* Form */}
-          <View style={styles.form}>
-            {/* Email field */}
-            <View style={[styles.field, !emailValid && email ? styles.fieldError : null]}>
-              <Animated.Text style={labelStyle(emailLabelAnim, !emailValid && !!email)}>
-                E-mailadres
-              </Animated.Text>
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={handleEmailChange}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!loading}
-                accessibilityLabel="E-mailadres"
-              />
-              {!emailValid && email ? (
-                <Text style={styles.errorText}>Vul een geldig e-mailadres in</Text>
-              ) : null}
-            </View>
-
-            {/* Password field */}
-            <View style={styles.field}>
-              <Animated.Text style={labelStyle(pwLabelAnim, false)}>
-                Wachtwoord
-              </Animated.Text>
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                onFocus={() => setPwFocused(true)}
-                onBlur={() => setPwFocused(false)}
-                secureTextEntry={!showPassword}
-                editable={!loading}
-                accessibilityLabel="Wachtwoord"
-              />
-              <TouchableOpacity
-                style={styles.eyeBtn}
-                onPress={() => setShowPassword((v) => !v)}
-                accessibilityLabel={showPassword ? 'Wachtwoord verbergen' : 'Wachtwoord tonen'}
-              >
-                {showPassword ? (
-                  <EyeOff size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                ) : (
-                  <Eye size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                )}
-              </TouchableOpacity>
-            </View>
-
-            {/* Options row */}
-            <View style={styles.optionsRow}>
-              <Pressable
-                onPress={() => setRememberMe(!rememberMe)}
-                style={styles.remember}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: rememberMe }}
-              >
-                <View style={[styles.checkbox, rememberMe && styles.checkboxOn]}>
-                  {rememberMe ? <Text style={styles.checkmark}>✓</Text> : null}
-                </View>
-                <Text style={styles.rememberText}>Onthoud mij</Text>
-              </Pressable>
-              <Pressable onPress={() => Alert.alert('Wachtwoord vergeten', 'Neem contact op met Spee Solutions.')}>
-                <Text style={styles.forgot}>Wachtwoord vergeten?</Text>
-              </Pressable>
-            </View>
-
-            {/* Sign in button */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                (loading || (submitted && (!email || !password || !emailValid))) && styles.buttonDisabled,
-                pressed && styles.buttonPressed,
-              ]}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.buttonText}>Inloggen</Text>
-              )}
-            </Pressable>
-          </View>
-
-          {/* Separator */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>of demo</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          {/* Demo quick-login knoppen */}
-          <View style={styles.demoRow}>
-            {DEMO_ACCOUNTS.map((acc) => (
-              <Pressable
-                key={acc.email}
-                style={({ pressed }) => [styles.demoBtn, pressed && { opacity: 0.7 }]}
-                onPress={() => handleQuickLogin(acc)}
-                disabled={loading}
-                accessibilityLabel={`Demo-login als ${acc.role}`}
-              >
-                <Text style={styles.demoEmoji}>{acc.emoji}</Text>
-                <Text style={styles.demoText}>{acc.role}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {onDevBypass ? (
-            <Pressable
-              style={({ pressed }) => [styles.devButton, pressed && { opacity: 0.6 }]}
-              onPress={onDevBypass}
-              disabled={loading}
-            >
-              <Text style={styles.devButtonText}>
-                🛠 Lokale dev-bypass (localhost only) →
-              </Text>
-            </Pressable>
-          ) : null}
-
-          <Text style={styles.footer}>
-            Veilig ingelogd via Supabase · Spee Solutions 2026
-          </Text>
+        <View style={isDesktop ? styles.desktopGrid : styles.mobileStack}>
+          {Hero}
+          {LoginCard}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-function createStyles(isDark: boolean) {
-  // Hardcoded animated-sign-in palette (geen useTheme — bewust losgekoppeld
-  // van Warm Minimal zodat het er exact zo uitziet als het 21st.dev voorbeeld)
-  const C = isDark
-    ? {
-        bg: '#0f172a',         // slate-900
-        bgGradient: '#1e293b', // slate-800
-        cardBg: '#1e293b',
-        cardBorder: '#334155', // slate-700
-        text: '#f1f5f9',       // slate-100
-        textMuted: '#94a3b8',  // slate-400
-        accent: '#a78bfa',     // violet-400
-        accentDark: '#8b5cf6', // violet-500
-        inputBg: '#0f172a',
-        inputBorder: '#334155',
-        dotColor: 'rgba(255,255,255,0.04)',
-      }
-    : {
-        bg: '#f8fafc',         // slate-50
-        bgGradient: '#e2e8f0', // slate-200
-        cardBg: '#ffffff',
-        cardBorder: '#e2e8f0',
-        text: '#0f172a',
-        textMuted: '#64748b',
-        accent: '#7c3aed',     // violet-600
-        accentDark: '#6d28d9', // violet-700
-        inputBg: '#ffffff',
-        inputBorder: '#e2e8f0',
-        dotColor: 'rgba(0,0,0,0.04)',
-      };
-
-  return StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: C.bg,
-    },
-    bgDots: {
-      ...StyleSheet.absoluteFillObject,
-      // Web-only radial-gradient dotted pattern (RN negeert onbekende keys)
-      ...(Platform.OS === 'web'
-        ? ({
-            backgroundImage: `radial-gradient(${C.dotColor} 1px, transparent 1px)`,
-            backgroundSize: '24px 24px',
-          } as object)
-        : {}),
-    },
-    themeToggle: {
-      position: 'absolute',
-      top: 24,
-      right: 24,
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: C.cardBg,
-      borderWidth: 1,
-      borderColor: C.cardBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10,
-    },
-    scrollContent: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-      paddingTop: 80,
-    },
-    card: {
-      width: '100%',
-      maxWidth: 420,
-      backgroundColor: C.cardBg,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: C.cardBorder,
-      padding: 32,
-      ...(Platform.OS === 'web'
-        ? ({ boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' } as object)
-        : {}),
-    },
-    header: {
-      alignItems: 'center',
-      marginBottom: 28,
-    },
-    logo: {
-      width: 96,
-      height: 48,
-      marginBottom: 12,
-    },
-    welcome: {
-      fontSize: 28,
-      fontWeight: '700',
-      color: C.text,
-      letterSpacing: -0.5,
-    },
-    subWelcome: {
-      fontSize: 14,
-      color: C.textMuted,
-      marginTop: 4,
-    },
-    form: {
-      gap: 22,
-    },
-    field: {
-      position: 'relative',
-    },
-    fieldError: {
-      // visuele aanvulling via input borderColor — niet zelf
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: C.inputBorder,
-      backgroundColor: C.inputBg,
-      borderRadius: 10,
-      paddingHorizontal: 16,
-      paddingVertical: 14,
-      fontSize: 15,
-      color: C.text,
-      ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}),
-    },
-    errorText: {
-      color: '#ef4444',
-      fontSize: 12,
-      marginTop: 4,
-      marginLeft: 4,
-    },
-    eyeBtn: {
-      position: 'absolute',
-      right: 12,
-      top: 14,
-      padding: 4,
-    },
-    optionsRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    remember: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    checkbox: {
-      width: 18,
-      height: 18,
-      borderRadius: 4,
-      borderWidth: 1.5,
-      borderColor: C.inputBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: C.inputBg,
-    },
-    checkboxOn: {
-      backgroundColor: C.accent,
-      borderColor: C.accent,
-    },
-    checkmark: {
-      color: '#fff',
-      fontSize: 12,
-      fontWeight: '900',
-    },
-    rememberText: {
-      color: C.textMuted,
-      fontSize: 13,
-    },
-    forgot: {
-      color: C.accent,
-      fontSize: 13,
-      fontWeight: '600',
-    },
-    button: {
-      backgroundColor: C.accent,
-      borderRadius: 10,
-      paddingVertical: 14,
-      alignItems: 'center',
-      ...(Platform.OS === 'web'
-        ? ({
-            transitionProperty: 'background-color, transform',
-            transitionDuration: '180ms',
-          } as object)
-        : {}),
-    },
-    buttonDisabled: {
-      opacity: 0.55,
-    },
-    buttonPressed: {
-      backgroundColor: C.accentDark,
-      transform: [{ scale: 0.99 }],
-    },
-    buttonText: {
-      color: '#ffffff',
-      fontSize: 15,
-      fontWeight: '700',
-    },
-    divider: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      marginTop: 24,
-      marginBottom: 16,
-    },
-    dividerLine: {
-      flex: 1,
-      height: 1,
-      backgroundColor: C.cardBorder,
-    },
-    dividerText: {
-      color: C.textMuted,
-      fontSize: 11,
-      fontWeight: '700',
-      letterSpacing: 1.2,
-      textTransform: 'uppercase',
-    },
-    demoRow: {
-      flexDirection: 'row',
-      gap: 10,
-    },
-    demoBtn: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      paddingVertical: 12,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: C.cardBorder,
-      backgroundColor: C.inputBg,
-    },
-    demoEmoji: {
-      fontSize: 16,
-    },
-    demoText: {
-      color: C.text,
-      fontSize: 13,
-      fontWeight: '700',
-    },
-    devButton: {
-      paddingVertical: 12,
-      alignItems: 'center',
-      marginTop: 12,
-    },
-    devButtonText: {
-      color: C.textMuted,
-      fontSize: 12,
-      fontWeight: '500',
-    },
-    footer: {
-      marginTop: 20,
-      textAlign: 'center',
-      fontSize: 11,
-      color: C.textMuted,
-    },
-  });
-}
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.bg },
+  hidden: { display: 'none' },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 36,
+    paddingTop: 20,
+    paddingBottom: 12,
+  },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandLogo: { width: 32, height: 32 },
+  brandText: {
+    fontFamily: C.fontDisplay,
+    fontWeight: '800',
+    fontSize: 18,
+    color: '#0F2436',
+    letterSpacing: -0.4,
+  },
+  brandSub: {
+    fontFamily: C.fontSans,
+    fontSize: 11,
+    color: C.textSubtle,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    marginLeft: 4,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 56,
+  },
+  desktopGrid: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: 56,
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 24,
+    maxWidth: 1240,
+    width: '100%',
+    alignSelf: 'center',
+  },
+  mobileStack: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 32,
+  },
+  hero: {
+    flex: 1.05,
+    borderRadius: 32,
+    padding: 52,
+    minHeight: 520,
+    justifyContent: 'center',
+    ...(Platform.OS === 'web'
+      ? ({ backgroundImage: C.heroGradient } as object)
+      : { backgroundColor: '#F0EEE8' }),
+  },
+  heroEyebrow: {
+    fontFamily: C.fontSans,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    color: C.navy,
+    marginBottom: 14,
+  },
+  heroHeadline: {
+    fontFamily: C.fontDisplay,
+    fontSize: 52,
+    fontWeight: '700',
+    color: C.textStrong,
+    letterSpacing: -1.8,
+    lineHeight: 54,
+    maxWidth: 520,
+  },
+  heroBody: {
+    fontFamily: C.fontSans,
+    marginTop: 18,
+    fontSize: 16,
+    color: C.textMuted,
+    maxWidth: 460,
+    lineHeight: 24,
+  },
+  heroTrust: {
+    flexDirection: 'row',
+    gap: 28,
+    marginTop: 24,
+    flexWrap: 'wrap',
+  },
+  trustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  trustText: {
+    fontFamily: C.fontSans,
+    fontSize: 13,
+    color: C.textMuted,
+    fontWeight: '500',
+  },
+  card: {
+    flex: 0.95,
+    maxWidth: 440,
+    width: '100%',
+    backgroundColor: C.bg,
+    borderRadius: 24,
+    padding: 36,
+    borderWidth: 1,
+    borderColor: C.border,
+    ...(Platform.OS === 'web'
+      ? ({ boxShadow: C.cardShadow } as object)
+      : {
+          shadowColor: '#0F2436',
+          shadowOpacity: 0.12,
+          shadowRadius: 48,
+          shadowOffset: { width: 0, height: 24 },
+          elevation: 8,
+        }),
+  },
+  cardTitle: {
+    fontFamily: C.fontDisplay,
+    fontSize: 26,
+    fontWeight: '700',
+    color: C.textStrong,
+    letterSpacing: -0.7,
+  },
+  cardSub: {
+    fontFamily: C.fontSans,
+    fontSize: 14,
+    color: C.textSubtle,
+    marginTop: 6,
+  },
+  field: { position: 'relative', marginTop: 16 },
+  input: {
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.bg,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: C.text,
+    fontFamily: C.fontSans,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}),
+  },
+  inputError: { borderColor: '#DC2626' },
+  errorText: {
+    fontFamily: C.fontSans,
+    color: '#DC2626',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  eyeBtn: { position: 'absolute', right: 12, top: 14, padding: 4 },
+  optionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  remember: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: C.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.bg,
+  },
+  checkboxOn: { backgroundColor: C.navy, borderColor: C.navy },
+  checkmark: { color: '#fff', fontSize: 12, fontWeight: '900' },
+  rememberText: {
+    fontFamily: C.fontSans,
+    color: C.textMuted,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  forgot: {
+    fontFamily: C.fontSans,
+    color: C.navy,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  cta: {
+    backgroundColor: C.navy,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 18,
+    ...(Platform.OS === 'web'
+      ? ({
+          transitionProperty: 'background-color, transform',
+          transitionDuration: '180ms',
+        } as object)
+      : {}),
+  },
+  ctaDisabled: { opacity: 0.55 },
+  ctaPressed: {
+    backgroundColor: C.navyHover,
+    transform: [{ scale: 0.99 }],
+  },
+  ctaText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: C.fontSans,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 24,
+    marginBottom: 14,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: C.border },
+  dividerText: {
+    fontFamily: C.fontSans,
+    color: C.textSubtle,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  demoRow: { flexDirection: 'row', gap: 10 },
+  demoBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.bg,
+  },
+  demoEmoji: { fontSize: 16 },
+  demoText: {
+    fontFamily: C.fontSans,
+    color: C.text,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  devBtn: { paddingVertical: 12, alignItems: 'center', marginTop: 12 },
+  devBtnText: {
+    fontFamily: C.fontSans,
+    color: C.textSubtle,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  footer: {
+    fontFamily: C.fontSans,
+    marginTop: 18,
+    textAlign: 'center',
+    fontSize: 11,
+    color: C.textSubtle,
+  },
+});
