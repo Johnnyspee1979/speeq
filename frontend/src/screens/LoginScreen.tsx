@@ -22,6 +22,17 @@ interface LoginScreenProps {
   onDevBypass?: () => void;
 }
 
+/**
+ * Demo-quick-logins voor live productie-demo's (Johnny 25 mei).
+ * Echte test-accounts in Supabase combivo tenant — geen geheime data,
+ * alleen voor showcase. Knoppen verschijnen onder de inlog-form en
+ * vullen + submitten direct.
+ */
+const DEMO_ACCOUNTS: ReadonlyArray<{ role: string; emoji: string; email: string; password: string }> = [
+  { role: 'Vakman',           emoji: '👷', email: 'vakman@combivo.nl',       password: 'combivo2026' },
+  { role: 'Werkvoorbereider', emoji: '🛠️', email: 'johnny@speesolutions.com', password: 'Val7118!?' },
+];
+
 export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -29,6 +40,22 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
+  /** Quick-login: tap rol-knop en log direct in. Voor demo's. */
+  const handleQuickLogin = async (acc: { email: string; password: string }) => {
+    setEmail(acc.email);
+    setPassword(acc.password);
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: acc.email,
+      password: acc.password,
+    });
+    if (error) {
+      setLoading(false);
+      Alert.alert('Demo-login mislukt', error.message);
+    }
+    // Bij succes: supabase triggert auth-state change → App.tsx rerendert
+  };
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -74,11 +101,7 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
               style={styles.logo}
               resizeMode="contain"
             />
-            <Text style={styles.eyebrow}>WELKOM TERUG</Text>
             <Text style={styles.title}>Inloggen</Text>
-            <Text style={styles.subtitle}>
-              Kwaliteitsborging voor de bouw — gemaakt door Spee Solutions.
-            </Text>
           </View>
 
           <View style={styles.field}>
@@ -124,6 +147,33 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
             )}
           </Pressable>
 
+          {/* Demo-quick-login knoppen — altijd zichtbaar (de accounts
+              zijn echte test-users, geen geheime data). Onder de "of"-lijn
+              voor visuele scheiding van de echte inlog. */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>of demo</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          <View style={styles.quickLoginRow}>
+            {DEMO_ACCOUNTS.map((acc) => (
+              <Pressable
+                key={acc.email}
+                style={({ pressed }) => [
+                  styles.quickLoginBtn,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => handleQuickLogin(acc)}
+                disabled={loading}
+                accessibilityLabel={`Demo-login als ${acc.role}`}
+              >
+                <Text style={styles.quickLoginEmoji}>{acc.emoji}</Text>
+                <Text style={styles.quickLoginText}>{acc.role}</Text>
+              </Pressable>
+            ))}
+          </View>
+
           {onDevBypass ? (
             <Pressable
               style={({ pressed }) => [
@@ -134,7 +184,7 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
               disabled={loading}
             >
               <Text style={styles.devButtonText}>
-                Snel toegang (demo) →
+                🛠 Lokale dev-bypass (localhost only) →
               </Text>
             </Pressable>
           ) : null}
@@ -262,6 +312,49 @@ const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
       fontSize: 15,
       fontWeight: '700',
       letterSpacing: 0.2,
+    },
+    divider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 22,
+      marginBottom: 14,
+      gap: 10,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: theme.colors.border,
+    },
+    dividerText: {
+      color: theme.colors.textSecondary,
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
+    quickLoginRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    quickLoginBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 14,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.surface,
+    },
+    quickLoginEmoji: {
+      fontSize: 18,
+    },
+    quickLoginText: {
+      color: theme.colors.textPrimary,
+      fontSize: 14,
+      fontWeight: '700',
     },
     devButton: {
       paddingVertical: 12,
