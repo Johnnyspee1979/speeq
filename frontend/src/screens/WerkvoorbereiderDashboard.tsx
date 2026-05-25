@@ -76,6 +76,7 @@ import {
 } from '../services/BonScannerService';
 import OfflineSyncBanner from '../components/OfflineSyncBanner';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import DropdownMenu, { type DropdownMenuItem } from '../components/ui/DropdownMenu';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useTranslation } from '../i18n';
 import { EmptyProjectWizard } from '../components/ui/EmptyProjectWizard';
@@ -218,12 +219,8 @@ export default function WerkvoorbereiderDashboard({
    * Geen feature verwijderd, alleen verborgen tot nodig.
    */
   const [showMoreTabs, setShowMoreTabs] = useState(false);
-  /**
-   * Action-bar header strip per Johnny 25 mei (screenshot review).
-   * Was: 10 knoppen naast elkaar (Sign / Lock / Rapport / ZIP / PC-map /
-   * OneDrive / Mail / NL / etc.). Nu: 3 zichtbaar + ⋯ Acties voor rest.
-   */
-  const [showHeaderActions, setShowHeaderActions] = useState(false);
+  // (showHeaderActions toggle vervangen door DropdownMenu's — PR menubar-primitive.
+  // Stats grid is nu permanent compact; geen state nodig.)
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
 
@@ -857,225 +854,161 @@ export default function WerkvoorbereiderDashboard({
               <Text style={[st.zipBtnText, { color: theme.colors.textPrimary }]}>{t('header.mail')}</Text>
             </TouchableOpacity>
 
-            {/* ⋯ Acties toggle — Sign / Lock / Rapport / ZIP / PC-map / OneDrive / Taal */}
-            <TouchableOpacity
-              onPress={() => setShowHeaderActions((v) => !v)}
-              style={[st.zipBtn, {
-                backgroundColor: showHeaderActions ? theme.colors.accent + '18' : theme.colors.surface,
-                borderColor: showHeaderActions ? theme.colors.accent + '40' : theme.colors.borderWarm,
-              }]}
-              activeOpacity={0.7}
-              accessibilityLabel={showHeaderActions ? 'Acties verbergen' : 'Meer acties tonen'}
-            >
-              <Text style={[st.zipBtnText, { color: showHeaderActions ? theme.colors.accent : theme.colors.textSecondary }]}>
-                {showHeaderActions ? '⋯ Minder' : '⋯ Acties'}
-              </Text>
-            </TouchableOpacity>
+            {/* ─── Twee dropdown-menu's ipv 7 losse knoppen ─────────────────
+                Per Johnny 25 mei (shadcn MenuBar voorbeeld): groepeer
+                export-acties onder "📤 Delen" en afronding onder "🔒 Dossier".
+                Rustiger dan een rij van 7 chips. */}
 
-            {/* ─── Alle secundaire acties — fragment, toggled door showHeaderActions ─── */}
-            {showHeaderActions ? (
-            <>
-            <LanguageSwitcher theme={theme} />
-            {/* ✍️ Ondertekenen knop */}
-            <TouchableOpacity
-              onPress={() => { setEmailModal(true); setEmailMsg(null); }}
-              style={[st.zipBtn, { backgroundColor: (sigPL || sigOG) ? 'rgba(5,150,105,0.1)' : theme.colors.surface, borderColor: (sigPL || sigOG) ? 'rgba(5,150,105,0.4)' : theme.colors.borderWarm }]}
-              activeOpacity={0.7}
-            >
-              <Text style={[st.zipBtnText, { color: (sigPL || sigOG) ? theme.colors.statusSuccess : theme.colors.textSecondary }]}>
-                {(sigPL || sigOG) ? t('header.signed') : t('header.sign')}
-              </Text>
-            </TouchableOpacity>
-
-            {/* 🔒 Dossier afsluiten knop (Sprint 3) */}
-            <TouchableOpacity
-              onPress={() => { setLockConfirmModal(true); setLockMsg(null); }}
-              disabled={isDossierLocked || !dossier}
-              style={[st.zipBtn, {
-                backgroundColor: isDossierLocked ? 'rgba(120,120,120,0.15)' : 'rgba(220,38,38,0.1)',
-                borderColor: isDossierLocked ? theme.colors.borderWarm : 'rgba(220,38,38,0.4)',
-                opacity: dossier ? 1 : 0.5,
-              }]}
-              activeOpacity={0.7}
-            >
-              <Text style={[st.zipBtnText, { color: isDossierLocked ? theme.colors.textSecondary : theme.colors.statusWarning }]}>
-                {isDossierLocked ? '🔒 Afgesloten' : '🔒 Afsluiten'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Keuringsrapport knop */}
-            <TouchableOpacity
-              onPress={handleKeuringsrapport}
-              style={[st.zipBtn, { backgroundColor: 'rgba(124,58,237,0.1)', borderColor: 'rgba(124,58,237,0.35)' }]}
-              activeOpacity={0.7}
-            >
-              <Text style={[st.zipBtnText, { color: theme.colors.textPrimary }]}>{t('header.rapport')}</Text>
-            </TouchableOpacity>
-
-            {/* ZIP download knop */}
-            <TouchableOpacity
-              onPress={() => {
-                if (zipProgress && zipProgress.phase !== 'klaar' && zipProgress.phase !== 'fout') return;
-                setZipProgress({ phase: 'ophalen', current: 0, total: 0, message: 'Bezig…' });
-                exportProjectAsZip(projectId, projectName, setZipProgress).catch(() => {
-                  setZipProgress({ phase: 'fout', current: 0, total: 0, message: 'Download mislukt.' });
-                });
-              }}
-              style={[st.zipBtn, { backgroundColor: theme.colors.accent + '18', borderColor: theme.colors.accent + '40' }]}
-              activeOpacity={0.7}
-            >
-              <Text style={[st.zipBtnText, { color: theme.colors.accent }]}>
-                {zipProgress && zipProgress.phase !== 'klaar' && zipProgress.phase !== 'fout'
-                  ? `⏳ ${zipProgress.current}/${zipProgress.total}`
-                  : '📥 ZIP'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* PC-map koppelen knop */}
-            {folderSyncSupported && (
-              <TouchableOpacity
-                onPress={async () => {
-                  if (linkedFolder) {
-                    // Al gekoppeld → handmatige sync starten
-                    setFolderSyncing(true);
-                    setFolderSyncMsg('📂 Synchroniseren…');
-                    await runFolderSync(evidence as SyncEvidenceRow[]);
-                  } else {
-                    // Nog niet gekoppeld → map kiezen
-                    const name = await requestFolderAccess(projectId);
-                    if (name) {
-                      setLinkedFolder(name);
-                      setFolderSyncMsg(`✅ Map "${name}" gekoppeld — synchroniseren…`);
-                      // Direct eerste sync
-                      void syncToLocalFolder(projectId, projectName, evidence as SyncEvidenceRow[]).then(r => {
-                        setFolderSyncMsg(`✅ "${name}" gekoppeld · ${r.synced} bestanden gesynchroniseerd`);
-                        setTimeout(() => setFolderSyncMsg(null), 5000);
-                      });
-                    }
-                  }
-                }}
-                style={[st.zipBtn, {
-                  backgroundColor: linkedFolder ? 'rgba(5,150,105,0.1)' : theme.colors.surface,
-                  borderColor: linkedFolder ? 'rgba(5,150,105,0.4)' : theme.colors.borderWarm,
-                }]}
-                activeOpacity={0.7}
-              >
-                <Text style={[st.zipBtnText, { color: linkedFolder ? theme.colors.statusSuccess : theme.colors.textSecondary }]}>
-                  {folderSyncing ? '⏳' : linkedFolder ? `📁 ${linkedFolder.slice(0, 12)}` : '📁 PC-map'}
+            <DropdownMenu
+              accessibilityLabel="Delen menu"
+              trigger={
+                <Text style={[st.zipBtnText, { color: theme.colors.textPrimary }]}>
+                  📤 Delen ▾
                 </Text>
-              </TouchableOpacity>
-            )}
-            {linkedFolder && (
-              <TouchableOpacity
-                onPress={() => { unlinkFolder(projectId).then(() => { setLinkedFolder(null); setFolderSyncMsg(null); }); }}
-                style={{ padding: 4 }}
-                activeOpacity={0.7}
-              >
-                <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>✕</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* OneDrive knop */}
-            {oneDriveReady ? (
-              <TouchableOpacity
-                onPress={async () => {
-                  if (oneDriveAccount) {
-                    // Al ingelogd → handmatige sync
-                    setOneDriveSyncing(true);
-                    setOneDriveMsg('☁️ Synchroniseren naar OneDrive…');
-                    const result = await syncToOneDrive(
-                      projectName,
-                      evidence as OneDriveEvidenceRow[],
-                      (done, total) => setOneDriveMsg(`☁️ OneDrive ${done}/${total}…`)
-                    );
-                    setOneDriveSyncing(false);
-                    if (result.ok) {
-                      setOneDriveMsg(`✅ ${result.synced} bestanden naar OneDrive`);
-                      setTimeout(() => setOneDriveMsg(null), 5000);
-                    } else if (result.authFailed) {
-                      setOneDriveMsg('⚠️ Sessie verlopen — koppel opnieuw');
-                      setOneDriveAccount(null);
-                    }
-                  } else {
-                    // Nog niet ingelogd → login
-                    setOneDriveMsg('☁️ Microsoft login opent…');
-                    const account = await connectOneDrive();
-                    if (account) {
-                      setOneDriveAccount(account);
-                      setOneDriveMsg(`✅ "${account}" gekoppeld — synchroniseren…`);
+              }
+              items={[
+                {
+                  icon: '📥',
+                  label: 'ZIP downloaden',
+                  onPress: () => {
+                    if (zipProgress && zipProgress.phase !== 'klaar' && zipProgress.phase !== 'fout') return;
+                    setZipProgress({ phase: 'ophalen', current: 0, total: 0, message: 'Bezig…' });
+                    exportProjectAsZip(projectId, projectName, setZipProgress).catch(() => {
+                      setZipProgress({ phase: 'fout', current: 0, total: 0, message: 'Download mislukt.' });
+                    });
+                  },
+                },
+                ...(folderSyncSupported
+                  ? [{
+                      icon: '📁',
+                      label: linkedFolder ? `Sync met "${linkedFolder.slice(0, 20)}"` : 'PC-map koppelen',
+                      onPress: async () => {
+                        if (linkedFolder) {
+                          setFolderSyncing(true);
+                          setFolderSyncMsg('📂 Synchroniseren…');
+                          await runFolderSync(evidence as SyncEvidenceRow[]);
+                        } else {
+                          const name = await requestFolderAccess(projectId);
+                          if (name) {
+                            setLinkedFolder(name);
+                            setFolderSyncMsg(`✅ Map "${name}" gekoppeld — synchroniseren…`);
+                            void syncToLocalFolder(projectId, projectName, evidence as SyncEvidenceRow[]).then(r => {
+                              setFolderSyncMsg(`✅ "${name}" gekoppeld · ${r.synced} bestanden gesynchroniseerd`);
+                              setTimeout(() => setFolderSyncMsg(null), 5000);
+                            });
+                          }
+                        }
+                      },
+                    } as DropdownMenuItem]
+                  : []),
+                ...(linkedFolder
+                  ? [{
+                      icon: '✕',
+                      label: 'PC-map ontkoppelen',
+                      onPress: () => { unlinkFolder(projectId).then(() => { setLinkedFolder(null); setFolderSyncMsg(null); }); },
+                      destructive: true,
+                    } as DropdownMenuItem]
+                  : []),
+                'divider' as const,
+                {
+                  icon: '☁',
+                  label: oneDriveAccount
+                    ? `Sync OneDrive (${oneDriveAccount.slice(0, 18)})`
+                    : (oneDriveReady ? 'OneDrive koppelen' : 'OneDrive instellen'),
+                  onPress: async () => {
+                    if (!oneDriveReady) { setOneDriveMsg('setup'); return; }
+                    if (oneDriveAccount) {
                       setOneDriveSyncing(true);
-                      const result = await syncToOneDrive(projectName, evidence as OneDriveEvidenceRow[]);
+                      setOneDriveMsg('☁️ Synchroniseren naar OneDrive…');
+                      const result = await syncToOneDrive(
+                        projectName,
+                        evidence as OneDriveEvidenceRow[],
+                        (done, total) => setOneDriveMsg(`☁️ OneDrive ${done}/${total}…`),
+                      );
                       setOneDriveSyncing(false);
                       if (result.ok) {
-                        setOneDriveMsg(`✅ OneDrive gekoppeld · ${result.synced} bestanden gesynchroniseerd`);
-                        setTimeout(() => setOneDriveMsg(null), 6000);
+                        setOneDriveMsg(`✅ ${result.synced} bestanden naar OneDrive`);
+                        setTimeout(() => setOneDriveMsg(null), 5000);
+                      } else if (result.authFailed) {
+                        setOneDriveMsg('⚠️ Sessie verlopen — koppel opnieuw');
+                        setOneDriveAccount(null);
                       }
                     } else {
-                      setOneDriveMsg(null);
+                      setOneDriveMsg('☁️ Microsoft login opent…');
+                      const account = await connectOneDrive();
+                      if (account) {
+                        setOneDriveAccount(account);
+                        setOneDriveMsg(`✅ "${account}" gekoppeld — synchroniseren…`);
+                        setOneDriveSyncing(true);
+                        const result = await syncToOneDrive(projectName, evidence as OneDriveEvidenceRow[]);
+                        setOneDriveSyncing(false);
+                        if (result.ok) {
+                          setOneDriveMsg(`✅ OneDrive gekoppeld · ${result.synced} bestanden gesynchroniseerd`);
+                          setTimeout(() => setOneDriveMsg(null), 6000);
+                        }
+                      } else {
+                        setOneDriveMsg(null);
+                      }
                     }
-                  }
-                }}
-                style={[st.zipBtn, {
-                  backgroundColor: oneDriveAccount ? 'rgba(0,120,212,0.1)' : theme.colors.surface,
-                  borderColor:     oneDriveAccount ? 'rgba(0,120,212,0.4)' : theme.colors.borderWarm,
-                }]}
-                activeOpacity={0.7}
-              >
-                <Text style={[st.zipBtnText, { color: oneDriveAccount ? theme.colors.textPrimary : theme.colors.textSecondary }]}>
-                  {oneDriveSyncing ? '⏳' : oneDriveAccount ? `☁️ OneDrive` : '☁️ OneDrive'}
+                  },
+                },
+                ...(oneDriveAccount
+                  ? [{
+                      icon: '✕',
+                      label: 'OneDrive ontkoppelen',
+                      onPress: () => { disconnectOneDrive().then(() => { setOneDriveAccount(null); setOneDriveMsg(null); }); },
+                      destructive: true,
+                    } as DropdownMenuItem]
+                  : []),
+              ]}
+            />
+
+            <DropdownMenu
+              accessibilityLabel="Dossier menu"
+              trigger={
+                <Text style={[st.zipBtnText, { color: theme.colors.textPrimary }]}>
+                  📋 Dossier ▾
                 </Text>
-              </TouchableOpacity>
-            ) : (
-              // Niet geconfigureerd → setup knop
-              <TouchableOpacity
-                onPress={() => setOneDriveMsg('setup')}
-                style={[st.zipBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm, opacity: 0.6 }]}
-                activeOpacity={0.7}
-              >
-                <Text style={[st.zipBtnText, { color: theme.colors.textSecondary }]}>☁️ OneDrive</Text>
-              </TouchableOpacity>
-            )}
-            {oneDriveAccount && (
-              <TouchableOpacity
-                onPress={() => { disconnectOneDrive().then(() => { setOneDriveAccount(null); setOneDriveMsg(null); }); }}
-                style={{ padding: 4 }}
-                activeOpacity={0.7}
-              >
-                <Text style={{ color: theme.colors.textSecondary, fontSize: 12 }}>✕</Text>
-              </TouchableOpacity>
-            )}
-            </>
-            ) : null}
+              }
+              items={[
+                {
+                  icon: '📑',
+                  label: t('header.rapport'),
+                  onPress: handleKeuringsrapport,
+                },
+                {
+                  icon: (sigPL || sigOG) ? '✅' : '✍',
+                  label: (sigPL || sigOG) ? t('header.signed') : t('header.sign'),
+                  onPress: () => { setEmailModal(true); setEmailMsg(null); },
+                },
+                'divider' as const,
+                {
+                  icon: isDossierLocked ? '🔒' : '🔓',
+                  label: isDossierLocked ? 'Dossier afgesloten' : 'Dossier afsluiten',
+                  onPress: () => { setLockConfirmModal(true); setLockMsg(null); },
+                  disabled: isDossierLocked || !dossier,
+                  destructive: !isDossierLocked,
+                },
+              ]}
+            />
+
+            {/* Taalwisselaar blijft als losse compacte component */}
+            <LanguageSwitcher theme={theme} />
+
           </View>
 
-          {/* Stats strip — per Johnny ultraplan 25 mei.
-              Compact (5 cijfers → 1 regel) tenzij showHeaderActions aan.
-              Volle grid blijft beschikbaar voor wie 't echt wil zien. */}
+          {/* Stats strip — compact (1 regel). Per Johnny ultraplan 25 mei.
+              Volle 5-cijfer grid bestaat niet meer; details staan in Dashboard-tab. */}
           <View style={[st.statsStrip, { borderTopColor: theme.colors.borderWarm }]}>
-            {showHeaderActions ? (
-              [
-                { label: t('dash.total'),    value: metrics.total,    color: theme.colors.textPrimary },
-                { label: t('dash.today'),    value: metrics.vandaag,  color: theme.colors.accent },
-                { label: t('dash.approved'), value: metrics.akkoord,  color: theme.colors.statusSuccess },
-                { label: t('dash.review'),   value: metrics.review,   color: metrics.review > 0 ? '#d97706' : theme.colors.textSecondary },
-                { label: t('dash.rejected'), value: metrics.afgekeurd,color: metrics.afgekeurd > 0 ? theme.colors.statusWarning : theme.colors.textSecondary },
-              ].map(s => (
-                <View key={s.label} style={st.statItem}>
-                  <Text style={[st.statNum, { color: s.color }]}>{s.value}</Text>
-                  <Text style={[st.statLabel, { color: theme.colors.textSecondary }]}>{s.label}</Text>
-                </View>
-              ))
-            ) : (
-              <Text style={{ color: theme.colors.textSecondary, fontSize: 13, paddingVertical: 8 }}>
-                <Text style={{ color: theme.colors.textPrimary, fontWeight: '700' }}>{metrics.total}</Text> foto's
-                {metrics.review > 0 ? (
-                  <> · <Text style={{ color: '#d97706', fontWeight: '700' }}>{metrics.review}</Text> wachten op review</>
-                ) : null}
-                {metrics.afgekeurd > 0 ? (
-                  <> · <Text style={{ color: theme.colors.statusWarning, fontWeight: '700' }}>{metrics.afgekeurd}</Text> afgekeurd</>
-                ) : null}
-              </Text>
-            )}
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 13, paddingVertical: 8 }}>
+              <Text style={{ color: theme.colors.textPrimary, fontWeight: '700' }}>{metrics.total}</Text> foto's
+              {metrics.review > 0 ? (
+                <> · <Text style={{ color: '#d97706', fontWeight: '700' }}>{metrics.review}</Text> wachten op review</>
+              ) : null}
+              {metrics.afgekeurd > 0 ? (
+                <> · <Text style={{ color: theme.colors.statusWarning, fontWeight: '700' }}>{metrics.afgekeurd}</Text> afgekeurd</>
+              ) : null}
+            </Text>
           </View>
         </View>
 
