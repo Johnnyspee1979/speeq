@@ -1,26 +1,22 @@
 /**
- * MobileVakmanQuickCapture — ultra-minimale vakman-flow voor mobiel.
+ * MobileVakmanQuickCapture — Claude Design v2 (Raven Health-aesthetic).
  *
- * Per Johnny 24 mei: "vakman moet zien WAAR ie is, welk PROJECT, welke
- * KLANT, WAT hij wil registreren — meer niet. Onder de motorkap mag alles
- * zwaar georganiseerd zijn, daar moet de vakman niets van merken."
+ * Bron mock: .claude/claude-design-import/ui_kits/mobile/VakmanScene.jsx
  *
- * Wat de vakman ziet:
- *   • 4 context-chips bovenaan (adres · klant · project · discipline)
- *   • Eén grote 📷 Foto-knop
- *   • Bevestiging "✓ Verzonden" na opslaan
+ * Wat vakman ziet:
+ *  • Eyebrow "Hé {voornaam}" in navy uppercase
+ *  • Bricolage headline "Klaar voor een foto? {count} vandaag." (groen accent)
+ *  • 4 chips: GPS adres · Klant · Project (chevron) · Discipline (chevron)
+ *  • Grote GROENE capture-knop met camera icoon
+ *  • Bottom sheets voor project/discipline kiezen
+ *  • Toast na succesvolle upload
  *
- * Wat onder de motor draait (onzichtbaar):
- *   • EXIF / GPS extractie
- *   • SHA-256 hash voor non-repudiation
- *   • OfflinePhotoStore (IndexedDB) bij geen netwerk
- *   • syncEvidenceQueue voor stilletjes uploaden
- *   • Tenant + RLS-isolatie via Supabase
- *
- * Vakman tikt: 2× setup (project + discipline) + N× foto's (1 tap).
+ * Palette: hardcoded navy + green + zinc (Claude Design tokens v2).
+ * Onder de motorkap: EXIF, GPS, SHA-256 hash, IndexedDB, syncEvidenceQueue —
+ * onveranderd. Vakman hoeft niets te weten van die plumbing.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -30,11 +26,20 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { designTokens } from '../theme/designTokens';
+import {
+  MapPin,
+  User,
+  Folder,
+  Target,
+  Camera,
+  Check,
+  AlertTriangle,
+  ChevronRight,
+} from 'lucide-react-native';
 import { useProject, type Project } from '../context/ProjectContext';
-import { supabase } from '../lib/supabase';
 import { persistOfflinePhoto } from '../services/OfflinePhotoStore';
 import { saveEvidenceLocally } from '../database/database';
 import { syncEvidenceQueue } from '../services/sync';
@@ -43,9 +48,26 @@ import { useWkbAuth } from '../hooks/useWkbAuth';
 import { isWeb } from '../lib/platform';
 import type { WkbEvidence } from '../types/Evidence';
 
-const theme = designTokens;
-
-// ─── Disciplines (kortere set dan StartFlow, alleen wat vakman doet) ───────
+// Claude Design tokens (hardcoded — Raven-aligned navy + green).
+const C = {
+  bg:            '#FFFFFF',
+  navy:          '#1B3A5C',
+  navyDark:      '#0F2436',
+  green:         '#5BAA3A',
+  green600:      '#4A9430',
+  greenSoft:     '#ECF6E5',
+  successFg:     '#15803D',
+  successWash:   '#ECFDF5',
+  text:          '#18181B',
+  textStrong:    '#09090B',
+  textMuted:     '#52525B',
+  textSubtle:    '#71717A',
+  border:        '#E4E4E7',
+  borderSoft:    '#F4F4F5',
+  chipMuted:     '#F4F4F5',
+  fontDisplay:   '"Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif',
+  fontSans:      '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+};
 
 interface Discipline {
   id: string;
@@ -63,6 +85,8 @@ const DISCIPLINES: Discipline[] = [
 ];
 
 const DISCIPLINE_STORAGE_KEY = 'wkb_vakman_last_discipline';
+const COUNT_STORAGE_KEY      = 'wkb_vakman_today_count';
+const COUNT_DATE_KEY         = 'wkb_vakman_today_date';
 
 function loadLastDiscipline(): Discipline | null {
   if (typeof window === 'undefined') return null;
@@ -82,10 +106,26 @@ function saveLastDiscipline(d: Discipline): void {
   } catch { /* ignore */ }
 }
 
-// ─── Component ──────────────────────────────────────────────────────────────
+function loadTodayCount(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const storedDate = window.localStorage.getItem(COUNT_DATE_KEY);
+    if (storedDate !== today) {
+      window.localStorage.setItem(COUNT_DATE_KEY, today);
+      window.localStorage.setItem(COUNT_STORAGE_KEY, '0');
+      return 0;
+    }
+    return parseInt(window.localStorage.getItem(COUNT_STORAGE_KEY) ?? '0', 10) || 0;
+  } catch { return 0; }
+}
+
+function saveTodayCount(n: number): void {
+  if (typeof window === 'undefined') return;
+  try { window.localStorage.setItem(COUNT_STORAGE_KEY, String(n)); } catch { /* ignore */ }
+}
 
 interface MobileVakmanQuickCaptureProps {
-  /** Trigger om project-picker modal te openen (vanuit parent). */
   onChangeProject?: () => void;
 }
 
@@ -97,13 +137,20 @@ export default function MobileVakmanQuickCapture({ onChangeProject }: MobileVakm
   const [showDisciplinePicker, setShowDisciplinePicker] = useState(false);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [address, setAddress] = useState<string | null>(null);
-
   const [uploadState, setUploadState] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [todayCount, setTodayCount] = useState(loadTodayCount);
+  const [toast, setToast] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // ─── GPS adres reverse-geocoding (alleen 1x bij mount, zachte fout) ──────
+  const firstName = (() => {
+    const ROLE_NAMES = new Set(['vakman', 'voorman', 'admin', 'keyuser', 'projectleider', 'werkvoorbereider']);
+    const c = (user?.displayName?.split(' ')[0] ?? user?.email?.split('@')[0] ?? '').trim();
+    if (!c || ROLE_NAMES.has(c.toLowerCase())) return null;
+    return c.charAt(0).toUpperCase() + c.slice(1);
+  })();
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -120,40 +167,31 @@ export default function MobileVakmanQuickCapture({ onChangeProject }: MobileVakm
         const a = res[0];
         const parts = [a.street, a.city].filter(Boolean);
         setAddress(parts.length ? parts.join(', ') : null);
-      } catch {
-        // Geen toegang of fout — laat adres-chip leeg, geen storend bericht
-      }
+      } catch { /* geen GPS — chip blijft leeg */ }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  // ─── Klant + project info ────────────────────────────────────────────────
   const klantNaam =
     (activeProject as { initiatorName?: string | null })?.initiatorName ??
     user?.companyName ??
     null;
 
-  const projectNaam = activeProject?.name ?? 'Geen project';
+  const projectNaam = activeProject?.name ?? 'Kies project';
 
-  // ─── Foto maken — opent native camera, slaat lokaal op + sync ────────────
   const handlePhotoTap = useCallback(() => {
     if (uploadState === 'uploading') return;
-    if (!discipline) {
-      setShowDisciplinePicker(true);
-      return;
-    }
+    if (!discipline) { setShowDisciplinePicker(true); return; }
     if (!activeProject || activeProject.id === 'demo-default') {
       setShowProjectPicker(true);
       return;
     }
-    // Trigger hidden file input — opent native camera op mobiel
     fileInputRef.current?.click();
   }, [uploadState, discipline, activeProject]);
 
   const handleFileSelected = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    // Reset input zodat dezelfde foto opnieuw kan
     e.target.value = '';
     if (!discipline || !activeProject) return;
 
@@ -161,30 +199,23 @@ export default function MobileVakmanQuickCapture({ onChangeProject }: MobileVakm
     setErrorMsg(null);
 
     try {
-      // Foto → blob URL → IndexedDB (overleeft refresh)
       const blobUri = URL.createObjectURL(file);
       const evidenceId = createEvidenceId();
       const persistedUri = (await persistOfflinePhoto(blobUri, evidenceId).catch(() => null)) ?? blobUri;
 
-      // GPS — best effort, niet blokkerend
       let lat = 0;
       let lng = 0;
       let acc: number | null = null;
       let hasGps = false;
       try {
-        const pos = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         lat = pos.coords.latitude;
         lng = pos.coords.longitude;
         acc = pos.coords.accuracy ?? null;
         hasGps = true;
-      } catch { /* geen GPS — gewoon doorsturen */ }
+      } catch { /* geen GPS */ }
 
-      // Server-side timestamp via Supabase wordt bij sync ingevuld; lokaal nu
       const timestamp = new Date().toISOString();
-
-      // Hash voor non-repudiation (light versie; native build doet hardware-signing)
       const exifHash = await createEvidenceHash(persistedUri).catch(() => '');
 
       const newEvidence: WkbEvidence = {
@@ -195,7 +226,6 @@ export default function MobileVakmanQuickCapture({ onChangeProject }: MobileVakm
         gpsAccuracy: acc,
         timestamp,
         projectId: activeProject.id,
-        // Discipline-based inspection point — vakman koos discipline, AI vult later
         inspectionPointId: `${discipline.id}-QUICK`,
         exifHash,
         exifVerified: false,
@@ -222,17 +252,20 @@ export default function MobileVakmanQuickCapture({ onChangeProject }: MobileVakm
       await saveEvidenceLocally(newEvidence);
       void syncEvidenceQueue();
 
+      const nextCount = todayCount + 1;
+      setTodayCount(nextCount);
+      saveTodayCount(nextCount);
+      const ticket = `KIK-${discipline.id}-${String(nextCount).padStart(3, '0')}`;
+      setToast(`${ticket} verzonden`);
       setUploadState('success');
-      // Reset naar idle na 2.5s
-      setTimeout(() => setUploadState('idle'), 2500);
+      setTimeout(() => setToast(null), 2400);
+      setTimeout(() => setUploadState('idle'), 2600);
     } catch (err) {
       setUploadState('error');
       setErrorMsg(err instanceof Error ? err.message : 'Onbekende fout');
       setTimeout(() => setUploadState('idle'), 3500);
     }
-  }, [discipline, activeProject, user?.id]);
-
-  // ─── Render ──────────────────────────────────────────────────────────────
+  }, [discipline, activeProject, user?.id, todayCount]);
 
   if (!isWeb) {
     return (
@@ -242,9 +275,19 @@ export default function MobileVakmanQuickCapture({ onChangeProject }: MobileVakm
     );
   }
 
+  const captureBg =
+    uploadState === 'success' ? C.successFg :
+    uploadState === 'error'   ? '#DC2626' :
+    uploadState === 'uploading' ? C.green600 :
+    C.green;
+  const captureText =
+    uploadState === 'success' ? 'Verzonden' :
+    uploadState === 'error'   ? 'Probeer opnieuw' :
+    uploadState === 'uploading' ? 'Verzenden…' :
+    'Foto maken';
+
   return (
     <View style={styles.fullscreen}>
-      {/* Hidden file input — opent native camera op mobiel */}
       <input
         ref={fileInputRef}
         type="file"
@@ -254,183 +297,209 @@ export default function MobileVakmanQuickCapture({ onChangeProject }: MobileVakm
         onChange={handleFileSelected}
       />
 
-      {/* ── Context chips bovenaan ─────────────────────────────────── */}
-      <View style={styles.contextWrap}>
+      <View style={styles.headerWrap}>
+        <Text style={styles.eyebrow}>
+          {firstName ? `Hé ${firstName}` : 'Goedendag'}
+        </Text>
+        <Text style={styles.headline}>
+          Klaar voor een foto?{'\n'}
+          <Text style={{ color: C.green }}>
+            {todayCount} vandaag.
+          </Text>
+        </Text>
+      </View>
+
+      <View style={styles.chipsWrap}>
+        <Chip icon={<MapPin size={16} color={C.textSubtle} />} label={address ?? 'GPS laden…'} muted />
+        {klantNaam ? <Chip icon={<User size={16} color={C.textSubtle} />} label={klantNaam} muted /> : null}
         <Chip
-          icon="📍"
-          label={address ?? 'GPS laden…'}
-          muted
-        />
-        {klantNaam ? <Chip icon="👤" label={klantNaam} muted /> : null}
-        <ChipPressable
-          icon="📁"
+          icon={<Folder size={16} color={C.navy} />}
           label={projectNaam}
+          chevron
           onPress={() => setShowProjectPicker(true)}
         />
-        <ChipPressable
-          icon="🎯"
+        <Chip
+          icon={<Target size={16} color={discipline ? C.navy : C.green} />}
           label={discipline?.label ?? 'Kies wat je registreert'}
-          onPress={() => setShowDisciplinePicker(true)}
+          chevron
           highlight={!discipline}
+          onPress={() => setShowDisciplinePicker(true)}
         />
       </View>
 
-      {/* ── Grote camera-knop ───────────────────────────────────────── */}
-      <View style={styles.cameraWrap}>
+      <View style={styles.captureWrap}>
         <Pressable
           onPress={handlePhotoTap}
           disabled={uploadState === 'uploading'}
           style={({ pressed }) => [
-            styles.cameraBtn,
-            uploadState === 'success' && styles.cameraBtnSuccess,
-            uploadState === 'error' && styles.cameraBtnError,
-            pressed && styles.cameraBtnPressed,
+            styles.captureBtn,
+            { backgroundColor: captureBg },
+            pressed && styles.capturePressed,
           ]}
-          accessibilityLabel="Foto maken"
           accessibilityRole="button"
+          accessibilityLabel="Foto maken"
         >
           {uploadState === 'uploading' ? (
-            <>
-              <ActivityIndicator color="#fff" size="large" />
-              <Text style={styles.cameraBtnText}>Verzenden…</Text>
-            </>
+            <ActivityIndicator color="#fff" size="large" />
           ) : uploadState === 'success' ? (
-            <>
-              <Text style={styles.cameraBtnIcon}>✓</Text>
-              <Text style={styles.cameraBtnText}>Verzonden</Text>
-            </>
+            <Check size={56} color="#fff" strokeWidth={1.8} />
           ) : uploadState === 'error' ? (
-            <>
-              <Text style={styles.cameraBtnIcon}>⚠️</Text>
-              <Text style={styles.cameraBtnText}>Probeer opnieuw</Text>
-              {errorMsg ? <Text style={styles.cameraBtnSub}>{errorMsg.slice(0, 60)}</Text> : null}
-            </>
+            <AlertTriangle size={56} color="#fff" strokeWidth={1.8} />
           ) : (
-            <>
-              <Text style={styles.cameraBtnIcon}>📷</Text>
-              <Text style={styles.cameraBtnText}>Foto maken</Text>
-            </>
+            <Camera size={56} color="#fff" strokeWidth={1.6} />
           )}
+          <Text style={styles.captureText}>{captureText}</Text>
+          {uploadState === 'error' && errorMsg ? (
+            <Text style={styles.captureSub}>{errorMsg.slice(0, 50)}</Text>
+          ) : null}
         </Pressable>
       </View>
 
-      {/* ── Discipline picker modal ────────────────────────────────── */}
-      <Modal visible={showDisciplinePicker} animationType="slide" transparent onRequestClose={() => setShowDisciplinePicker(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Wat ga je registreren?</Text>
-            <ScrollView>
-              {DISCIPLINES.map((d) => (
-                <TouchableOpacity
-                  key={d.id}
-                  style={[
-                    styles.modalItem,
-                    discipline?.id === d.id && styles.modalItemActive,
-                  ]}
-                  onPress={() => {
-                    setDiscipline(d);
-                    saveLastDiscipline(d);
-                    setShowDisciplinePicker(false);
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <Text style={styles.modalItemEmoji}>{d.emoji}</Text>
-                  <Text style={styles.modalItemText}>{d.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity onPress={() => setShowDisciplinePicker(false)} style={styles.modalCloseBtn}>
-              <Text style={styles.modalCloseText}>Sluit</Text>
-            </TouchableOpacity>
-          </View>
+      {toast ? (
+        <View style={styles.toast}>
+          <Check size={16} color="#fff" />
+          <Text style={styles.toastText}>{toast}</Text>
         </View>
+      ) : null}
+
+      <Modal
+        visible={showDisciplinePicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowDisciplinePicker(false)}
+      >
+        <Pressable style={styles.sheetBackdrop} onPress={() => setShowDisciplinePicker(false)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Wat ga je registreren?</Text>
+            <ScrollView>
+              {DISCIPLINES.map((d) => {
+                const active = discipline?.id === d.id;
+                return (
+                  <TouchableOpacity
+                    key={d.id}
+                    style={[styles.sheetItem, active && styles.sheetItemActive]}
+                    onPress={() => {
+                      setDiscipline(d);
+                      saveLastDiscipline(d);
+                      setShowDisciplinePicker(false);
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={styles.sheetItemEmoji}>{d.emoji}</Text>
+                    <Text style={[styles.sheetItemText, active && styles.sheetItemTextActive]}>{d.label}</Text>
+                    {active ? <Check size={18} color={C.green} /> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
       </Modal>
 
-      {/* ── Project picker modal ───────────────────────────────────── */}
-      <Modal visible={showProjectPicker} animationType="slide" transparent onRequestClose={() => setShowProjectPicker(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Welk project?</Text>
+      <Modal
+        visible={showProjectPicker}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowProjectPicker(false)}
+      >
+        <Pressable style={styles.sheetBackdrop} onPress={() => setShowProjectPicker(false)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Welk project?</Text>
             <ScrollView>
-              {projects.map((p: Project) => (
-                <TouchableOpacity
-                  key={p.id}
-                  style={[
-                    styles.modalItem,
-                    activeProject?.id === p.id && styles.modalItemActive,
-                  ]}
-                  onPress={() => {
-                    setActiveProject(p);
-                    setShowProjectPicker(false);
-                    if (onChangeProject) onChangeProject();
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <Text style={styles.modalItemEmoji}>📁</Text>
-                  <Text style={styles.modalItemText}>{p.name}</Text>
-                </TouchableOpacity>
-              ))}
+              {projects.map((p: Project) => {
+                const active = activeProject?.id === p.id;
+                return (
+                  <TouchableOpacity
+                    key={p.id}
+                    style={[styles.sheetItem, active && styles.sheetItemActive]}
+                    onPress={() => {
+                      setActiveProject(p);
+                      setShowProjectPicker(false);
+                      if (onChangeProject) onChangeProject();
+                    }}
+                    activeOpacity={0.75}
+                  >
+                    <Folder size={18} color={active ? C.green : C.navy} />
+                    <Text style={[styles.sheetItemText, active && styles.sheetItemTextActive]}>{p.name}</Text>
+                    {active ? <Check size={18} color={C.green} /> : null}
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
-            <TouchableOpacity onPress={() => setShowProjectPicker(false)} style={styles.modalCloseBtn}>
-              <Text style={styles.modalCloseText}>Sluit</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
 }
 
-// ─── Sub-componenten ──────────────────────────────────────────────────────
-
 interface ChipProps {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   muted?: boolean;
-}
-const Chip: React.FC<ChipProps> = ({ icon, label, muted }) => (
-  <View style={[styles.chip, muted && styles.chipMuted]}>
-    <Text style={styles.chipIcon}>{icon}</Text>
-    <Text style={[styles.chipText, muted && styles.chipTextMuted]} numberOfLines={1}>{label}</Text>
-  </View>
-);
-
-interface ChipPressableProps extends ChipProps {
-  onPress: () => void;
   highlight?: boolean;
+  chevron?: boolean;
+  onPress?: () => void;
 }
-const ChipPressable: React.FC<ChipPressableProps> = ({ icon, label, onPress, highlight }) => (
+const Chip: React.FC<ChipProps> = ({ icon, label, muted, highlight, chevron, onPress }) => (
   <Pressable
     onPress={onPress}
+    disabled={!onPress}
     style={({ pressed }) => [
       styles.chip,
-      styles.chipPressable,
+      muted && styles.chipMuted,
       highlight && styles.chipHighlight,
-      pressed && styles.chipPressed,
+      pressed && onPress && styles.chipPressed,
     ]}
-    accessibilityRole="button"
-    accessibilityLabel={`${icon} ${label} — tap om te wijzigen`}
+    accessibilityRole={onPress ? 'button' : undefined}
+    accessibilityLabel={onPress ? `${label} — tap om te wijzigen` : label}
   >
-    <Text style={styles.chipIcon}>{icon}</Text>
-    <Text style={styles.chipText} numberOfLines={1}>{label}</Text>
-    <Text style={styles.chipChevron}>›</Text>
+    {icon}
+    <Text
+      style={[styles.chipLabel, muted && styles.chipLabelMuted]}
+      numberOfLines={1}
+      ellipsizeMode="tail"
+    >
+      {label}
+    </Text>
+    {chevron ? <ChevronRight size={18} color={C.textSubtle} /> : null}
   </Pressable>
 );
 
-// ─── Styles ────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  fullscreen: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
+  fullscreen: { flex: 1, backgroundColor: C.bg },
   fallbackText: {
-    color: theme.colors.textPrimary,
+    color: C.text,
     textAlign: 'center',
     marginTop: 40,
     paddingHorizontal: 20,
+    fontFamily: C.fontSans,
   },
-  contextWrap: {
+  headerWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  eyebrow: {
+    fontFamily: C.fontSans,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: C.navy,
+    marginBottom: 6,
+  },
+  headline: {
+    fontFamily: C.fontDisplay,
+    fontSize: 30,
+    fontWeight: '700',
+    color: C.textStrong,
+    letterSpacing: -1.05,
+    lineHeight: 32,
+  },
+  chipsWrap: {
     paddingHorizontal: 16,
     paddingTop: 18,
     gap: 8,
@@ -438,141 +507,168 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: C.bg,
     borderWidth: 1,
-    borderColor: theme.colors.borderWarm,
+    borderColor: C.border,
     gap: 10,
+    ...(Platform.OS === 'web'
+      ? ({ boxShadow: '0 1px 2px rgba(15,36,54,0.04)' } as object)
+      : {}),
   },
   chipMuted: {
-    backgroundColor: 'transparent',
-    borderStyle: 'dashed',
-  },
-  chipPressable: {
-    backgroundColor: theme.colors.surface,
+    backgroundColor: C.chipMuted,
+    borderColor: C.borderSoft,
+    ...(Platform.OS === 'web'
+      ? ({ boxShadow: 'none' } as object)
+      : {}),
   },
   chipHighlight: {
-    borderColor: theme.colors.statusSuccess,
-    backgroundColor: theme.colors.statusSuccess + '12',
+    borderColor: C.green,
+    backgroundColor: C.greenSoft,
   },
-  chipPressed: {
-    opacity: 0.7,
-  },
-  chipIcon: {
-    fontSize: 18,
-  },
-  chipText: {
+  chipPressed: { opacity: 0.7 },
+  chipLabel: {
     flex: 1,
-    color: theme.colors.textPrimary,
+    fontFamily: C.fontSans,
     fontSize: 15,
     fontWeight: '600',
+    color: C.text,
   },
-  chipTextMuted: {
-    color: theme.colors.textSecondary,
+  chipLabelMuted: {
+    color: C.textMuted,
     fontWeight: '500',
   },
-  chipChevron: {
-    color: theme.colors.textSecondary,
-    fontSize: 22,
-    fontWeight: '300',
-  },
-  cameraWrap: {
+  captureWrap: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingHorizontal: 18,
+    paddingVertical: 28,
   },
-  cameraBtn: {
+  captureBtn: {
     width: '100%',
-    minHeight: 220,
-    backgroundColor: theme.colors.statusSuccess,
-    borderRadius: 24,
+    minHeight: 180,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 32,
+    gap: 12,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    ...(Platform.OS === 'web'
+      ? ({
+          boxShadow: '0 18px 40px -12px rgba(91,170,58,0.40), 0 6px 16px -6px rgba(91,170,58,0.30)',
+          transitionProperty: 'transform, background-color',
+          transitionDuration: '180ms',
+        } as object)
+      : {
+          shadowColor: '#5BAA3A',
+          shadowOpacity: 0.4,
+          shadowRadius: 40,
+          shadowOffset: { width: 0, height: 18 },
+          elevation: 8,
+        }),
   },
-  cameraBtnPressed: {
-    opacity: 0.85,
+  capturePressed: {
     transform: [{ scale: 0.98 }],
   },
-  cameraBtnSuccess: {
-    backgroundColor: theme.colors.statusSuccess,
-  },
-  cameraBtnError: {
-    backgroundColor: '#dc2626',
-  },
-  cameraBtnIcon: {
-    fontSize: 72,
+  captureText: {
     color: '#fff',
-  },
-  cameraBtnText: {
-    color: '#fff',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
+    fontFamily: C.fontSans,
+    letterSpacing: -0.4,
   },
-  cameraBtnSub: {
+  captureSub: {
     color: '#fff',
     fontSize: 12,
     opacity: 0.85,
     paddingHorizontal: 16,
     textAlign: 'center',
+    fontFamily: C.fontSans,
   },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+  toast: {
+    position: 'absolute',
+    bottom: 32,
+    left: 24,
+    right: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: C.navyDark,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 14,
+    ...(Platform.OS === 'web'
+      ? ({ boxShadow: '0 8px 24px rgba(9,9,11,0.30)' } as object)
+      : {}),
   },
-  modalSheet: {
-    backgroundColor: theme.colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 28,
-    maxHeight: '75%',
-  },
-  modalTitle: {
-    fontSize: 18,
+  toastText: {
+    fontFamily: C.fontSans,
+    color: '#fff',
+    fontSize: 13,
     fontWeight: '700',
-    color: theme.colors.textPrimary,
+  },
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(15,36,54,0.45)',
+    justifyContent: 'flex-end',
+    ...(Platform.OS === 'web'
+      ? ({ backdropFilter: 'blur(4px)' } as object)
+      : {}),
+  },
+  sheet: {
+    backgroundColor: C.bg,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 28,
+    maxHeight: '74%',
+  },
+  sheetHandle: {
+    width: 44,
+    height: 4,
+    backgroundColor: C.border,
+    borderRadius: 2,
+    alignSelf: 'center',
     marginBottom: 14,
   },
-  modalItem: {
+  sheetTitle: {
+    fontFamily: C.fontDisplay,
+    fontSize: 22,
+    fontWeight: '700',
+    color: C.textStrong,
+    letterSpacing: -0.5,
+    marginBottom: 14,
+    paddingHorizontal: 4,
+  },
+  sheetItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     gap: 12,
     marginBottom: 4,
   },
-  modalItemActive: {
-    backgroundColor: theme.colors.statusSuccess + '15',
+  sheetItemActive: {
+    backgroundColor: C.greenSoft,
   },
-  modalItemEmoji: {
-    fontSize: 24,
+  sheetItemEmoji: {
+    fontSize: 22,
   },
-  modalItemText: {
+  sheetItemText: {
     flex: 1,
-    color: theme.colors.textPrimary,
+    fontFamily: C.fontSans,
+    color: C.text,
     fontSize: 16,
     fontWeight: '600',
   },
-  modalCloseBtn: {
-    marginTop: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.borderWarm,
-  },
-  modalCloseText: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
+  sheetItemTextActive: {
+    color: C.successFg,
   },
 });
