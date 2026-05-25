@@ -282,7 +282,7 @@ export default function WkbGereedmeldingChecklist({
 }
 
 const createStyles = (
-  theme: { name: 'dark' | 'light'; colors: Record<string, string> },
+  theme: { name: 'dark' | 'light' | 'modern'; colors: Record<string, string> },
   deviceType: 'DESKTOP' | 'TABLET' | 'MOBILE'
 ) =>
   StyleSheet.create({

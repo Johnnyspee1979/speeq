@@ -8,9 +8,32 @@
 // UI-primitives consumeren UITSLUITEND via `const { theme } = useTheme()` — nooit
 // met hard-gecodeerde hex-waarden.
 
-import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import { Platform } from 'react-native';
 
 import { designTokens, type DesignTokens, type ColorTokens } from './designTokens';
+
+/**
+ * Modern theme variant (Johnny 25 mei: "ik wil van die oude look af").
+ * Slate-50 / wit / violet-600 — losgekoppeld van Warm Minimal beige.
+ * Toggle in de header cyclet door: warm → modern → dark.
+ */
+const MODERN_LIGHT_OVERRIDES: Partial<ColorTokens> = {
+  background:    '#F8FAFC',  // slate-50
+  backgroundAlt: '#F1F5F9',  // slate-100
+  surface:       '#FFFFFF',
+  surfaceAlt:    '#F8FAFC',
+  textPrimary:   '#0F172A',  // slate-900
+  textSecondary: '#334155',  // slate-700
+  textMuted:     '#64748B',  // slate-500
+  statusSuccess: '#059669',  // emerald-600 (moderner dan bos-groen)
+  statusWarning: '#DC2626',  // red-600 (moderner dan terracotta)
+  borderWarm:    '#E2E8F0',  // slate-200
+  borderWarmAlt: '#CBD5E1',  // slate-300
+};
+
+const MODERN_ACCENT      = '#7C3AED'; // violet-600
+const MODERN_ACCENT_MUTED = 'rgba(124,58,237,0.12)';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,8 +51,10 @@ export type TenantFeaturesPayload = {
 // Bevat de Warm Minimal designTokens + legacy-aliasen op `colors` zodat
 // bestaande schermen die `theme.colors.{accent, danger, success, surfaceAlt, border, ...}`
 // gebruiken naadloos meelopen.
+export type ThemeMode = 'light' | 'modern' | 'dark';
+
 export type ActiveTheme = DesignTokens & {
-  name: 'light' | 'dark';
+  name: ThemeMode;
   colors: ColorTokens & {
     // Legacy-aliasen voor schermen die via de oude `Theme`-shape stylen.
     accent:       string;
@@ -44,8 +69,7 @@ export type ActiveTheme = DesignTokens & {
 
 type ThemeContextValue = {
   theme: ActiveTheme;
-  // Toggle blijft beschikbaar — dark-fallback gebruikt dezelfde tokens met
-  // een gedimde background. Geen tech-blauw, geen puur zwart.
+  // Toggle cyclet: light (Warm Minimal) → modern (slate/violet) → dark → light.
   toggleTheme: () => void;
 };
 
@@ -54,7 +78,7 @@ type ThemeContextValue = {
 function buildActiveTheme(
   base: DesignTokens,
   tenantFeatures: TenantFeaturesPayload,
-  mode: 'light' | 'dark',
+  mode: ThemeMode,
 ): ActiveTheme {
   const tenantColors: TenantBrandingColors =
     tenantFeatures && tenantFeatures.branding_colors
@@ -62,42 +86,73 @@ function buildActiveTheme(
       : {};
 
   // Merge de vaste basis met de dynamische klant-branding.
-  // Alle kleuren in `designTokens.colors` mogen overschreven worden door de tenant.
   const mergedColors: ColorTokens = { ...base.colors, ...tenantColors };
 
-  // Dark-mode: behoud Warm Minimal-karakter, alleen background/surface dimmen.
-  const colorsForMode: ColorTokens =
-    mode === 'dark'
-      ? {
-          ...mergedColors,
-          background:    '#1B1A17',     // donker espresso
-          backgroundAlt: '#26241F',
-          surface:       '#2F2A25',     // textSecondary als oppervlak
-          surfaceAlt:    '#3A332D',
-          textPrimary:   '#F3EDE2',     // backgroundAlt als tekstkleur
-          textSecondary: '#D7C2AA',
-          textMuted:     '#9A8F84',
-          borderWarm:    '#5A4F43',
-          borderWarmAlt: '#6B5D4F',
-        }
-      : mergedColors;
+  let colorsForMode: ColorTokens;
+  let accent: string;
+  let accentMuted: string;
+
+  if (mode === 'dark') {
+    // Dark-mode: behoud Warm Minimal-karakter, alleen background/surface dimmen.
+    colorsForMode = {
+      ...mergedColors,
+      background:    '#1B1A17',
+      backgroundAlt: '#26241F',
+      surface:       '#2F2A25',
+      surfaceAlt:    '#3A332D',
+      textPrimary:   '#F3EDE2',
+      textSecondary: '#D7C2AA',
+      textMuted:     '#9A8F84',
+      borderWarm:    '#5A4F43',
+      borderWarmAlt: '#6B5D4F',
+    };
+    accent = colorsForMode.statusSuccess;
+    accentMuted = 'rgba(31,77,58,0.10)';
+  } else if (mode === 'modern') {
+    // Modern: wit/slate/violet — losgekoppeld van Warm Minimal beige.
+    colorsForMode = { ...mergedColors, ...MODERN_LIGHT_OVERRIDES };
+    accent = MODERN_ACCENT;
+    accentMuted = MODERN_ACCENT_MUTED;
+  } else {
+    // Warm Minimal light (default).
+    colorsForMode = mergedColors;
+    accent = colorsForMode.statusSuccess;
+    accentMuted = 'rgba(31,77,58,0.10)';
+  }
 
   return {
     ...base,
     name: mode,
     colors: {
       ...colorsForMode,
-      // Legacy-aliasen — afgeleid van de Warm Minimal kleuren zodat
-      // bestaande `theme.colors.accent` automatisch correct meeloopt.
-      accent:       colorsForMode.statusSuccess,
-      accentMuted:  'rgba(31,77,58,0.10)',
+      accent,
+      accentMuted,
       success:      colorsForMode.statusSuccess,
-      warning:      '#9A6C1C',
+      warning:      mode === 'modern' ? '#D97706' : '#9A6C1C',
       danger:       colorsForMode.statusWarning,
       border:       colorsForMode.borderWarm,
       chip:         colorsForMode.textPrimary,
     },
   };
+}
+
+/** localStorage key voor persistente theme-keuze. */
+const THEME_STORAGE_KEY = 'speeq_theme_mode_v1';
+
+function loadStoredMode(): ThemeMode {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return 'light';
+  try {
+    const v = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (v === 'modern' || v === 'dark' || v === 'light') return v;
+  } catch { /* ignore */ }
+  return 'light';
+}
+
+function persistMode(m: ThemeMode): void {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, m);
+  } catch { /* ignore */ }
 }
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -117,10 +172,20 @@ type Props = {
 };
 
 export const ThemeProvider = ({ children, tenantFeatures = null }: Props) => {
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  const [mode, setMode] = useState<ThemeMode>(loadStoredMode);
 
+  // Persisteer wijzigingen naar localStorage zodat refresh de keuze onthoudt.
+  useEffect(() => {
+    persistMode(mode);
+  }, [mode]);
+
+  /** 3-mode cycle: light (Warm Minimal) → modern (slate/violet) → dark → light. */
   const toggleTheme = useCallback(() => {
-    setMode((current) => (current === 'dark' ? 'light' : 'dark'));
+    setMode((current) => {
+      if (current === 'light') return 'modern';
+      if (current === 'modern') return 'dark';
+      return 'light';
+    });
   }, []);
 
   // Merge de vaste basis (designTokens) met de dynamische klant-branding uit Supabase.
