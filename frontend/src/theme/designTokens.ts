@@ -10,16 +10,18 @@ import { Platform } from 'react-native';
 // daar bereiken productie niet — dit module-level effect omzeilt dat.
 import './injectGoogleFonts';
 
-// Two-Font System families. Web gebruikt de Google Fonts namen (geladen via
-// injectGoogleFonts.ts); native blijft de expo-font alias gebruiken die later
-// via useFonts() kan worden geregistreerd.
+// Two-Font System per Claude Design tokens v2 (Johnny 25 mei).
+// Display = Bricolage Grotesque (chunky humanist, optical sizing).
+// UI body = Plus Jakarta Sans (clean geometric humanist).
+// Vervangt Playfair Display + Inter — Johnny: "ik wil van die oude look af".
+// Native blijft op systeemfont vallen tot expo-font registratie volgt.
 const HEADLINE_FAMILY = Platform.OS === 'web'
-  ? '"Playfair Display", Georgia, serif'
-  : 'Playfair-Italic';
+  ? '"Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif'
+  : 'System';
 
 const INTER_FAMILY = Platform.OS === 'web'
-  ? '"Inter", system-ui, -apple-system, sans-serif'
-  : 'Inter';
+  ? '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+  : 'System';
 
 export const designTokens = {
   colors: {
@@ -53,8 +55,11 @@ export const designTokens = {
       fontFamily: HEADLINE_FAMILY,
       fontSize: 32,
       lineHeight: 40,
-      fontWeight: '700' as const,   // Bold
-      fontStyle: 'italic' as const, // Italic voor PageHeader titels
+      fontWeight: '700' as const,
+      // Bricolage Grotesque heeft geen italic-display, fontStyle: 'normal'
+      // past beter bij Claude Design tokens v2 dan de oude Playfair-italic.
+      fontStyle: 'normal' as const,
+      letterSpacing: -0.5,
     },
     sectionTitle: {
       fontFamily: INTER_FAMILY,

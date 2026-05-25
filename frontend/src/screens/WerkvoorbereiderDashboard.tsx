@@ -811,15 +811,14 @@ export default function WerkvoorbereiderDashboard({
           <View style={st.headerTop}>
             <TenantBrandMark size="md" showName={false} theme={theme} />
             <View style={{ flex: 1 }}>
-              {/* Two-Font System — Bold + Italic Playfair via theme.typography */}
+              {/* Display font per Claude Design tokens v2 — Bricolage Grotesque */}
               <Text
                 style={[
                   st.projectTitle,
                   {
                     color: theme.colors.textPrimary,
-                    fontFamily: 'Georgia, "Playfair Display", serif',
+                    fontFamily: '"Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif',
                     fontWeight: '700',
-                    fontStyle: 'italic',
                     fontSize: 28,
                     lineHeight: 34,
                     letterSpacing: -0.5,
