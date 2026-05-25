@@ -211,7 +211,13 @@ export default function WerkvoorbereiderDashboard({
   const { width, height } = useWindowDimensions();
   const isDesktop = width >= 768;
 
-  const [activeTab, setActiveTab] = useState<WvTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<WvTab>('bewijs');
+  /**
+   * Tab-strip per Johnny 25 mei: van 9 tabs naar 3 primary + ⋯ Meer.
+   * Werkvoorbereider werkt 90% in Bewijs/Kaart/Bonnen — rest is bijwerk.
+   * Geen feature verwijderd, alleen verborgen tot nodig.
+   */
+  const [showMoreTabs, setShowMoreTabs] = useState(false);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
 
@@ -741,17 +747,25 @@ export default function WerkvoorbereiderDashboard({
   const checkDone = checklist.filter(i => i.done).length;
 
   // ── Tab config ─────────────────────────────────────────────────────────────
-  const TABS: { id: WvTab; label: string; badge?: number }[] = [
-    { id: 'dashboard', label: `📊 ${t('nav.dashboard')}` },
-    { id: 'bewijs',    label: `📸 ${t('nav.bewijs')}`,    badge: metrics.review > 0 ? metrics.review : undefined },
-    { id: 'checklist', label: `✅ ${t('nav.checklist')}`, badge: checklist.filter(i => !i.done).length || undefined },
-    { id: 'kaart',     label: `🗺️ ${t('nav.kaart')}` },
-    { id: 'tekening',  label: `📐 ${t('nav.tekening')}` },
+  // 3 PRIMARY tabs = de 90% taken: foto's reviewen, op kaart kijken, bonnen.
+  // Rest achter "⋯ Meer" — niets verwijderd, alleen verborgen tot nodig.
+  const PRIMARY_TABS: { id: WvTab; label: string; badge?: number }[] = [
+    { id: 'bewijs',     label: `📸 ${t('nav.bewijs')}`, badge: metrics.review > 0 ? metrics.review : undefined },
+    { id: 'kaart',      label: `🗺️ ${t('nav.kaart')}` },
     { id: 'documenten', label: `📄 Bonnen` },
+  ];
+  const SECONDARY_TABS: { id: WvTab; label: string; badge?: number }[] = [
+    { id: 'dashboard',  label: `📊 ${t('nav.dashboard')}` },
+    { id: 'checklist',  label: `✅ ${t('nav.checklist')}`, badge: checklist.filter(i => !i.done).length || undefined },
+    { id: 'tekening',   label: `📐 ${t('nav.tekening')}` },
     { id: 'stickers',   label: `🏷️ ${t('nav.stickers')}` },
     { id: 'taken',      label: `📋 ${t('nav.taken')}` },
     { id: 'rapportage', label: `📑 ${t('nav.rapportage')}` },
   ];
+  // Auto-expand wanneer een secundaire tab actief is (na refresh / deep-link)
+  const activeIsSecondary = SECONDARY_TABS.some((tab) => tab.id === activeTab);
+  const visibleSecondary = showMoreTabs || activeIsSecondary ? SECONDARY_TABS : [];
+  const TABS = [...PRIMARY_TABS, ...visibleSecondary];
 
   return (
     <View style={[st.root, { backgroundColor: theme.colors.background }]}>
@@ -1106,13 +1120,51 @@ export default function WerkvoorbereiderDashboard({
           style={[st.tabRow, { borderBottomColor: theme.colors.borderWarm }]}
           contentContainerStyle={{ flexDirection: 'row' }}
         >
-          {TABS.map(tab => (
+          {PRIMARY_TABS.map(tab => (
             <TouchableOpacity
               key={tab.id}
               style={[st.tabItem, activeTab === tab.id && st.tabItemActive]}
               onPress={() => {
-                // Refresh evidence wanneer de gebruiker terugkomt naar bewijs/dashboard
-                if (tab.id === 'bewijs' || tab.id === 'dashboard') {
+                if (tab.id === 'bewijs') {
+                  void fetchEvidence();
+                }
+                setActiveTab(tab.id);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[st.tabLabel, { color: activeTab === tab.id ? theme.colors.accent : theme.colors.textSecondary }]}>
+                  {tab.label}
+                </Text>
+                {tab.badge !== undefined && tab.badge > 0 && (
+                  <View style={[st.tabBadge, { backgroundColor: activeTab === tab.id ? theme.colors.accent : '#d97706' }]}>
+                    <Text style={st.tabBadgeText}>{tab.badge}</Text>
+                  </View>
+                )}
+              </View>
+              {activeTab === tab.id && <View style={[st.tabUnderline, { backgroundColor: theme.colors.accent }]} />}
+            </TouchableOpacity>
+          ))}
+
+          {/* ⋯ Meer toggle — toont secundaire tabs (dashboard, checklist, etc.) */}
+          <TouchableOpacity
+            style={[st.tabItem]}
+            onPress={() => setShowMoreTabs(v => !v)}
+            activeOpacity={0.7}
+            accessibilityLabel={showMoreTabs ? 'Minder tabs tonen' : 'Meer tabs tonen'}
+          >
+            <Text style={[st.tabLabel, { color: showMoreTabs ? theme.colors.accent : theme.colors.textSecondary, fontWeight: '600' }]}>
+              {showMoreTabs ? '⋯ Minder' : '⋯ Meer'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Secundaire tabs — verschijnen na toggle OF wanneer 'n secundaire actief is */}
+          {visibleSecondary.map(tab => (
+            <TouchableOpacity
+              key={tab.id}
+              style={[st.tabItem, activeTab === tab.id && st.tabItemActive]}
+              onPress={() => {
+                if (tab.id === 'dashboard') {
                   void fetchEvidence();
                 }
                 setActiveTab(tab.id);
