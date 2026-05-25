@@ -178,9 +178,17 @@ export function ResponsiveLayout({
                     afgekapt en onduidelijk. */}
               </View>
             ) : null}
-            <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme} accessibilityLabel="Wissel licht/donker thema">
+            <TouchableOpacity
+              style={styles.themeToggle}
+              onPress={toggleTheme}
+              accessibilityLabel="Wissel thema: warm → modern → donker"
+              {...(Platform.OS === 'web'
+                ? ({ title: `Thema: ${theme.name === 'modern' ? 'Modern' : theme.name === 'dark' ? 'Donker' : 'Warm'} — klik voor volgende` } as object)
+                : {})}
+            >
               <Text style={styles.themeToggleText}>
-                {theme.name === 'dark' ? '☀' : '◑'}
+                {/* 3-mode cycle indicator: ◑ warm / ✦ modern / ☾ dark */}
+                {theme.name === 'dark' ? '☾' : theme.name === 'modern' ? '✦' : '◑'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -299,7 +307,7 @@ function SidebarItems({ items, activeTab, renderNavButton, styles }: SidebarItem
 }
 
 const createStyles = (
-  theme: { name: 'dark' | 'light'; colors: Record<string, string> },
+  theme: { name: 'dark' | 'light' | 'modern'; colors: Record<string, string> },
   isDesktop: boolean,
   brandColor: string
 ) => {

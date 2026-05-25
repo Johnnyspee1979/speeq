@@ -1,5 +1,5 @@
 export type Theme = {
-  name: 'dark' | 'light';
+  name: 'dark' | 'light' | 'modern';
   colors: {
     background: string;
     surface: string;
