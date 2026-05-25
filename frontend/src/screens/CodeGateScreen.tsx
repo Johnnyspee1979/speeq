@@ -1,5 +1,18 @@
-import React, { useRef, useState } from 'react';
+/**
+ * CodeGateScreen — Claude Design v2 (Raven Health-aesthetic).
+ *
+ * Bron mock: .claude/claude-design-import/ui_kits/desktop/CodeGateScreen.jsx
+ *
+ * Full-bleed soft gradient hero, centered headline + single input + navy CTA.
+ * Back-link linksboven met glass-effect, brand-mark rechtsboven.
+ *
+ * Palette: hardcoded navy + green (Claude Design tokens v2) — eerste indruk.
+ */
+
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   View,
   Text,
   StyleSheet,
@@ -7,11 +20,11 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
-  Image,
+  TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { useTheme } from '../theme/ThemeProvider';
 import { ArrowLeft, KeyRound } from 'lucide-react-native';
 
 const speeqQLogo = require('../assets/speeq-q-logo.png');
@@ -19,10 +32,9 @@ const speeqQLogo = require('../assets/speeq-q-logo.png');
 /** Letterlijke toegangscode — case-insensitive vergeleken. */
 export const TOOL_ACCESS_CODE = '0987';
 
-/** sessionStorage key — onthoudt de gate alléén binnen dezelfde tab-sessie. */
+/** sessionStorage key — onthoudt de gate alleen binnen dezelfde tab-sessie. */
 export const GATE_STORAGE_KEY = 'speeq_gate_passed_v1';
 
-/** Web-only helper: heeft deze tab de gate al gepasseerd? */
 export function hasPassedGate(): boolean {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
   try {
@@ -32,41 +44,54 @@ export function hasPassedGate(): boolean {
   }
 }
 
-/** Markeer de gate als gepasseerd voor deze tab-sessie. */
 export function markGatePassed(): void {
   if (Platform.OS !== 'web' || typeof window === 'undefined') return;
   try {
     window.sessionStorage.setItem(GATE_STORAGE_KEY, 'true');
-  } catch {
-    /* private mode, quota — geen probleem, gate werkt dan per call */
-  }
+  } catch { /* ignore */ }
 }
 
 interface CodeGateScreenProps {
-  /** Code geaccepteerd → laat de bezoeker door naar de echte login. */
   onCodeAccepted: () => void;
-  /** Terug naar de landing pagina. */
   onBack: () => void;
 }
 
-/**
- * CodeGateScreen — soft gatekeeper vóór de Supabase login.
- *
- * Niet bedoeld als echte beveiliging (de code zit in de JS bundle),
- * maar als drempel om de tool niet open op het publieke internet te zetten.
- * Voor échte security blijft de Supabase auth verantwoordelijk.
- */
+// Claude Design tokens (hardcoded).
+const C = {
+  bg:            '#FFFFFF',
+  heroGradient:  'linear-gradient(120deg, #EEF2F7 0%, #F6F4EF 50%, #ECF6E5 100%)',
+  navy:          '#1B3A5C',
+  navyHover:     '#15304B',
+  green:         '#5BAA3A',
+  textStrong:    '#09090B',
+  text:          '#18181B',
+  textMuted:     '#52525B',
+  textSubtle:    '#71717A',
+  border:        '#E4E4E7',
+  cardShadow:    '0 24px 48px -12px rgba(15,36,54,0.12), 0 4px 16px -4px rgba(9,9,11,0.04)',
+  fontDisplay:   '"Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif',
+  fontSans:      '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+};
+
 export default function CodeGateScreen({
   onCodeAccepted,
   onBack,
 }: CodeGateScreenProps) {
-  const { theme } = useTheme();
-  const s = createStyles(theme);
-
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
+  const [focused, setFocused] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const labelAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(labelAnim, {
+      toValue: focused || code.length > 0 ? 1 : 0,
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [focused, code, labelAnim]);
 
   const handleSubmit = () => {
     setError(null);
@@ -75,9 +100,7 @@ export default function CodeGateScreen({
       setError('Vul de toegangscode in.');
       return;
     }
-
     setChecking(true);
-    // Korte UX-pauze zodat de loading state zichtbaar is
     setTimeout(() => {
       if (trimmed === TOOL_ACCESS_CODE.toLowerCase()) {
         markGatePassed();
@@ -91,240 +114,279 @@ export default function CodeGateScreen({
     }, 250);
   };
 
+  const labelStyle = {
+    position: 'absolute' as const,
+    left: labelAnim.interpolate({ inputRange: [0, 1], outputRange: [16, 12] }),
+    top: labelAnim.interpolate({ inputRange: [0, 1], outputRange: [14, -8] }),
+    fontSize: labelAnim.interpolate({ inputRange: [0, 1], outputRange: [14, 11] }),
+    color: error
+      ? '#DC2626'
+      : labelAnim.interpolate({ inputRange: [0, 1], outputRange: [C.textSubtle, C.navy] }),
+    backgroundColor: C.bg,
+    paddingHorizontal: 4,
+    fontFamily: C.fontSans,
+    fontWeight: '600' as const,
+    zIndex: 1,
+  };
+
   return (
     <KeyboardAvoidingView
-      style={s.container}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={s.watermark} pointerEvents="none">
-        <Image source={speeqQLogo} style={s.watermarkImage} resizeMode="contain" />
+      {/* Full-bleed gradient hero achtergrond */}
+      <View style={styles.gradient} pointerEvents="none" />
+
+      {/* Back-link met glass-effect (linksboven) */}
+      <Pressable
+        onPress={onBack}
+        style={({ pressed }) => [styles.backLink, pressed && { opacity: 0.7 }]}
+        accessibilityRole="button"
+        accessibilityLabel="Terug naar landing"
+      >
+        <ArrowLeft size={14} color={C.textMuted} />
+        <Text style={styles.backLinkText}>terug</Text>
+      </Pressable>
+
+      {/* Brand-mark (rechtsboven) */}
+      <View style={styles.brandMark} pointerEvents="none">
+        <Image source={speeqQLogo} style={styles.brandLogo} resizeMode="contain" />
+        <Text style={styles.brandText}>
+          Spee<Text style={{ color: C.green }}>Q</Text>
+        </Text>
+        <Text style={styles.brandSub}>WKB Tool</Text>
       </View>
 
       <ScrollView
-        contentContainerStyle={s.scrollContent}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={s.card}>
-          {/* Back link */}
-          <Pressable
-            onPress={onBack}
-            style={({ pressed }) => [s.backLink, pressed && { opacity: 0.6 }]}
-          >
-            <ArrowLeft size={14} color={theme.colors.textSecondary} />
-            <Text style={s.backLinkText}>terug</Text>
-          </Pressable>
-
-          {/* Header */}
-          <View style={s.iconBadge}>
-            <KeyRound size={22} color={theme.colors.accent} />
+        <View style={styles.card}>
+          <View style={styles.iconBadge}>
+            <KeyRound size={22} color={C.navy} />
           </View>
-          <Text style={s.eyebrow}>TOEGANG</Text>
-          <Text style={s.title}>Voer je toegangscode in</Text>
-          <Text style={s.subtitle}>
-            SpeeQ WKB Tool is alleen beschikbaar voor uitgenodigde bouwers.
+          <Text style={styles.eyebrow}>TOEGANG</Text>
+          <Text style={styles.title}>Voer je toegangscode in</Text>
+          <Text style={styles.subtitle}>
+            SpeeQ WKB is alleen beschikbaar voor uitgenodigde bouwers.
             Geen code? Vraag een aan bij Spee Solutions.
           </Text>
 
-          {/* Input */}
-          <View style={s.field}>
-            <Text style={s.label}>Toegangscode</Text>
+          <View style={styles.field}>
+            <Animated.Text style={labelStyle}>
+              4-cijferige code
+            </Animated.Text>
             <TextInput
               ref={inputRef}
-              style={[s.input, error ? s.inputError : null]}
-              placeholder="4-cijferige code"
-              placeholderTextColor={theme.colors.textSecondary}
+              style={[styles.input, error ? styles.inputError : null]}
               value={code}
               onChangeText={(v) => {
                 setCode(v);
                 if (error) setError(null);
               }}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
               autoCapitalize="none"
               autoCorrect={false}
               autoFocus
               editable={!checking}
               onSubmitEditing={handleSubmit}
               returnKeyType="go"
+              accessibilityLabel="Toegangscode"
             />
-            {error ? <Text style={s.errorText}>{error}</Text> : null}
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
           </View>
 
-          {/* Submit */}
           <Pressable
             onPress={handleSubmit}
             disabled={checking}
             style={({ pressed }) => [
-              s.button,
-              (checking || pressed) && s.buttonPressed,
+              styles.cta,
+              (checking || pressed) && styles.ctaPressed,
             ]}
+            accessibilityLabel="Open tool met toegangscode"
           >
             {checking ? (
               <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <Text style={s.buttonText}>Open tool</Text>
+              <Text style={styles.ctaText}>Open tool</Text>
             )}
           </Pressable>
 
-          {/* Footer */}
-          <View style={s.footer}>
-            <View style={s.footerDot} />
-            <Text style={s.footerText}>
-              Spee Solutions 2026
-            </Text>
-          </View>
+          <Text style={styles.footer}>
+            Spee Solutions 2026
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
-const createStyles = (theme: ReturnType<typeof useTheme>['theme']) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    watermark: {
-      position: 'absolute',
-      top: -60,
-      right: -80,
-      width: 320,
-      height: 320,
-      opacity: 0.05,
-      transform: [{ rotate: '12deg' }],
-    },
-    watermarkImage: { width: '100%', height: '100%' },
-    scrollContent: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      padding: 24,
-    },
-    card: {
-      backgroundColor: theme.colors.surface,
-      paddingHorizontal: 28,
-      paddingVertical: 32,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      shadowColor: '#0F172A',
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.06,
-      shadowRadius: 32,
-      elevation: 4,
-      maxWidth: 440,
-      width: '100%',
-      alignSelf: 'center',
-    },
-    backLink: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      alignSelf: 'flex-start',
-      marginBottom: 20,
-      paddingVertical: 4,
-    },
-    backLinkText: {
-      fontSize: 13,
-      color: theme.colors.textSecondary,
-      fontWeight: '500',
-    },
-    iconBadge: {
-      width: 44,
-      height: 44,
-      borderRadius: 11,
-      backgroundColor: theme.colors.accentMuted,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 16,
-    },
-    eyebrow: {
-      fontSize: 11,
-      fontWeight: '600',
-      letterSpacing: 1.8,
-      color: theme.colors.textSecondary,
-      textTransform: 'uppercase',
-      marginBottom: 6,
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: '700',
-      color: theme.colors.textPrimary,
-      letterSpacing: -0.4,
-      marginBottom: 8,
-    },
-    subtitle: {
-      fontSize: 14,
-      lineHeight: 21,
-      color: theme.colors.textSecondary,
-      marginBottom: 24,
-    },
-    field: {
-      marginBottom: 18,
-    },
-    label: {
-      fontSize: 12,
-      fontWeight: '600',
-      color: theme.colors.textPrimary,
-      marginBottom: 6,
-      letterSpacing: 0.2,
-    },
-    input: {
-      backgroundColor: theme.colors.surfaceAlt,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      borderRadius: 10,
-      paddingHorizontal: 14,
-      paddingVertical: 14,
-      fontSize: 15,
-      color: theme.colors.textPrimary,
-    },
-    inputError: {
-      borderColor: theme.colors.danger,
-    },
-    errorText: {
-      marginTop: 8,
-      fontSize: 13,
-      color: theme.colors.danger,
-      fontWeight: '500',
-    },
-    button: {
-      backgroundColor: theme.colors.accent,
-      borderRadius: 10,
-      paddingVertical: 16,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: theme.colors.accent,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.25,
-      shadowRadius: 12,
-      elevation: 3,
-    },
-    buttonPressed: { opacity: 0.85 },
-    buttonText: {
-      color: '#FFFFFF',
-      fontSize: 15,
-      fontWeight: '700',
-      letterSpacing: 0.2,
-    },
-    footer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 6,
-      marginTop: 22,
-      paddingTop: 18,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border,
-    },
-    footerDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: theme.colors.accent,
-    },
-    footerText: {
-      fontSize: 11,
-      color: theme.colors.textSecondary,
-      letterSpacing: 0.2,
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
+  gradient: {
+    ...StyleSheet.absoluteFillObject,
+    ...(Platform.OS === 'web'
+      ? ({ backgroundImage: C.heroGradient } as object)
+      : { backgroundColor: '#F0EEE8' }),
+  },
+  backLink: {
+    position: 'absolute',
+    top: 28,
+    left: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.8)',
+    zIndex: 10,
+    ...(Platform.OS === 'web'
+      ? ({ backdropFilter: 'blur(8px)' } as object)
+      : {}),
+  },
+  backLinkText: {
+    fontFamily: C.fontSans,
+    fontSize: 13,
+    color: C.textMuted,
+    fontWeight: '600',
+  },
+  brandMark: {
+    position: 'absolute',
+    top: 28,
+    right: 32,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    zIndex: 10,
+  },
+  brandLogo: { width: 26, height: 26 },
+  brandText: {
+    fontFamily: C.fontDisplay,
+    fontWeight: '800',
+    fontSize: 15,
+    color: '#0F2436',
+    letterSpacing: -0.3,
+  },
+  brandSub: {
+    fontFamily: C.fontSans,
+    fontSize: 10,
+    color: C.textSubtle,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    marginLeft: 2,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    paddingTop: 80,
+  },
+  card: {
+    width: '100%',
+    maxWidth: 440,
+    backgroundColor: C.bg,
+    borderRadius: 24,
+    padding: 36,
+    borderWidth: 1,
+    borderColor: C.border,
+    ...(Platform.OS === 'web'
+      ? ({ boxShadow: C.cardShadow } as object)
+      : {
+          shadowColor: '#0F2436',
+          shadowOpacity: 0.12,
+          shadowRadius: 48,
+          shadowOffset: { width: 0, height: 24 },
+          elevation: 8,
+        }),
+  },
+  iconBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: '#EEF2F7', // navy-50 uit Claude Design
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+  eyebrow: {
+    fontFamily: C.fontSans,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: C.textMuted,
+    marginBottom: 8,
+  },
+  title: {
+    fontFamily: C.fontDisplay,
+    fontSize: 28,
+    fontWeight: '700',
+    color: C.textStrong,
+    letterSpacing: -0.7,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontFamily: C.fontSans,
+    fontSize: 14,
+    lineHeight: 22,
+    color: C.textSubtle,
+    marginBottom: 24,
+  },
+  field: {
+    position: 'relative',
+    marginBottom: 18,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: C.border,
+    backgroundColor: C.bg,
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: C.text,
+    fontFamily: C.fontSans,
+    ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}),
+  },
+  inputError: { borderColor: '#DC2626' },
+  errorText: {
+    fontFamily: C.fontSans,
+    marginTop: 8,
+    fontSize: 13,
+    color: '#DC2626',
+    fontWeight: '500',
+  },
+  cta: {
+    backgroundColor: C.navy,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaPressed: {
+    backgroundColor: C.navyHover,
+    opacity: 0.92,
+  },
+  ctaText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: C.fontSans,
+  },
+  footer: {
+    fontFamily: C.fontSans,
+    marginTop: 22,
+    textAlign: 'center',
+    fontSize: 11,
+    color: C.textSubtle,
+  },
+});
