@@ -39,8 +39,9 @@ interface LoginScreenProps {
 }
 
 const DEMO_ACCOUNTS: ReadonlyArray<{ role: string; emoji: string; email: string; password: string }> = [
-  { role: 'Vakman',           emoji: '👷', email: 'vakman@combivo.nl',       password: 'combivo2026' },
-  { role: 'Werkvoorbereider', emoji: '🛠️', email: 'johnny@speesolutions.com', password: 'Val7118!?' },
+  { role: 'Vakman',           emoji: '👷', email: 'vakman@combivo.nl',          password: 'combivo2026' },
+  { role: 'Werkvoorbereider', emoji: '🛠️', email: 'johnny@speesolutions.com',    password: 'Val7118!?' },
+  { role: 'Projectleider',    emoji: '👔', email: 'projectleider@speedemo.nl',  password: 'demo2026' },
 ];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
