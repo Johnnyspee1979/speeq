@@ -29,6 +29,7 @@ import { useProject, type Project } from '../context/ProjectContext';
 import { useTheme } from '../theme/ThemeProvider';
 import TenantBrandMark from '../components/TenantBrandMark';
 import { EmptyProjectWizard } from '../components/ui/EmptyProjectWizard';
+import ProjectAanmakenModal from '../components/ProjectAanmakenModal';
 // SpeeQ-assets (alleen nog gebruikt op entry-screens; in-app draait op klant-branding).
 const speeqLogoFull = require('../assets/speeq-logo-full.png');
 const speeqQLogo    = require('../assets/speeq-q-logo.png');
@@ -125,6 +126,7 @@ export default function ProjectleiderOverzicht() {
   const [allEvidence, setAllEvidence] = useState<EvidenceRow[]>([]);
   const [loading, setLoading]         = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  // showCreate state staat in DesktopLayout (waar modal rendert) — zie regel ~278.
 
   const projectIds = useMemo(() => projects.map(p => p.id), [projects]);
 
@@ -274,6 +276,10 @@ interface DesktopLayoutProps {
 
 function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvidence, onSelect, onProjectUpdated, theme, isDark, totals }: DesktopLayoutProps) {
   const [search, setSearch] = useState('');
+  /** Per Johnny 25 mei: "+ Nieuw project" voorop in hero ipv achter modal. */
+  const [showCreate, setShowCreate] = useState(false);
+  /** Forceer refresh van projectenlijst na aanmaken (loadAll zit in parent). */
+  const { refreshProjects } = useProject();
 
   const filtered = useMemo(() => {
     if (!search.trim()) return projects;
@@ -381,17 +387,33 @@ function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvi
             isDesktop
           />
         ) : (
-          <WelcomePanel theme={theme} projectCount={projects.length} totals={totals} />
+          <WelcomePanel
+            theme={theme}
+            projectCount={projects.length}
+            totals={totals}
+            onCreate={() => setShowCreate(true)}
+          />
         )}
       </View>
 
+      {/* "+ Nieuw project" modal — globaal in deze screen, opent vanuit hero. */}
+      <ProjectAanmakenModal
+        visible={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreated={() => {
+          setShowCreate(false);
+          // Forceer refresh van projects-context — KPI/lijst werken bij.
+          void refreshProjects();
+        }}
+        theme={theme as any}
+      />
     </View>
   );
 }
 
 // ─── Welcome panel (lege staat desktop) ──────────────────────────────────────
 
-function WelcomePanel({ theme, projectCount, totals }: { theme: { colors: Record<string, string> }; projectCount: number; totals: Totals }) {
+function WelcomePanel({ theme, projectCount, totals, onCreate }: { theme: { colors: Record<string, string> }; projectCount: number; totals: Totals; onCreate?: () => void }) {
   return (
     <ScrollView contentContainerStyle={{ padding: 32, paddingBottom: 60, maxWidth: 980, alignSelf: 'center', width: '100%' }}>
       {/* Hero card — tonen de klant-branding (logo + bedrijfsnaam) i.p.v. SpeeQ.
@@ -406,6 +428,28 @@ function WelcomePanel({ theme, projectCount, totals }: { theme: { colors: Record
               {projectCount} project{projectCount !== 1 ? 'en' : ''} · alle lopende dossiers en kwaliteitsborgingen.
             </Text>
           </View>
+          {/* Prominente "+ Nieuw project" CTA — Johnny 25 mei: "voorop, niet
+              achter een deur". onCreate-callback bubbelt naar parent. */}
+          {onCreate ? (
+            <TouchableOpacity
+              onPress={onCreate}
+              activeOpacity={0.85}
+              style={{
+                backgroundColor: theme.colors.accent,
+                paddingHorizontal: 18,
+                paddingVertical: 12,
+                borderRadius: 10,
+                alignSelf: 'flex-start',
+                marginLeft: 'auto' as unknown as number,
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Nieuw project aanmaken"
+            >
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>
+                + Nieuw project
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 
