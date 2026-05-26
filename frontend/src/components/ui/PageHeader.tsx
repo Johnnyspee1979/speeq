@@ -1,6 +1,6 @@
 // frontend/src/components/ui/PageHeader.tsx
 //
-// Two-Font System — schreeflettertype Playfair Display, Bold + Italic.
+// Claude Design v2 — display font Bricolage Grotesque, géén italic.
 // Maximaal 1 Call to Action aan de rechterkant. Geen kleuren of fonts
 // gehardcodeerd: alles komt uit `useTheme()`.
 
@@ -28,8 +28,8 @@ export const PageHeader = ({ title, rightAction }: PageHeaderProps) => {
       ]}
     >
       {/*
-        Two-Font System: Serif Bold + Italic voor de titel.
-        Haalt data verplicht uit designTokens.ts
+        Claude Design v2 — Bricolage Grotesque, géén italic.
+        Alle waarden via designTokens.typography.headline (single source of truth).
       */}
       <Text
         style={{
@@ -38,7 +38,7 @@ export const PageHeader = ({ title, rightAction }: PageHeaderProps) => {
           lineHeight: theme.typography.headline.lineHeight,
           color: theme.colors.textPrimary,
           fontWeight: '700',
-          fontStyle: 'italic',
+          letterSpacing: -0.5,
         }}
       >
         {title}
