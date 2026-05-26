@@ -124,32 +124,32 @@ export const fontStacks = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const tokens = {
-  // Calm palette aliassen
-  cream:          designTokens.colors.background,
-  creamSoft:      designTokens.colors.backgroundAlt,
-  ink:            designTokens.colors.textPrimary,
-  inkSoft:        designTokens.colors.textMuted,
-  beige:          designTokens.colors.borderWarm,
-  beigeSoft:      designTokens.colors.borderWarmAlt,
-  forest:         designTokens.colors.statusSuccess,
-  forestSoft:     'rgba(31,77,58,0.10)',
-  terracotta:     designTokens.colors.statusWarning,
-  terracottaSoft: 'rgba(248,131,99,0.12)',
-  amber:          '#9a6c1c',
-  amberSoft:      'rgba(154,108,28,0.12)',
+  // Calm palette aliassen — namen behouden voor compat, kleuren = Claude Design v2.
+  cream:          designTokens.colors.background,         // wit
+  creamSoft:      designTokens.colors.backgroundAlt,      // zinc-50
+  ink:            designTokens.colors.textPrimary,        // zinc-900
+  inkSoft:        designTokens.colors.textMuted,          // zinc-500
+  beige:          designTokens.colors.borderWarm,         // zinc-200
+  beigeSoft:      designTokens.colors.borderWarmAlt,      // zinc-300
+  forest:         designTokens.colors.statusSuccess,      // green-600
+  forestSoft:     'rgba(22,163,74,0.10)',                 // green-600 @ 10%
+  terracotta:     designTokens.colors.statusWarning,      // red-600
+  terracottaSoft: 'rgba(220,38,38,0.10)',                 // red-600 @ 10%
+  amber:          '#D97706',                              // orange-600
+  amberSoft:      'rgba(217,119,6,0.10)',
 
   // Compat met eerste pass
   primary:        designTokens.colors.textPrimary,
-  primarySoft:    'rgba(43,43,43,0.08)',
-  primaryBorder:  'rgba(43,43,43,0.25)',
+  primarySoft:    'rgba(24,24,27,0.06)',
+  primaryBorder:  'rgba(24,24,27,0.18)',
   danger:         designTokens.colors.statusWarning,
-  dangerSoft:     'rgba(248,131,99,0.12)',
-  warning:        '#9a6c1c',
-  warningSoft:    'rgba(154,108,28,0.12)',
-  surfaceWarm:    'rgba(244,236,221,0.5)',
+  dangerSoft:     'rgba(220,38,38,0.10)',
+  warning:        '#D97706',
+  warningSoft:    'rgba(217,119,6,0.10)',
+  surfaceWarm:    'rgba(244,244,245,0.6)',                // zinc-100 @ 60%
   borderWarm:     designTokens.colors.borderWarm,
   borderWarmSoft: designTokens.colors.borderWarmAlt,
-  hoverWarm:      'rgba(234,219,199,0.4)',
+  hoverWarm:      'rgba(228,228,231,0.5)',                // zinc-200 @ 50%
 
   // Radius
   radiusSm:   designTokens.radius.sm,
