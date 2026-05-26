@@ -46,6 +46,7 @@ const SETTINGS_KEYS = new Set([
   'presets',
   'dso',
   'about',
+  'maker',
 ]);
 
 export function ResponsiveLayout({

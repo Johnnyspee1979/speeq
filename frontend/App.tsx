@@ -13,8 +13,10 @@ import {
   Map,
   BarChart2,
   Hammer,
+  KeyRound,
 } from 'lucide-react-native';
 import CameraView from './src/components/CameraView';
+import MakerNewTenantScreen from './src/screens/MakerNewTenantScreen';
 import EvidenceList from './src/components/EvidenceList';
 import RejectionBanner from './src/components/RejectionBanner';
 import VakmanTutorialModal from './src/components/VakmanTutorialModal';
@@ -93,7 +95,8 @@ type Tab =
   | 'modules'
   | 'about'
   | 'overzicht'
-  | 'vakman';
+  | 'vakman'
+  | 'maker';
 
 type CameraEntryContext = 'selector' | 'oplevering';
 type OpleveringView = 'checklist' | 'consumentendossier';
@@ -143,6 +146,8 @@ const NAV_ITEMS: ResponsiveLayoutItem[] = [
   { key: 'presets', label: 'Presets', desktopLabel: 'Presets', icon: SlidersHorizontal },
   { key: 'dso', label: 'DSO', desktopLabel: 'DSO', icon: Building2 },
   { key: 'about', label: 'Info', desktopLabel: 'Info', icon: Info },
+  // Maker-only — alleen zichtbaar voor johnny@speesolutions.com via filter in navItems
+  { key: 'maker', label: 'Maker', desktopLabel: 'Maker tools', icon: KeyRound },
 ];
 
 class AppErrorBoundary extends React.Component<
@@ -409,7 +414,20 @@ function AppShell() {
       return NAV_ITEMS.filter((item) => !['review', 'dso', 'team', 'branding', 'modules', 'portal', 'overzicht'].includes(item.key));
     };
 
-    const items = getRoleItems();
+    let items = getRoleItems();
+
+    // Maker tools — alleen voor johnny@speesolutions.com (per Johnny 25 mei).
+    // Verwijder 'maker' uit alle andere users hun nav-lijst.
+    const isMaker = user?.email === 'johnny@speesolutions.com'
+                  || user?.email === 'johnny@speesolutions.nl';
+    if (!isMaker) {
+      items = items.filter((item) => item.key !== 'maker');
+    } else if (isDesktop && !items.some((item) => item.key === 'maker')) {
+      // Voeg toe als 't role-filter 'm wegnam (bv. PROJECTLEIDER filter)
+      const makerItem = NAV_ITEMS.find((i) => i.key === 'maker');
+      if (makerItem) items = [...items, makerItem];
+    }
+
 
     // Stap 2: simple-modus filter — verberg admin/dev-items
     if (simpleMode) {
@@ -678,6 +696,7 @@ function AppShell() {
     if (activeTab === 'modules') return <TenantFeaturesScreen />;
     if (activeTab === 'presets') return <PresetsManager />;
     if (activeTab === 'dso') return <DsoLog />;
+    if (activeTab === 'maker') return <MakerNewTenantScreen onBack={() => setActiveTab('overzicht')} />;
     if (activeTab === 'vakman') return (
       <View style={{ flex: 1 }}>
         <ProjectPicker />
