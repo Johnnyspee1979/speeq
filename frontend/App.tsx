@@ -17,6 +17,7 @@ import {
 } from 'lucide-react-native';
 import CameraView from './src/components/CameraView';
 import MakerNewTenantScreen from './src/screens/MakerNewTenantScreen';
+import MakerDashboardScreen from './src/screens/MakerDashboardScreen';
 import EvidenceList from './src/components/EvidenceList';
 import RejectionBanner from './src/components/RejectionBanner';
 import VakmanTutorialModal from './src/components/VakmanTutorialModal';
@@ -331,6 +332,8 @@ function AppShell() {
     }
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>('camera');
+  /** Sub-state voor maker-tab: dashboard (default) of new-tenant-wizard. */
+  const [makerView, setMakerView] = useState<'dashboard' | 'new'>('dashboard');
   const [selectedTask, setSelectedTask] = useState<CaptureTask | null>(null);
   const [startFlowResumeContext, setStartFlowResumeContext] = useState<StartFlowResumeContext | null>(null);
   const [cameraEntryContext, setCameraEntryContext] =
@@ -696,7 +699,28 @@ function AppShell() {
     if (activeTab === 'modules') return <TenantFeaturesScreen />;
     if (activeTab === 'presets') return <PresetsManager />;
     if (activeTab === 'dso') return <DsoLog />;
-    if (activeTab === 'maker') return <MakerNewTenantScreen onBack={() => setActiveTab('overzicht')} />;
+    if (activeTab === 'maker') {
+      return makerView === 'new' ? (
+        <MakerNewTenantScreen onBack={() => setMakerView('dashboard')} />
+      ) : (
+        <MakerDashboardScreen
+          onNewTenant={() => setMakerView('new')}
+          onViewAs={(slug) => {
+            // Impersonate via localStorage-override + reload zodat alle
+            // tenant-aware queries (RLS check via auth.uid) door diens
+            // ogen kijken. ADMIN heeft de juiste RLS-policies om door
+            // alle tenants te lezen.
+            if (typeof window !== 'undefined') {
+              try {
+                window.localStorage.setItem('wkb_active_tenant_id', slug);
+                window.localStorage.setItem('wkb_view_as_tenant', slug);
+                window.location.reload();
+              } catch { /* ignore */ }
+            }
+          }}
+        />
+      );
+    }
     if (activeTab === 'vakman') return (
       <View style={{ flex: 1 }}>
         <ProjectPicker />
