@@ -1256,7 +1256,7 @@ export default function WerkvoorbereiderDashboard({
 
         {/* ── Tab: Bonnen / Documenten ── */}
         {activeTab === 'documenten' && (
-          <View style={{ padding: isDesktop ? 28 : 16 }}>
+          <View style={{ paddingTop: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <Text style={{ fontSize: 20, fontWeight: '800', color: theme.colors.textPrimary }}>
                 📄 Bonnen & documenten ({documents.length})
