@@ -681,6 +681,34 @@ VALUES (
         </View>
       </View>
 
+      {/* Toon zichtbare lijst van wat nog ontbreekt — geen stille disabled-knop meer */}
+      {!canSubmit && !busy ? (
+        <View style={{
+          backgroundColor: 'rgba(217,119,6,0.08)',
+          borderWidth: 1,
+          borderColor: 'rgba(217,119,6,0.30)',
+          borderRadius: 10,
+          padding: 12,
+          marginBottom: 10,
+        }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#D97706', marginBottom: 4 }}>
+            ⚠️ Vul nog deze velden in:
+          </Text>
+          {bedrijfsnaam.trim().length < 2 ? (
+            <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginLeft: 8 }}>• Bedrijfsnaam</Text>
+          ) : null}
+          {effectiveSlug.length < 2 || !/^[a-z0-9-]+$/.test(effectiveSlug) ? (
+            <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginLeft: 8 }}>• URL-slug (alleen kleine letters, cijfers, koppelteken)</Text>
+          ) : null}
+          {keyuserEmail.trim().length < 4 ? (
+            <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginLeft: 8 }}>• Keyuser e-mail</Text>
+          ) : null}
+          {keyuserNaam.trim().length < 2 ? (
+            <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginLeft: 8 }}>• Sleutelgebruikersnaam</Text>
+          ) : null}
+        </View>
+      ) : null}
+
       <Pressable
         onPress={handleSubmit}
         disabled={!canSubmit}
