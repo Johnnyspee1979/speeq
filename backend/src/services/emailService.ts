@@ -342,7 +342,11 @@ const sendWelcomeEmail = async (input: WelcomeEmailInput): Promise<{ ok: boolean
   }
   try {
     const { error } = await resend.emails.send({
-      from: 'Johnny Spee <johnny@speesolutions.com>',
+      // Verzendadres: wkb.speesolutions.nl subdomein is al volledig
+      // geverifieerd in Resend (gebruikt door review + dossier mails).
+      // Reply-to wijst naar johnny@ zodat klanten direct kunnen reageren
+      // zonder dat we DNS-validatie voor speesolutions.com hoeven.
+      from: 'Johnny Spee <noreply@wkb.speesolutions.nl>',
       replyTo: 'johnny@speesolutions.com',
       to: input.toEmail,
       subject: `Welkom bij SpeeQ — ${input.bedrijfsnaam}`,
