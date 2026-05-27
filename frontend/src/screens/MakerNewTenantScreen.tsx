@@ -144,25 +144,22 @@ export default function MakerNewTenantScreen({ onBack }: Props) {
         return;
       }
 
-      // 2. INSERT tenants rij
+      // 2. INSERT tenants rij — kolom heet 'name', niet 'company_name'.
       const { error: tErr } = await supabase.from('tenants').insert({
         slug: effectiveSlug,
-        company_name: bedrijfsnaam.trim(),
+        name: bedrijfsnaam.trim(),
         admin_email: keyuserEmail.trim().toLowerCase(),
         provisioning_status: 'active',
         users: 1,
       });
       if (tErr) throw new Error(`tenants insert: ${tErr.message}`);
 
-      // 3. tenant_branding (zelfde slug als koppeling)
-      const { error: bErr } = await supabase.from('tenant_branding').insert({
-        company_id: effectiveSlug,
-        slug: effectiveSlug,
-        display_name: bedrijfsnaam.trim(),
-        primary_color: accentKleur,
-        logo_url: logoUrl.trim() || null,
-      });
-      if (bErr) console.warn('tenant_branding insert mislukt (niet fataal):', bErr.message);
+      // 3. tenant_branding-insert overgeslagen — deze tabel is in huidige
+      // schema een GEDEELDE rij (id=1) tussen alle tenants ipv per-tenant.
+      // Branding (logo + kleur) zet de klant later zelf in via
+      // Bedrijfsbranding-scherm. Bedrijfsnaam staat al in tenants.name.
+      // Bewaar het logo/kleur-keuze in een TODO voor de keyuser.
+      console.log('[Maker] tenant_branding skipped — klant stelt logo+kleur later in.');
 
       // 4. tenant_features defaults
       const featureRows = FEATURE_KEYS.map((k) => ({
