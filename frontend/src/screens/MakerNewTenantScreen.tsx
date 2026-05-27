@@ -323,13 +323,78 @@ VALUES (
           onChangeText={setKeyuserNaam}
           theme={theme}
         />
-        <Field
-          label="Accent-kleur (hex)"
-          placeholder="#1B3A5C"
-          value={accentKleur}
-          onChangeText={setAccentKleur}
-          theme={theme}
-        />
+        {/* Accent-kleur — paletje voor wie geen kleur-expert is, hex voor wie wel.
+            Klik op een swatch → vult hex in. Selectie krijgt witte ring. */}
+        <View style={{ marginBottom: 14 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary, marginBottom: 2 }}>
+            Accent-kleur
+          </Text>
+          <Text style={{ fontSize: 11, color: theme.colors.textMuted, marginBottom: 10 }}>
+            Kies een kleur uit het palet, of plak je eigen hex hieronder.
+          </Text>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+            {[
+              { hex: '#1B3A5C', name: 'Navy (default)' },
+              { hex: '#0EA5E9', name: 'Hemelsblauw' },
+              { hex: '#15803D', name: 'Bos-groen' },
+              { hex: '#16A34A', name: 'Stevig groen' },
+              { hex: '#CA8A04', name: 'Mosterd-geel' },
+              { hex: '#EA580C', name: 'Bouw-oranje' },
+              { hex: '#DC2626', name: 'Klassiek rood' },
+              { hex: '#9F1239', name: 'Bordeaux' },
+              { hex: '#7C3AED', name: 'Paars' },
+              { hex: '#A16207', name: 'Roest-bruin' },
+              { hex: '#374151', name: 'Donker grijs' },
+              { hex: '#1F2937', name: 'Antraciet' },
+            ].map(({ hex, name }) => {
+              const active = accentKleur.toLowerCase() === hex.toLowerCase();
+              return (
+                <Pressable
+                  key={hex}
+                  onPress={() => setAccentKleur(hex)}
+                  accessibilityLabel={`Kies ${name}`}
+                  {...(Platform.OS === 'web' ? ({ title: `${name} (${hex})` } as object) : {})}
+                  style={({ pressed }) => [
+                    {
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: hex,
+                      borderWidth: active ? 3 : 1,
+                      borderColor: active ? '#FFFFFF' : 'rgba(0,0,0,0.10)',
+                    },
+                    Platform.OS === 'web' && active
+                      ? ({ boxShadow: `0 0 0 2px ${hex}` } as object)
+                      : null,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                />
+              );
+            })}
+          </View>
+
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              borderRadius: 10,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              fontSize: 14,
+              color: theme.colors.textPrimary,
+              backgroundColor: theme.colors.surface,
+              fontFamily: 'Menlo, monospace',
+              ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}),
+            }}
+            value={accentKleur}
+            onChangeText={setAccentKleur}
+            placeholder="#1B3A5C"
+            placeholderTextColor={theme.colors.textMuted}
+            autoCapitalize="characters"
+            autoCorrect={false}
+          />
+        </View>
         {/* Klant-logo — upload van PC of plak URL (twee paden, kies wat handig is).
             Onderscheid t.o.v. Bedrijfsbranding-scherm: dáár wijzigt de klant zelf,
             hier geef jij als maker het startlogo mee. */}
