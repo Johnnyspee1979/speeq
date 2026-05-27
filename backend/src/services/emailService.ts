@@ -342,7 +342,8 @@ const sendWelcomeEmail = async (input: WelcomeEmailInput): Promise<{ ok: boolean
   }
   try {
     const { error } = await resend.emails.send({
-      from: 'SpeeQ WKB <noreply@wkb.speesolutions.nl>',
+      from: 'Johnny Spee <johnny@speesolutions.com>',
+      replyTo: 'johnny@speesolutions.com',
       to: input.toEmail,
       subject: `Welkom bij SpeeQ — ${input.bedrijfsnaam}`,
       html: buildWelcomeEmailHtml(input),
