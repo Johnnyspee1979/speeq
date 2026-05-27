@@ -156,7 +156,7 @@ export default function MakerNewTenantScreen({ onBack }: Props) {
         slug: effectiveSlug,
         name: bedrijfsnaam.trim(),
         admin_email: keyuserEmail.trim().toLowerCase(),
-        provisioning_status: 'active',
+        provisioning_status: 'provisioned',
         users: 1,
       });
       if (tErr) throw new Error(`tenants insert: ${tErr.message}`);
