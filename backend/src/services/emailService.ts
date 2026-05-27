@@ -265,7 +265,103 @@ const sendDossierReadyEmail = async (input: DossierEmailInput): Promise<boolean>
   }
 };
 
+// ─── Welkom-mail voor nieuwe SpeeQ-klant (Maker-wizard) ────────────────
+
+type WelcomeEmailInput = {
+  toEmail: string;
+  toName: string;
+  bedrijfsnaam: string;
+  wachtwoord: string;
+  loginUrl: string;
+  accentKleur: string;
+  logoUrl?: string | null;
+};
+
+const escHtmlBackend = (s: string) => s.replace(/[&<>"']/g, (c) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[c] ?? c));
+
+const buildWelcomeEmailHtml = (input: WelcomeEmailInput) => {
+  const logoBlock = input.logoUrl
+    ? `<img src="${input.logoUrl}" alt="${escHtmlBackend(input.bedrijfsnaam)}" style="max-width:120px;max-height:60px;margin-bottom:20px;" />`
+    : '';
+  return `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#F4F4F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#18181B;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F4F4F5;padding:40px 20px;">
+<tr><td align="center">
+  <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="background:#FFFFFF;border-radius:16px;border:1px solid #E4E4E7;overflow:hidden;max-width:560px;">
+    <tr><td style="padding:8px;background:${input.accentKleur};"></td></tr>
+    <tr><td style="padding:36px 36px 28px;">
+      ${logoBlock}
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${input.accentKleur};margin:0 0 8px;">WELKOM</p>
+      <h1 style="font-family:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;font-size:28px;font-weight:700;color:#09090B;letter-spacing:-0.5px;margin:0 0 12px;line-height:34px;">
+        Hallo ${escHtmlBackend(input.toName)},
+      </h1>
+      <p style="font-size:15px;line-height:24px;color:#52525B;margin:0 0 20px;">
+        Welkom bij <strong>SpeeQ WKB</strong>! We hebben een account aangemaakt voor <strong>${escHtmlBackend(input.bedrijfsnaam)}</strong>.
+      </p>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FAFAFA;border:1px solid #E4E4E7;border-radius:12px;margin-bottom:24px;">
+        <tr><td style="padding:18px 22px;">
+          <p style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#71717A;margin:0 0 10px;">Inloggegevens</p>
+          <p style="font-size:13px;color:#52525B;margin:0 0 4px;font-family:Menlo,monospace;">
+            <span style="color:#18181B;">${escHtmlBackend(input.toEmail)}</span>
+          </p>
+          <p style="font-size:13px;color:#52525B;margin:0;font-family:Menlo,monospace;">
+            Wachtwoord: <strong style="color:#18181B;">${escHtmlBackend(input.wachtwoord)}</strong>
+          </p>
+        </td></tr>
+      </table>
+      <a href="${input.loginUrl}" style="display:inline-block;background:${input.accentKleur};color:#FFFFFF;font-size:15px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:10px;margin-bottom:24px;">
+        Inloggen op SpeeQ →
+      </a>
+      <h3 style="font-size:14px;font-weight:700;color:#18181B;margin:8px 0 10px;">Eerste stappen</h3>
+      <ol style="font-size:14px;line-height:22px;color:#52525B;margin:0 0 20px;padding-left:18px;">
+        <li>Log in en wijzig je wachtwoord</li>
+        <li>Vul je bedrijfsbranding aan (logo + kleur)</li>
+        <li>Nodig werkvoorbereiders en vakmannen uit via Team Beheer</li>
+      </ol>
+      <hr style="border:0;border-top:1px solid #E4E4E7;margin:24px 0;" />
+      <p style="font-size:12px;color:#71717A;margin:0;">
+        Hulp nodig? Reply op deze mail of bel <a href="tel:+31681908480" style="color:${input.accentKleur};text-decoration:none;">+31 6 81908480</a>.
+      </p>
+      <p style="font-size:12px;color:#71717A;margin:14px 0 0;">
+        Hartelijk welkom,<br/>
+        <strong style="color:#18181B;">Johnny Spee</strong> · Spee Solutions
+      </p>
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body></html>`;
+};
+
+const sendWelcomeEmail = async (input: WelcomeEmailInput): Promise<{ ok: boolean; error?: string }> => {
+  const resend = getResendClient();
+  if (!resend) {
+    return { ok: false, error: 'RESEND_API_KEY niet geconfigureerd op de server.' };
+  }
+  try {
+    const { error } = await resend.emails.send({
+      from: 'SpeeQ WKB <noreply@wkb.speesolutions.nl>',
+      to: input.toEmail,
+      subject: `Welkom bij SpeeQ — ${input.bedrijfsnaam}`,
+      html: buildWelcomeEmailHtml(input),
+    });
+    if (error) {
+      console.error('📧 Welkom-mail mislukt:', error);
+      return { ok: false, error: String((error as { message?: string }).message ?? error) };
+    }
+    console.log(`📧 Welkom-mail verstuurd naar ${input.toEmail}`);
+    return { ok: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('📧 Welkom-mail exception:', msg);
+    return { ok: false, error: msg };
+  }
+};
+
 module.exports = {
   sendReviewNotificationEmail,
   sendDossierReadyEmail,
+  sendWelcomeEmail,
 };

@@ -30,6 +30,7 @@ const ocrRoutes = require('./routes/ocrRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const voiceRoutes = require('./routes/voiceRoutes');
+const makerRoutes = require('./routes/makerRoutes');
 const { startKiKRetryJob } = require('./jobs/kikRetryCron');
 const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
@@ -83,6 +84,7 @@ app.use('/api/wkb-ai/ocr', requireAuth, ocrRoutes);
 app.use('/api/review', requireAuth, reviewRoutes);
 app.use('/api/notifications', requireAuth, notificationRoutes);
 app.use('/api/voice', voiceRoutes);
+app.use('/api/maker', makerRoutes);
 
 const getSupabaseAdminClient = () => {
   if (!hasSupabaseConfig()) {
