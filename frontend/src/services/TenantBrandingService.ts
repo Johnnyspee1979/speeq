@@ -143,11 +143,14 @@ export function getBrandingSync(): TenantBranding {
  * Upload nieuw logo naar Storage en update `tenant_branding.logo_url`.
  * Geeft de publieke URL terug.
  */
-export async function uploadLogo(file: File): Promise<string> {
-  // Pad: logo-<timestamp>.<ext> — overschrijft niets bestaands, oude versies
-  // blijven beschikbaar voor history/audit.
+/**
+ * Pure storage-upload zonder side-effect op tenant_branding.
+ * Gebruikt door de Maker-wizard (tenant bestaat nog niet tijdens upload)
+ * en intern door uploadLogo() voor de huidige tenant.
+ */
+export async function uploadLogoToStorage(file: File, prefix = 'logo'): Promise<string> {
   const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-  const path = `logo-${Date.now()}.${ext}`;
+  const path = `${prefix}-${Date.now()}.${ext}`;
 
   const { error: uploadErr } = await supabase.storage
     .from(BUCKET)
@@ -158,8 +161,11 @@ export async function uploadLogo(file: File): Promise<string> {
   }
 
   const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  const publicUrl = pub.publicUrl;
+  return pub.publicUrl;
+}
 
+export async function uploadLogo(file: File): Promise<string> {
+  const publicUrl = await uploadLogoToStorage(file);
   await upsertBranding({ logo_url: publicUrl });
   return publicUrl;
 }

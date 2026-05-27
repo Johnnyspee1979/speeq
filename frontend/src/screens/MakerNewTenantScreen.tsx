@@ -15,7 +15,7 @@
  * Per Johnny 25 mei: "hoe maak ik als developer nieuwe klanten aan?"
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -27,10 +27,11 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { Building2, KeyRound, ExternalLink, Copy, CheckCircle2 } from 'lucide-react-native';
+import { Building2, KeyRound, ExternalLink, Copy, CheckCircle2, Upload, Image as ImageIcon } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { supabase } from '../lib/supabase';
 import { FEATURE_KEYS } from '../services/TenantFeaturesService';
+import { uploadLogoToStorage } from '../services/TenantBrandingService';
 
 // Welke features default aan bij nieuwe klant — minimale set
 const DEFAULT_ON_FEATURES = new Set(['pdf_export', 'gps_tracking', 'ai_review', 'qr_stickers']);
@@ -66,9 +67,41 @@ export default function MakerNewTenantScreen({ onBack }: Props) {
   const [keyuserNaam, setKeyuserNaam] = useState('');
   const [accentKleur, setAccentKleur] = useState('#1B3A5C');
   const [logoUrl, setLogoUrl] = useState('');
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ slug: string; password: string; sql: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  /** Open native bestandskiezer. */
+  const handlePickLogo = () => fileInputRef.current?.click();
+
+  /** Upload gekozen bestand naar Supabase storage en zet de public URL. */
+  const handleLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // reset zodat zelfde bestand opnieuw kan
+    if (!file) return;
+    setLogoError(null);
+    if (!file.type.startsWith('image/')) {
+      setLogoError('Kies een afbeelding (PNG, JPG of SVG).');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError('Logo te groot — max 2 MB.');
+      return;
+    }
+    setLogoUploading(true);
+    try {
+      // Prefix met slug zodat 't pad herkenbaar is in storage-bucket.
+      const url = await uploadLogoToStorage(file, `tenant-${effectiveSlug || 'new'}`);
+      setLogoUrl(url);
+    } catch (err) {
+      setLogoError(err instanceof Error ? err.message : 'Upload mislukt');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   // Auto-slug uit bedrijfsnaam, tenzij user al iets typte
   const effectiveSlug = slugInput.trim() || slugify(bedrijfsnaam);
@@ -297,14 +330,106 @@ VALUES (
           onChangeText={setAccentKleur}
           theme={theme}
         />
-        <Field
-          label="Logo URL (optioneel)"
-          placeholder="https://…/logo.png"
-          value={logoUrl}
-          onChangeText={setLogoUrl}
-          autoCapitalize="none"
-          theme={theme}
-        />
+        {/* Klant-logo — upload van PC of plak URL (twee paden, kies wat handig is).
+            Onderscheid t.o.v. Bedrijfsbranding-scherm: dáár wijzigt de klant zelf,
+            hier geef jij als maker het startlogo mee. */}
+        <View style={{ marginBottom: 14 }}>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: theme.colors.textPrimary, marginBottom: 2 }}>
+            Klant-logo (optioneel)
+          </Text>
+          <Text style={{ fontSize: 11, color: theme.colors.textMuted, marginBottom: 8 }}>
+            Initial logo voor de nieuwe klant — ze kunnen 't zelf later wijzigen via Bedrijfsbranding.
+          </Text>
+
+          {/* Verborgen file input — opent native dialog op web */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/svg+xml,image/webp"
+            style={{ display: 'none' } as React.CSSProperties}
+            onChange={handleLogoFile}
+          />
+
+          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+            {/* Preview */}
+            <View style={{
+              width: 64,
+              height: 64,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.surfaceAlt,
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              {logoUrl ? (
+                // @ts-ignore web img is fine
+                <img src={logoUrl} alt="Logo preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                <ImageIcon size={22} color={theme.colors.textMuted} />
+              )}
+            </View>
+
+            {/* Upload-knop */}
+            <Pressable
+              onPress={handlePickLogo}
+              disabled={logoUploading}
+              style={({ pressed }) => [
+                {
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: theme.colors.border,
+                  backgroundColor: theme.colors.surface,
+                },
+                pressed && { opacity: 0.7 },
+                logoUploading && { opacity: 0.5 },
+              ]}
+            >
+              {logoUploading ? (
+                <ActivityIndicator size="small" color={theme.colors.accent} />
+              ) : (
+                <Upload size={16} color={theme.colors.textPrimary} />
+              )}
+              <Text style={{ color: theme.colors.textPrimary, fontWeight: '700', fontSize: 13 }}>
+                {logoUploading ? 'Uploaden…' : logoUrl ? 'Vervang logo' : 'Upload logo van PC'}
+              </Text>
+            </Pressable>
+          </View>
+
+          {logoError ? (
+            <Text style={{ color: '#DC2626', fontSize: 12, marginTop: 6 }}>{logoError}</Text>
+          ) : null}
+
+          {/* Fallback: plak URL */}
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              borderRadius: 10,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              fontSize: 13,
+              color: theme.colors.textPrimary,
+              backgroundColor: theme.colors.surface,
+              marginTop: 8,
+              ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : {}),
+            }}
+            value={logoUrl}
+            onChangeText={setLogoUrl}
+            placeholder="Of plak hier een logo-URL: https://…/logo.png"
+            placeholderTextColor={theme.colors.textMuted}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
       </View>
 
       <Pressable

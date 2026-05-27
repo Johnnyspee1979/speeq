@@ -166,9 +166,9 @@ export default function TenantBrandingScreen({ onBack }: Props) {
         </View>
       )}
 
-      {/* ─── Logo ─────────────────────────────────────────────────────────── */}
+      {/* ─── Mijn bedrijfslogo ───────────────────────────────────────────── */}
       <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
-        <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Logo</Text>
+        <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Mijn bedrijfslogo</Text>
 
         <View style={s.logoRow}>
           <View style={[s.logoPreview, { borderColor: theme.colors.borderWarm, backgroundColor: theme.colors.background }]}>
@@ -208,7 +208,7 @@ export default function TenantBrandingScreen({ onBack }: Props) {
 
       {/* ─── Bedrijfsnaam ─────────────────────────────────────────────────── */}
       <View style={[s.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.borderWarm }]}>
-        <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Bedrijfsnaam</Text>
+        <Text style={[s.sectionTitle, { color: theme.colors.textPrimary }]}>Mijn bedrijfsnaam</Text>
         <TextInput
           value={name}
           onChangeText={setName}
