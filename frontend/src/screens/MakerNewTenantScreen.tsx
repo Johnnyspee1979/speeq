@@ -27,7 +27,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { Building2, KeyRound, ExternalLink, Copy, CheckCircle2, Upload, Image as ImageIcon } from 'lucide-react-native';
+import { Building2, KeyRound, ExternalLink, Copy, CheckCircle2, Upload, Image as ImageIcon, Mail, FileCode } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { supabase } from '../lib/supabase';
 import { FEATURE_KEYS } from '../services/TenantFeaturesService';
@@ -71,7 +71,15 @@ export default function MakerNewTenantScreen({ onBack }: Props) {
   const [logoError, setLogoError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ slug: string; password: string; sql: string } | null>(null);
+  const [result, setResult] = useState<{
+    slug: string;
+    password: string;
+    sql: string;
+    mailSubject: string;
+    mailText: string;
+    mailHtml: string;
+  } | null>(null);
+  const [copiedMail, setCopiedMail] = useState<'html' | 'text' | null>(null);
   const [copied, setCopied] = useState(false);
 
   /** Open native bestandskiezer. */
@@ -195,7 +203,36 @@ VALUES (
   '${effectiveSlug}'
 );`;
 
-      setResult({ slug: effectiveSlug, password: pw, sql });
+      // Bouw welkom-mail content voor de keyuser (Johnny verstuurt 'm zelf
+      // via Gmail/Outlook tot we de Edge Function-route bouwen).
+      const loginUrl = typeof window !== 'undefined' ? window.location.origin : 'https://speeq-wkb.vercel.app';
+      const mailSubject = `Welkom bij SpeeQ — ${bedrijfsnaam.trim()}`;
+      const mailText = buildWelcomeMailText({
+        bedrijfsnaam: bedrijfsnaam.trim(),
+        keyuserNaam: keyuserNaam.trim(),
+        keyuserEmail: keyuserEmail.trim().toLowerCase(),
+        wachtwoord: pw,
+        loginUrl,
+        accentKleur,
+      });
+      const mailHtml = buildWelcomeMailHtml({
+        bedrijfsnaam: bedrijfsnaam.trim(),
+        keyuserNaam: keyuserNaam.trim(),
+        keyuserEmail: keyuserEmail.trim().toLowerCase(),
+        wachtwoord: pw,
+        loginUrl,
+        accentKleur,
+        logoUrl: logoUrl.trim() || null,
+      });
+
+      setResult({
+        slug: effectiveSlug,
+        password: pw,
+        sql,
+        mailSubject,
+        mailText,
+        mailHtml,
+      });
     } catch (err) {
       Alert.alert('Aanmaken mislukt', err instanceof Error ? err.message : String(err));
     } finally {
@@ -264,6 +301,69 @@ VALUES (
               <Text style={styles.openBtnText}>Open Supabase SQL</Text>
             </Pressable>
           </View>
+
+          {/* ─── Welkom-mail sectie ──────────────────────────────────── */}
+          <Text style={styles.sectionTitle}>Welkom-mail voor de keyuser</Text>
+          <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginBottom: 10 }}>
+            Branded HTML met logo + kleur. Verstuur 'm via Gmail/Outlook of klik
+            "Open in mail-app" voor een simpele plain-text variant.
+          </Text>
+
+          {/* Preview — toon kort de eerste paar regels uit text-versie */}
+          <View style={[styles.sqlBox, { maxHeight: 180, overflow: 'hidden' }]}>
+            <Text style={[styles.sqlText, { fontFamily: undefined, fontSize: 12 }]}>
+              {result.mailText.split('\n').slice(0, 10).join('\n')}…
+            </Text>
+          </View>
+
+          <View style={styles.actionRow}>
+            <Pressable
+              onPress={() => {
+                if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                  const mailto = `mailto:${keyuserEmail}?subject=${encodeURIComponent(result.mailSubject)}&body=${encodeURIComponent(result.mailText)}`;
+                  window.location.href = mailto;
+                }
+              }}
+              style={({ pressed }) => [styles.copyBtn, pressed && { opacity: 0.7 }]}
+            >
+              <Mail size={16} color="#FFFFFF" />
+              <Text style={styles.copyBtnText}>Open in mail-app</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (Platform.OS === 'web' && navigator?.clipboard) {
+                  void navigator.clipboard.writeText(result.mailHtml);
+                  setCopiedMail('html');
+                  setTimeout(() => setCopiedMail(null), 2000);
+                }
+              }}
+              style={({ pressed }) => [styles.openBtn, pressed && { opacity: 0.7 }]}
+            >
+              <FileCode size={16} color={theme.colors.textPrimary} />
+              <Text style={styles.openBtnText}>
+                {copiedMail === 'html' ? '✓ HTML gekopieerd' : 'Kopieer HTML (Gmail/Outlook)'}
+              </Text>
+            </Pressable>
+          </View>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS === 'web' && navigator?.clipboard) {
+                void navigator.clipboard.writeText(result.mailText);
+                setCopiedMail('text');
+                setTimeout(() => setCopiedMail(null), 2000);
+              }
+            }}
+            style={({ pressed }) => [
+              styles.openBtn,
+              { marginTop: 8, alignSelf: 'stretch' },
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Copy size={16} color={theme.colors.textPrimary} />
+            <Text style={styles.openBtnText}>
+              {copiedMail === 'text' ? '✓ Tekst gekopieerd' : 'Kopieer als platte tekst'}
+            </Text>
+          </Pressable>
 
           <Pressable
             onPress={onBack}
@@ -748,4 +848,122 @@ function createStyles(theme: ReturnType<typeof useTheme>['theme']) {
       fontWeight: '600',
     },
   });
+}
+
+// ─── Welkom-mail builders ──────────────────────────────────────────────
+// Twee versies: HTML voor Gmail/Outlook paste, plain text voor mailto: link.
+// Bewust eenvoudig — geen externe mail-service. Johnny paste/verstuurt zelf.
+
+interface WelcomeMailOpts {
+  bedrijfsnaam: string;
+  keyuserNaam: string;
+  keyuserEmail: string;
+  wachtwoord: string;
+  loginUrl: string;
+  accentKleur: string;
+  logoUrl?: string | null;
+}
+
+function buildWelcomeMailText(opts: WelcomeMailOpts): string {
+  return `Hallo ${opts.keyuserNaam},
+
+Welkom bij SpeeQ WKB! We hebben een account aangemaakt voor ${opts.bedrijfsnaam}.
+
+Inloggegevens:
+  E-mail:       ${opts.keyuserEmail}
+  Wachtwoord:   ${opts.wachtwoord}
+  Inloglink:    ${opts.loginUrl}
+
+Eerste stappen:
+  1. Log in en wijzig je wachtwoord
+  2. Vul je bedrijfsbranding aan (logo + kleur)
+  3. Nodig je werkvoorbereiders en vakmannen uit via Team Beheer
+
+Je krijgt direct toegang tot:
+  - Offline-first foto-app voor de vakman
+  - Werkvoorbereider review-dashboard
+  - PDF-dossier exports
+  - GPS-tracking + AI-validatie
+
+Hulp nodig? Reply op deze mail of bel +31 6 81908480.
+
+Hartelijk welkom,
+Johnny Spee
+Spee Solutions / SpeeQ WKB
+`;
+}
+
+function buildWelcomeMailHtml(opts: WelcomeMailOpts): string {
+  const logoBlock = opts.logoUrl
+    ? `<img src="${opts.logoUrl}" alt="${opts.bedrijfsnaam}" style="max-width:120px;max-height:60px;margin-bottom:20px;" />`
+    : '';
+  return `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#F4F4F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;color:#18181B;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#F4F4F5;padding:40px 20px;">
+<tr><td align="center">
+  <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="background:#FFFFFF;border-radius:16px;border:1px solid #E4E4E7;overflow:hidden;max-width:560px;">
+    <tr><td style="padding:8px;background:${opts.accentKleur};"></td></tr>
+    <tr><td style="padding:36px 36px 28px;">
+      ${logoBlock}
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:${opts.accentKleur};margin:0 0 8px;">WELKOM</p>
+      <h1 style="font-family:'Bricolage Grotesque','Plus Jakarta Sans',system-ui,sans-serif;font-size:28px;font-weight:700;color:#09090B;letter-spacing:-0.5px;margin:0 0 12px;line-height:34px;">
+        Hallo ${escHtml(opts.keyuserNaam)},
+      </h1>
+      <p style="font-size:15px;line-height:24px;color:#52525B;margin:0 0 20px;">
+        Welkom bij <strong>SpeeQ WKB</strong>! We hebben een account aangemaakt voor <strong>${escHtml(opts.bedrijfsnaam)}</strong>.
+      </p>
+
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#FAFAFA;border:1px solid #E4E4E7;border-radius:12px;margin-bottom:24px;">
+        <tr><td style="padding:18px 22px;">
+          <p style="font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#71717A;margin:0 0 10px;">Inloggegevens</p>
+          <p style="font-size:13px;color:#52525B;margin:0 0 4px;font-family:Menlo,monospace;">
+            <span style="color:#18181B;">${escHtml(opts.keyuserEmail)}</span>
+          </p>
+          <p style="font-size:13px;color:#52525B;margin:0;font-family:Menlo,monospace;">
+            Wachtwoord: <strong style="color:#18181B;">${escHtml(opts.wachtwoord)}</strong>
+          </p>
+        </td></tr>
+      </table>
+
+      <a href="${opts.loginUrl}" style="display:inline-block;background:${opts.accentKleur};color:#FFFFFF;font-size:15px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:10px;margin-bottom:24px;">
+        Inloggen op SpeeQ →
+      </a>
+
+      <h3 style="font-size:14px;font-weight:700;color:#18181B;margin:8px 0 10px;">Eerste stappen</h3>
+      <ol style="font-size:14px;line-height:22px;color:#52525B;margin:0 0 20px;padding-left:18px;">
+        <li>Log in en wijzig je wachtwoord</li>
+        <li>Vul je bedrijfsbranding aan (logo + kleur)</li>
+        <li>Nodig werkvoorbereiders en vakmannen uit via Team Beheer</li>
+      </ol>
+
+      <h3 style="font-size:14px;font-weight:700;color:#18181B;margin:8px 0 10px;">Je krijgt direct toegang tot</h3>
+      <ul style="font-size:14px;line-height:22px;color:#52525B;margin:0 0 24px;padding-left:18px;">
+        <li>Offline-first foto-app voor de vakman</li>
+        <li>Werkvoorbereider review-dashboard</li>
+        <li>PDF-dossier exports + GPS-tracking</li>
+        <li>AI-validatie van foto-bewijs</li>
+      </ul>
+
+      <hr style="border:0;border-top:1px solid #E4E4E7;margin:24px 0;" />
+      <p style="font-size:12px;color:#71717A;margin:0;">
+        Hulp nodig? Reply op deze mail of bel <a href="tel:+31681908480" style="color:${opts.accentKleur};text-decoration:none;">+31 6 81908480</a>.
+      </p>
+      <p style="font-size:12px;color:#71717A;margin:14px 0 0;">
+        Hartelijk welkom,<br/>
+        <strong style="color:#18181B;">Johnny Spee</strong> · Spee Solutions
+      </p>
+    </td></tr>
+  </table>
+  <p style="font-size:11px;color:#A1A1AA;margin:20px 0 0;">
+    Verzonden vanaf SpeeQ WKB · ${opts.loginUrl.replace(/^https?:\/\//, '')}
+  </p>
+</td></tr>
+</table>
+</body></html>`;
+}
+
+function escHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c] ?? c));
 }
