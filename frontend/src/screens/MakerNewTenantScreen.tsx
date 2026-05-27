@@ -84,6 +84,8 @@ export default function MakerNewTenantScreen({ onBack }: Props) {
   const [copied, setCopied] = useState(false);
   const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [sendError, setSendError] = useState<string | null>(null);
+  // Web-Alert is op Expo Web stil → toon submit-error als zichtbare banner.
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   /** Open native bestandskiezer. */
   const handlePickLogo = () => fileInputRef.current?.click();
@@ -131,21 +133,26 @@ export default function MakerNewTenantScreen({ onBack }: Props) {
   const handleSubmit = async () => {
     setBusy(true);
     setResult(null);
+    setSubmitError(null);
     try {
-      // 1. Bestaande slug check
+      // 1. Bestaande slug/company_id check — beide kolommen kunnen botsen.
       const { data: existing } = await supabase
         .from('tenants')
-        .select('slug')
-        .eq('slug', effectiveSlug)
+        .select('slug, company_id')
+        .or(`slug.eq.${effectiveSlug},company_id.eq.${effectiveSlug}`)
         .maybeSingle();
       if (existing) {
-        Alert.alert('Slug bestaat al', `Tenant '${effectiveSlug}' bestaat al. Kies een andere slug.`);
+        setSubmitError(`Tenant '${effectiveSlug}' bestaat al. Kies een andere URL-naam.`);
         setBusy(false);
         return;
       }
 
-      // 2. INSERT tenants rij — kolom heet 'name', niet 'company_name'.
+      // 2. INSERT tenants rij.
+      // Verplichte NOT NULL kolommen zonder default: company_id, name.
+      // We gebruiken slug ook als company_id (1:1 conventie, zie bestaande
+      // rij 'combivo/combivo'). status/users/provisioning_status hebben defaults.
       const { error: tErr } = await supabase.from('tenants').insert({
+        company_id: effectiveSlug,
         slug: effectiveSlug,
         name: bedrijfsnaam.trim(),
         admin_email: keyuserEmail.trim().toLowerCase(),
@@ -234,7 +241,12 @@ VALUES (
         mailHtml,
       });
     } catch (err) {
-      Alert.alert('Aanmaken mislukt', err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      // Toon altijd zichtbaar in UI (Alert.alert werkt niet op Expo Web).
+      setSubmitError(msg);
+      // Log óók in console zodat we 't bij de hand hebben.
+      // eslint-disable-next-line no-console
+      console.error('[Maker] Klant aanmaken mislukt:', msg);
     } finally {
       setBusy(false);
     }
@@ -706,6 +718,23 @@ VALUES (
           {keyuserNaam.trim().length < 2 ? (
             <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginLeft: 8 }}>• Sleutelgebruikersnaam</Text>
           ) : null}
+        </View>
+      ) : null}
+
+      {/* Rode fout-banner — Alert.alert is op web stil, dus tonen we 't hier. */}
+      {submitError ? (
+        <View style={{
+          backgroundColor: 'rgba(220,38,38,0.08)',
+          borderWidth: 1,
+          borderColor: 'rgba(220,38,38,0.35)',
+          borderRadius: 10,
+          padding: 12,
+          marginBottom: 10,
+        }}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: '#DC2626', marginBottom: 4 }}>
+            ❌ Klant aanmaken mislukt
+          </Text>
+          <Text style={{ fontSize: 12, color: theme.colors.textSecondary }}>{submitError}</Text>
         </View>
       ) : null}
 
