@@ -27,11 +27,12 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { Building2, KeyRound, ExternalLink, Copy, CheckCircle2, Upload, Image as ImageIcon, Mail, FileCode } from 'lucide-react-native';
+import { Building2, KeyRound, ExternalLink, Copy, CheckCircle2, Upload, Image as ImageIcon, Mail, FileCode, Send } from 'lucide-react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import { supabase } from '../lib/supabase';
 import { FEATURE_KEYS } from '../services/TenantFeaturesService';
 import { uploadLogoToStorage } from '../services/TenantBrandingService';
+import { BACKEND_URL } from '../config/app';
 
 // Welke features default aan bij nieuwe klant — minimale set
 const DEFAULT_ON_FEATURES = new Set(['pdf_export', 'gps_tracking', 'ai_review', 'qr_stickers']);
@@ -81,6 +82,8 @@ export default function MakerNewTenantScreen({ onBack }: Props) {
   } | null>(null);
   const [copiedMail, setCopiedMail] = useState<'html' | 'text' | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [sendError, setSendError] = useState<string | null>(null);
 
   /** Open native bestandskiezer. */
   const handlePickLogo = () => fileInputRef.current?.click();
@@ -251,6 +254,48 @@ VALUES (
     } catch { /* ignore */ }
   };
 
+  /**
+   * Echte mail-verzending via backend /api/maker/send-welcome-email.
+   * Vereist RESEND_API_KEY env var op Railway (zie docs/operations.md).
+   * Backend valideert dat alleen Maker (johnny@) deze endpoint mag aanroepen.
+   */
+  const handleSendWelcomeMail = async () => {
+    if (!result) return;
+    setSendStatus('sending');
+    setSendError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('Niet ingelogd');
+      const res = await fetch(`${BACKEND_URL}/api/maker/send-welcome-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          toEmail: keyuserEmail.trim().toLowerCase(),
+          toName: keyuserNaam.trim(),
+          bedrijfsnaam: bedrijfsnaam.trim(),
+          wachtwoord: result.password,
+          loginUrl: typeof window !== 'undefined' ? window.location.origin : 'https://speeq-wkb.vercel.app',
+          accentKleur,
+          logoUrl: logoUrl.trim() || null,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || body.ok === false) {
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      setSendStatus('sent');
+      setTimeout(() => setSendStatus('idle'), 4000);
+    } catch (err) {
+      setSendStatus('error');
+      setSendError(err instanceof Error ? err.message : String(err));
+      setTimeout(() => setSendStatus('idle'), 5000);
+    }
+  };
+
   // ─── Render: succes-scherm ─────────────────────────────────────────────
   if (result) {
     return (
@@ -305,9 +350,51 @@ VALUES (
           {/* ─── Welkom-mail sectie ──────────────────────────────────── */}
           <Text style={styles.sectionTitle}>Welkom-mail voor de keyuser</Text>
           <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginBottom: 10 }}>
-            Branded HTML met logo + kleur. Verstuur 'm via Gmail/Outlook of klik
-            "Open in mail-app" voor een simpele plain-text variant.
+            Branded HTML met logo + kleur. Klik <Text style={{ fontWeight: '700' }}>Verstuur direct</Text> om
+            'm via Resend te sturen, of gebruik kopieer-knoppen voor Gmail/Outlook.
           </Text>
+
+          {/* PRIMARY: groene "Verstuur direct" knop — gebruikt backend Resend.
+              Werkt alleen wanneer RESEND_API_KEY op Railway is gezet. */}
+          <Pressable
+            onPress={handleSendWelcomeMail}
+            disabled={sendStatus === 'sending' || sendStatus === 'sent'}
+            style={({ pressed }) => [
+              {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                backgroundColor:
+                  sendStatus === 'sent'  ? '#16A34A' :
+                  sendStatus === 'error' ? '#DC2626' :
+                  '#1B3A5C',
+                paddingVertical: 14,
+                paddingHorizontal: 18,
+                borderRadius: 10,
+                marginBottom: 10,
+              },
+              (sendStatus === 'sending' || sendStatus === 'sent') && { opacity: 0.85 },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            {sendStatus === 'sending' ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : sendStatus === 'sent' ? (
+              <CheckCircle2 size={18} color="#FFFFFF" />
+            ) : (
+              <Send size={18} color="#FFFFFF" />
+            )}
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>
+              {sendStatus === 'sending' ? 'Verzenden…' :
+               sendStatus === 'sent'    ? `✓ Verzonden naar ${keyuserEmail}` :
+               sendStatus === 'error'   ? 'Fout — probeer opnieuw' :
+               `📨 Verstuur direct naar ${keyuserEmail}`}
+            </Text>
+          </Pressable>
+          {sendStatus === 'error' && sendError ? (
+            <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{sendError}</Text>
+          ) : null}
 
           {/* Preview — toon kort de eerste paar regels uit text-versie */}
           <View style={[styles.sqlBox, { maxHeight: 180, overflow: 'hidden' }]}>
