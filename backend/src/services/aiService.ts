@@ -117,12 +117,13 @@ const validateEvidenceWithGemini = async (
 
   // 2026-05-29: gemini-1.5-flash deprecated door Google (HTTP 404).
   // gemini-2.5-flash-lite werkt maar gratis-tier quota is 20 req/dag — te krap.
-  // Vervangen door gemini-flash-latest (auto-tracks nieuwste stable flash, ruimere quota).
+  // Vervangen door gemini-flash-latest (auto-tracks nieuwste stable flash).
+  // Timeout 45s: Railway US-West → Google API kan tot 30s duren bij grote images.
   const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, payload, {
     headers: {
       'Content-Type': 'application/json'
     },
-    timeout: 15000
+    timeout: 45000
   });
 
   const content = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
