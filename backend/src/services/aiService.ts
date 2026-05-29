@@ -116,8 +116,9 @@ const validateEvidenceWithGemini = async (
   }
 
   // 2026-05-29: gemini-1.5-flash deprecated door Google (HTTP 404).
-  // Vervangen door gemini-2.5-flash-lite (in gratis tier, vision-capable, ~1.4s latency).
-  const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, payload, {
+  // gemini-2.5-flash-lite werkt maar gratis-tier quota is 20 req/dag — te krap.
+  // Vervangen door gemini-flash-latest (auto-tracks nieuwste stable flash, ruimere quota).
+  const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, payload, {
     headers: {
       'Content-Type': 'application/json'
     },
