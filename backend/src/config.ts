@@ -62,6 +62,10 @@ const backendConfig = {
   openaiApiKey: process.env.OPENAI_API_KEY ?? '',
   resendApiKey: process.env.RESEND_API_KEY ?? '',
   notificationFromEmail: process.env.NOTIFICATION_FROM_EMAIL ?? 'noreply@wkb.speesolutions.nl',
+  // Ontvanger van technische alerts (bv. wanneer beide AI-providers falen en
+  // de mock-fallback inspringt). Default naar de eigenaar zodat een stille
+  // productie-degradatie niet onopgemerkt blijft.
+  alertEmail: process.env.ALERT_EMAIL ?? 'johnny@speesolutions.com',
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? '',
 };
 

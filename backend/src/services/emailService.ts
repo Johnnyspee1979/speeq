@@ -365,8 +365,74 @@ const sendWelcomeEmail = async (input: WelcomeEmailInput): Promise<{ ok: boolean
   }
 };
 
+// ─── Technische alert: AI mock-fallback ingesprongen ───────────────────
+// Vuurt wanneer zowel Gemini als OpenAI faalt en de mock-fallback de validatie
+// overneemt. Zonder dit alert blijft een productie-degradatie onzichtbaar
+// (de gebruiker krijgt een "geldig" mock-antwoord, maar de echte AI is stuk).
+
+type AiFallbackAlertInput = {
+  inspectionPoint: string;
+  imageUrl: string;
+  geminiError?: string;
+  openaiError?: string;
+};
+
+const sendAiFallbackAlertEmail = async (input: AiFallbackAlertInput): Promise<boolean> => {
+  const resend = getResendClient();
+  if (!resend) {
+    console.warn('🚨 AI-fallback alert overgeslagen: geen RESEND_API_KEY geconfigureerd.');
+    return false;
+  }
+
+  const to = backendConfig.alertEmail;
+  const when = new Date().toISOString();
+  const html = `<!DOCTYPE html>
+<html lang="nl"><body style="margin:0;padding:0;background:#0F1117;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0F1117;padding:32px 0;"><tr><td align="center">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#1A1D27;border-radius:16px;border:1px solid #DC2626;overflow:hidden;">
+      <tr><td style="background:#DC2626;padding:24px 32px;">
+        <p style="margin:0;color:#fff;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;">SpeeQ · Productie-alert</p>
+        <h1 style="margin:8px 0 0;color:#fff;font-size:22px;font-weight:900;">🚨 AI mock-fallback ingesprongen</h1>
+      </td></tr>
+      <tr><td style="padding:24px 32px;color:#F0F2F5;font-size:14px;line-height:22px;">
+        <p style="margin:0 0 16px;">Beide AI-providers faalden. De mock-fallback heeft de validatie overgenomen — gebruikers krijgen een <strong>nep-resultaat</strong> dat eruitziet als echte AI. Actie vereist.</p>
+        <table width="100%" cellpadding="0" cellspacing="0">
+          <tr><td style="padding:8px 0;border-bottom:1px solid #2A2D3A;"><span style="color:#8B96A8;font-size:12px;font-weight:700;">TIJDSTIP</span><br><span>${when}</span></td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid #2A2D3A;"><span style="color:#8B96A8;font-size:12px;font-weight:700;">INSPECTIEPUNT</span><br><span>${input.inspectionPoint}</span></td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid #2A2D3A;"><span style="color:#8B96A8;font-size:12px;font-weight:700;">AFBEELDING</span><br><span style="word-break:break-all;font-size:12px;">${input.imageUrl}</span></td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid #2A2D3A;"><span style="color:#8B96A8;font-size:12px;font-weight:700;">GEMINI-FOUT</span><br><span style="font-family:Menlo,monospace;font-size:12px;color:#F59E0B;">${input.geminiError ?? 'onbekend'}</span></td></tr>
+          <tr><td style="padding:8px 0;"><span style="color:#8B96A8;font-size:12px;font-weight:700;">OPENAI-FOUT</span><br><span style="font-family:Menlo,monospace;font-size:12px;color:#F59E0B;">${input.openaiError ?? 'onbekend'}</span></td></tr>
+        </table>
+      </td></tr>
+      <tr><td style="background:#0F1117;padding:16px 32px;border-top:1px solid #2A2D3A;">
+        <p style="margin:0;color:#4A5568;font-size:12px;">Automatische monitoring · SpeeQ backend (aiService.ts)</p>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: 'SpeeQ Monitoring <noreply@wkb.speesolutions.nl>',
+      to,
+      subject: `🚨 SpeeQ AI-uitval — mock-fallback actief (${input.inspectionPoint})`,
+      html,
+    });
+    if (error) {
+      console.error('🚨 AI-fallback alert versturen mislukt:', error);
+      return false;
+    }
+    console.log(`🚨 AI-fallback alert verstuurd naar ${to}`);
+    return true;
+  } catch (err: any) {
+    console.error('🚨 AI-fallback alert service fout:', err?.message ?? err);
+    return false;
+  }
+};
+
 module.exports = {
   sendReviewNotificationEmail,
   sendDossierReadyEmail,
   sendWelcomeEmail,
+  sendAiFallbackAlertEmail,
 };

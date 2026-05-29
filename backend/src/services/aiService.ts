@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { OpenAI } = require('openai');
 const { backendConfig } = require('../config');
+const { sendAiFallbackAlertEmail } = require('./emailService');
 
 export interface WkbTemplate {
   id: string;
@@ -209,28 +210,59 @@ const validateEvidenceImage = async (
     );
 
     // Try Gemini first as it's typically faster and more cost-effective for these checks
+    let geminiErrorMsg: string | undefined;
+    let openaiErrorMsg: string | undefined;
     try {
       console.log('[AI Service] Proberen met Gemini API...');
       const geminiResult = await validateEvidenceWithGemini(imageUrl, inspectionPoint, template);
       return geminiResult;
     } catch (geminiError: any) {
-      console.warn('[AI Service] Gemini API gefaald of niet ingesteld. Fallback naar OpenAI...', geminiError.message);
-      
+      geminiErrorMsg = geminiError?.message ?? String(geminiError);
+      console.warn('[AI Service] Gemini API gefaald of niet ingesteld. Fallback naar OpenAI...', geminiErrorMsg);
+
       // Fallback to OpenAI
       try {
         console.log('[AI Service] Proberen met OpenAI API fallback...');
         const openaiResult = await validateEvidenceWithOpenAI(imageUrl, inspectionPoint, template);
         return openaiResult;
       } catch (openaiError: any) {
-        console.warn('[AI Service] OpenAI API fallback ook gefaald of niet ingesteld.', openaiError.message);
-        throw new Error('Beide AI services gefaald.');
+        openaiErrorMsg = openaiError?.message ?? String(openaiError);
+        console.warn('[AI Service] OpenAI API fallback ook gefaald of niet ingesteld.', openaiErrorMsg);
+        const bothFailed: any = new Error('Beide AI services gefaald.');
+        bothFailed.geminiError = geminiErrorMsg;
+        bothFailed.openaiError = openaiErrorMsg;
+        throw bothFailed;
       }
     }
   } catch (error: any) {
-    console.error('[AI Service] Fout tijdens beeldanalyse volledig mislukt. Gebruik makend van Mock.', error.message);
-    
+    const normalizedInspectionPoint = normalizeInspectionPoint(inspectionPoint);
+
+    // Structured log zodat een log-drain (Railway/Sentry) hierop kan alerten.
+    console.error(
+      '[AI Service] MOCK_FALLBACK_TRIGGERED',
+      JSON.stringify({
+        event: 'ai_mock_fallback',
+        inspectionPoint: normalizedInspectionPoint,
+        imageUrl,
+        geminiError: error?.geminiError,
+        openaiError: error?.openaiError,
+        message: error?.message,
+        at: new Date().toISOString(),
+      })
+    );
+
+    // E-mail alert (fire-and-forget): zo blijft een stille degradatie niet
+    // onopgemerkt. Faalt het mailen, dan logt emailService dat zelf — de
+    // validatie zelf mag er nooit op vastlopen.
+    void sendAiFallbackAlertEmail({
+      inspectionPoint: normalizedInspectionPoint,
+      imageUrl,
+      geminiError: error?.geminiError,
+      openaiError: error?.openaiError,
+    }).catch(() => undefined);
+
     // Fallback naar mock mocht alles falen
-    return getMockResult(normalizeInspectionPoint(inspectionPoint));
+    return getMockResult(normalizedInspectionPoint);
   }
 };
 
