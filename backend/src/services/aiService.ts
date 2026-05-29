@@ -103,12 +103,16 @@ const validateEvidenceWithGemini = async (
     const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     const imageBase64 = Buffer.from(imageResponse.data).toString('base64');
     const mimeType = imageResponse.headers['content-type'] || 'image/jpeg';
-    
-    const part = payload.contents[0]?.parts[1] as any;
-    if (part) {
-      part.inlineData = {
-        mimeType: mimeType,
-        data: imageBase64
+
+    // 2026-05-29 bug fix: Gemini's API accepteert geen part met BÁDE text + inlineData.
+    // Originele code voegde inlineData toe aan part[1] dat al een text-veld had → HTTP 400.
+    // Fix: vervang part[1] volledig met alleen inlineData.
+    if (payload.contents[0]?.parts?.[1]) {
+      (payload.contents[0].parts[1] as any) = {
+        inlineData: {
+          mimeType: mimeType,
+          data: imageBase64,
+        },
       };
     }
   } catch (e) {
