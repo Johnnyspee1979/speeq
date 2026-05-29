@@ -115,7 +115,9 @@ const validateEvidenceWithGemini = async (
     console.warn('[AI Service] Kon afbeelding niet downloaden voor Gemini. Probeert URL mee te sturen.', e);
   }
 
-  const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, payload, {
+  // 2026-05-29: gemini-1.5-flash deprecated door Google (HTTP 404).
+  // Vervangen door gemini-2.5-flash-lite (in gratis tier, vision-capable, ~1.4s latency).
+  const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`, payload, {
     headers: {
       'Content-Type': 'application/json'
     },
