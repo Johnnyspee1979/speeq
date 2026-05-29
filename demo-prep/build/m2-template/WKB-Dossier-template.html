@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>{{project.name}} — Wkb-dossier</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    color: #1a2e1a;
+    font-size: 11pt;
+    line-height: 1.45;
+    background: white;
+  }
+
+  /* Cover */
+  .cover {
+    page-break-after: always;
+    padding: 60px 40px;
+    background: #f5f1e9;
+    min-height: 90vh;
+  }
+  .cover-logo {
+    height: 48px;
+    margin-bottom: 80px;
+  }
+  .cover-eyebrow {
+    font-size: 11pt;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #5a7d5a;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .cover-title {
+    font-size: 32pt;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #1a3a1a;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+  .cover-title em {
+    font-family: "Times New Roman", Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+  }
+  .cover-subtitle {
+    font-size: 14pt;
+    color: #5a7d5a;
+    margin-bottom: 80px;
+  }
+  .cover-meta {
+    border-top: 1px solid #d8cfb8;
+    border-bottom: 1px solid #d8cfb8;
+    padding: 20px 0;
+    margin-bottom: 24px;
+  }
+  .cover-meta dl {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 8px 16px;
+  }
+  .cover-meta dt {
+    font-weight: 600;
+    color: #5a7d5a;
+    font-size: 10pt;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .cover-meta dd {
+    font-size: 11pt;
+    color: #1a2e1a;
+  }
+
+  /* Page header / footer */
+  .page-header {
+    border-bottom: 1px solid #d8cfb8;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9pt;
+    color: #6a6a5a;
+  }
+  .page-footer {
+    border-top: 1px solid #d8cfb8;
+    padding-top: 8px;
+    margin-top: 16px;
+    font-size: 9pt;
+    color: #6a6a5a;
+    text-align: center;
+  }
+
+  h2 {
+    font-size: 22pt;
+    font-weight: 700;
+    color: #1a3a1a;
+    margin: 24px 0 12px;
+    letter-spacing: -0.01em;
+  }
+  h2 em {
+    font-family: "Times New Roman", Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+  }
+  h3 {
+    font-size: 14pt;
+    font-weight: 700;
+    color: #1a3a1a;
+    margin: 16px 0 8px;
+  }
+
+  p { margin-bottom: 8px; }
+
+  /* Evidence block */
+  .evidence-block {
+    border: 1px solid #e0d8c0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    page-break-inside: avoid;
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 16px;
+  }
+  .evidence-photo {
+    width: 160px;
+    height: 120px;
+    background: #f0eadf;
+    border-radius: 6px;
+    object-fit: cover;
+    overflow: hidden;
+  }
+  .evidence-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .evidence-detail dl {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 4px 12px;
+    font-size: 10pt;
+  }
+  .evidence-detail dt {
+    color: #5a7d5a;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 8.5pt;
+    letter-spacing: 0.5px;
+  }
+  .evidence-detail dd { color: #1a2e1a; }
+  .evidence-title {
+    font-size: 12pt;
+    font-weight: 700;
+    color: #1a3a1a;
+    margin-bottom: 8px;
+  }
+  .ai-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .ai-badge.passed { background: #d4e8d4; color: #1a3a1a; }
+  .ai-badge.needs-review { background: #f7e6c4; color: #8a5a00; }
+  .ai-badge.failed { background: #f3d4d4; color: #8a1a1a; }
+
+  /* Signatures */
+  .signatures {
+    page-break-before: always;
+    padding: 40px 0;
+  }
+  .signature-block {
+    border-top: 1px solid #d8cfb8;
+    padding: 24px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+  .sign-box {
+    border: 1px solid #d8cfb8;
+    padding: 16px;
+    height: 120px;
+    background: #faf6ed;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .sign-box .label {
+    font-size: 9pt;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #5a7d5a;
+    font-weight: 600;
+  }
+  .sign-box .signed-by {
+    font-size: 11pt;
+    color: #1a3a1a;
+    font-weight: 600;
+    border-top: 1px solid #d8cfb8;
+    padding-top: 8px;
+  }
+
+  /* Hash footer */
+  .hash-footer {
+    margin-top: 32px;
+    padding: 16px;
+    background: #1a3a1a;
+    color: #f5f1e9;
+    border-radius: 6px;
+    font-family: "Courier New", monospace;
+    font-size: 9pt;
+    word-break: break-all;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- COVER PAGE -->
+<!-- ============================================================ -->
+<div class="cover">
+  {{#if tenant.logo_url}}
+  <img class="cover-logo" src="{{tenant.logo_url}}" alt="{{tenant.name}}">
+  {{/if}}
+
+  <div class="cover-eyebrow">WKB-Bouwdossier · Gevolgklasse 1</div>
+  <h1 class="cover-title">{{project.name}}<br><em>opleverdossier.</em></h1>
+  <div class="cover-subtitle">{{project.address}}</div>
+
+  <div class="cover-meta">
+    <dl>
+      <dt>Initiatiefnemer</dt><dd>{{project.initiator_name}}</dd>
+      <dt>Kadastrale aanduiding</dt><dd>{{project.kadastrale_aanduiding}}</dd>
+      <dt>Kwaliteitsborger</dt><dd>{{kwaliteitsborger.name}}</dd>
+      <dt>Instrument</dt><dd>{{project.instrument_id}}</dd>
+      <dt>DSO bouwmelding</dt><dd>{{project.dso_meldings_datum}} · {{project.dso_transaction_id}}</dd>
+      <dt>Aantal bewijsfoto's</dt><dd>{{evidence.count}}</dd>
+      <dt>Genereerdatum</dt><dd>{{generation.timestamp}}</dd>
+    </dl>
+  </div>
+
+  <p style="font-size:10pt;color:#6a6a5a;">
+    Dit dossier bevat alle Wkb-bewijsmaterialen voor het bovengenoemde project,
+    inclusief geografisch gekoppelde foto's, AI-validatie-resultaten,
+    review-status en ondertekening. Het document is cryptografisch verzegeld.
+  </p>
+</div>
+
+<!-- ============================================================ -->
+<!-- INSPECTIE-OVERZICHT -->
+<!-- ============================================================ -->
+<div class="page-header">
+  <span>{{project.name}}</span>
+  <span>Wkb-bouwdossier · pagina <span class="pageno"></span></span>
+</div>
+
+<h2>Inspectie<em>punten.</em></h2>
+<p style="margin-bottom:16px;color:#6a6a5a;">
+  {{evidence.count}} geverifieerde bewijsfoto's, gesorteerd op discipline en tijd.
+  Elk inspectiepunt bevat GPS-coördinaten, EXIF-verificatie en AI-validatieresultaat.
+</p>
+
+{{#each evidence}}
+<div class="evidence-block">
+  <div class="evidence-photo">
+    {{#if this.photo_uri}}<img src="{{this.photo_uri}}" alt="">{{/if}}
+  </div>
+  <div class="evidence-detail">
+    <div class="evidence-title">{{this.inspection_point_id}} — {{this.title_or_discipline}}</div>
+    <dl>
+      <dt>Discipline</dt><dd>{{this.discipline_id}}</dd>
+      <dt>Locatie</dt><dd>{{this.etage}} · {{this.ruimtenummer}} · {{this.binnenbuiten}}</dd>
+      <dt>GPS</dt><dd>{{this.latitude}}, {{this.longitude}} (±{{this.gps_accuracy}} m)</dd>
+      <dt>Tijd</dt><dd>{{this.timestamp}}</dd>
+      <dt>EXIF</dt><dd>{{#if this.exif_verified}}✓ geverifieerd ({{this.exif_hash_short}}){{else}}✗ NIET geverifieerd{{/if}}</dd>
+      <dt>AI-status</dt><dd><span class="ai-badge {{this.ai_status_lower}}">{{this.ai_status}}</span> · confidence {{this.ai_confidence_pct}}%</dd>
+      <dt>AI-notitie</dt><dd>{{this.ai_notes}}</dd>
+      <dt>Veldnotitie</dt><dd>{{this.field_note}}</dd>
+      <dt>Review</dt><dd>{{this.review_status}} door {{this.reviewer_name}} op {{this.reviewed_at}}</dd>
+      {{#if this.review_note}}<dt>Review-notitie</dt><dd>{{this.review_note}}</dd>{{/if}}
+    </dl>
+  </div>
+</div>
+{{/each}}
+
+<!-- ============================================================ -->
+<!-- PLATTEGROND -->
+<!-- ============================================================ -->
+{{#if floor_plan}}
+<div class="page-header">
+  <span>{{project.name}}</span>
+  <span>Wkb-bouwdossier · plattegrond</span>
+</div>
+
+<h2>Plattegrond <em>met pin-locaties.</em></h2>
+<p style="margin-bottom:16px;color:#6a6a5a;">
+  Per inspectiepunt is een pin op de plattegrond gezet, gekoppeld aan de
+  foto-coördinaten op de bouwtekening.
+</p>
+<div style="border:1px solid #d8cfb8;padding:12px;background:#faf6ed;text-align:center;">
+  <img src="{{floor_plan.file_url}}" style="max-width:100%;height:auto;" alt="Plattegrond">
+</div>
+{{/if}}
+
+<!-- ============================================================ -->
+<!-- ONDERTEKENING -->
+<!-- ============================================================ -->
+<div class="signatures">
+  <div class="page-header">
+    <span>{{project.name}}</span>
+    <span>Wkb-bouwdossier · ondertekening</span>
+  </div>
+
+  <h2>Onder<em>tekening.</em></h2>
+  <p style="margin-bottom:16px;color:#6a6a5a;">
+    Door ondertekening verklaren projectleider en opdrachtgever dat dit dossier
+    de werkelijke uitvoering weergeeft conform de aangeleverde tekeningen en bestek.
+  </p>
+
+  <div class="signature-block">
+    <div class="sign-box">
+      <span class="label">Projectleider</span>
+      <div class="signed-by">
+        {{signature.pl_name}}<br>
+        <span style="font-weight:400;color:#6a6a5a;font-size:9pt;">
+          {{signature.pl_role}} · {{signed.pl_at}}
+        </span>
+      </div>
+    </div>
+    <div class="sign-box">
+      <span class="label">Opdrachtgever</span>
+      <div class="signed-by">
+        {{signature.og_name}}<br>
+        <span style="font-weight:400;color:#6a6a5a;font-size:9pt;">
+          {{signature.og_role}} · {{signed.og_at}}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="hash-footer">
+    Dit dossier is digitaal verzegeld onder SHA-256 hash:<br>
+    {{dossier.hash}}
+  </div>
+
+  <p style="margin-top:20px;font-size:9pt;color:#6a6a5a;text-align:center;">
+    Gegenereerd door SpeeQ WKB Tool · Spee Solutions · {{generation.timestamp}}<br>
+    {{tenant.pdf_footer_text}}
+  </p>
+</div>
+
+</body>
+</html>

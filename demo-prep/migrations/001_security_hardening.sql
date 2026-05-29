@@ -47,12 +47,19 @@ CREATE POLICY "notif_subs_self_only"
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
--- review_webhook_endpoints: alleen lezen voor authenticated van eigen tenant, geen writes via API
-DROP POLICY IF EXISTS "review_webhooks_select_tenant" ON public.review_webhook_endpoints;
-CREATE POLICY "review_webhooks_select_tenant"
+-- review_webhook_endpoints: alleen lezen voor authenticated van eigen tenant via project-join
+-- (review_webhook_endpoints heeft project_id, geen tenant_id direct)
+DROP POLICY IF EXISTS "review_webhooks_select_via_project" ON public.review_webhook_endpoints;
+CREATE POLICY "review_webhooks_select_via_project"
   ON public.review_webhook_endpoints FOR SELECT
   TO authenticated
-  USING (tenant_id = public.current_tenant_id());
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.projects p
+      WHERE p.id = review_webhook_endpoints.project_id
+        AND p.tenant_id = public.current_tenant_id()
+    )
+  );
 
 -- ---------------------------------------------------------------------------
 -- 2) Tighten policies die nu USING (true) zijn

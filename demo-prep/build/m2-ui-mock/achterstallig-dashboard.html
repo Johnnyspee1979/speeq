@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Achterstallig Onderhoud — Combivo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #f5f1e9;
+    --cream-light: #faf6ed;
+    --white: #ffffff;
+    --green: #2f5d2f;
+    --green-deep: #1a3a1a;
+    --olive: #5a7d5a;
+    --ink: #1a2e1a;
+    --muted: #6a6a5a;
+    --line: #e0d8c0;
+    --line-soft: #ebe5d2;
+    --combivo: #14283E;
+    --critical: #a83a2a;
+    --high: #c89a3a;
+    --medium: #5a7d2a;
+    --low: #8a9a7a;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    background: var(--cream-light);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  /* Topbar */
+  .topbar {
+    background: var(--combivo);
+    color: var(--cream);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+  .topbar .brand {
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+  }
+  .topbar .brand em {
+    font-family: "Times New Roman", Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
+    margin-left: 8px;
+  }
+  .topbar .user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+
+  /* Layout */
+  .container {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 40px 32px;
+  }
+
+  /* Page header */
+  .page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .page-header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--green-deep);
+    letter-spacing: -0.025em;
+    margin-bottom: 4px;
+  }
+  .page-header h1 em {
+    font-family: "Times New Roman", Georgia, serif;
+    font-style: italic;
+    font-weight: 500;
+  }
+  .page-header .subtitle {
+    font-size: 16px;
+    color: var(--muted);
+  }
+  .btn {
+    background: var(--green-deep);
+    color: var(--cream);
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--green-deep);
+    border: 1px solid var(--line);
+    margin-right: 8px;
+  }
+
+  /* KPI cards */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi {
+    background: var(--white);
+    border: 1px solid var(--line-soft);
+    border-radius: 14px;
+    padding: 22px 24px;
+  }
+  .kpi-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .kpi-value {
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--green-deep);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .kpi-suffix {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .kpi.critical .kpi-value { color: var(--critical); }
+  .kpi.high .kpi-value { color: var(--high); }
+
+  /* Filter row */
+  .filters {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px 20px;
+    background: var(--white);
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    align-items: center;
+  }
+  .filter {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 160px;
+  }
+  .filter-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .filter select, .filter input {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 10px;
+    background: var(--cream-light);
+    font-size: 14px;
+    color: var(--ink);
+    font-family: inherit;
+  }
+
+  /* Project blocks */
+  .project-block {
+    background: var(--white);
+    border: 1px solid var(--line-soft);
+    border-radius: 14px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .project-header {
+    background: var(--cream);
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line-soft);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .project-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--green-deep);
+    margin-bottom: 2px;
+  }
+  .project-address {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .project-counts {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .project-counts span strong { color: var(--green-deep); font-weight: 700; }
+
+  .items {
+    list-style: none;
+  }
+  .item {
+    display: grid;
+    grid-template-columns: 40px 1fr 120px 160px 100px 120px 120px;
+    gap: 16px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--line-soft);
+    align-items: center;
+    font-size: 14px;
+  }
+  .item:last-child { border-bottom: none; }
+  .item:hover { background: var(--cream-light); }
+  .item .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+  }
+  .dot.critical { background: var(--critical); }
+  .dot.high { background: var(--high); }
+  .dot.medium { background: var(--medium); }
+  .dot.low { background: var(--low); }
+
+  .item .title {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .item .meta {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .badge.critical { background: #f7dcd2; color: var(--critical); }
+  .badge.high { background: #f7e9d2; color: var(--high); }
+  .badge.medium { background: #e0e8d2; color: #4a6520; }
+  .badge.low { background: #ebe5d2; color: var(--olive); }
+
+  .overdue-cell {
+    color: var(--critical);
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .overdue-cell.warn { color: var(--high); }
+
+  .responsible {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .resp-avatar {
+    width: 24px; height: 24px;
+    background: var(--olive);
+    color: var(--cream);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .actions {
+    display: flex;
+    gap: 6px;
+  }
+  .action-btn {
+    background: var(--cream);
+    border: 1px solid var(--line);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--green-deep);
+    cursor: pointer;
+  }
+  .action-btn.primary {
+    background: var(--green-deep);
+    color: var(--cream);
+    border-color: var(--green-deep);
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* Annotations for mock */
+  .mock-note {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--green-deep);
+    color: var(--cream);
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    max-width: 280px;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">Combivo SpeeQ <em>Wkb-tool</em></div>
+  <div class="user">
+    <span>Aldert Ensing · Maker</span>
+    <div class="avatar">AE</div>
+  </div>
+</div>
+
+<div class="container">
+  <div class="page-header">
+    <div>
+      <div style="font-size:12px;letter-spacing:2px;color:var(--olive);font-weight:600;margin-bottom:8px;">MJOP · ONDERHOUD</div>
+      <h1>Achterstallig <em>onderhoud.</em></h1>
+      <div class="subtitle">47 open items verspreid over 12 panden · stand 29 mei 2026</div>
+    </div>
+    <div>
+      <button class="btn btn-secondary">⬇ Excel exporteren</button>
+      <button class="btn">+ Item toevoegen</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi critical">
+      <div class="kpi-label">Kritiek</div>
+      <div class="kpi-value">3</div>
+      <div class="kpi-suffix">vraagt directe actie</div>
+    </div>
+    <div class="kpi high">
+      <div class="kpi-label">Hoog</div>
+      <div class="kpi-value">12</div>
+      <div class="kpi-suffix">deze week inplannen</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Medium + Laag</div>
+      <div class="kpi-value">32</div>
+      <div class="kpi-suffix">binnen 30 dagen</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Geplande inspecties</div>
+      <div class="kpi-value">128</div>
+      <div class="kpi-suffix">komende 90 dagen</div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <div class="filter">
+      <div class="filter-label">Discipline</div>
+      <select><option>Alle</option><option>Schilderwerk</option><option>Dakwerk</option><option>Gevelrenovatie</option><option>Installatie</option></select>
+    </div>
+    <div class="filter">
+      <div class="filter-label">Pand</div>
+      <select><option>Alle 12 panden</option><option>Hoofdstraat 12</option><option>Stationsweg 45</option></select>
+    </div>
+    <div class="filter">
+      <div class="filter-label">Verantwoordelijke</div>
+      <select><option>Iedereen</option><option>Jan de Vries</option><option>Aldert Ensing</option></select>
+    </div>
+    <div class="filter">
+      <div class="filter-label">Prioriteit</div>
+      <select><option>Alle</option><option>Kritiek</option><option>Hoog</option></select>
+    </div>
+    <div class="filter" style="margin-left:auto;">
+      <div class="filter-label">Zoeken</div>
+      <input type="text" placeholder="Zoek item of pand…">
+    </div>
+  </div>
+
+  <!-- Project 1 -->
+  <div class="project-block">
+    <div class="project-header">
+      <div>
+        <div class="project-name">Renovatie complex De Brink</div>
+        <div class="project-address">Hoofdstraat 12-24, Rotterdam · Eigenaar: Woonstede Corporatie</div>
+      </div>
+      <div class="project-counts">
+        <span><strong>2</strong> kritiek</span>
+        <span><strong>5</strong> hoog</span>
+        <span><strong>11</strong> totaal open</span>
+      </div>
+    </div>
+    <ul class="items">
+      <li class="item">
+        <div class="dot critical"></div>
+        <div>
+          <div class="title">Kozijnen schilderen — buitenzijde noord</div>
+          <div class="meta">Schilderwerk · MJOP-cyclus 6 jaar · gepland 2026-04-15</div>
+        </div>
+        <span class="badge critical">Kritiek</span>
+        <div class="overdue-cell">43 dagen overdue</div>
+        <div class="meta">8u werk</div>
+        <div class="responsible">
+          <div class="resp-avatar">JV</div>
+          <span>Jan de Vries</span>
+        </div>
+        <div class="actions">
+          <button class="action-btn primary">📸 Plan</button>
+        </div>
+      </li>
+      <li class="item">
+        <div class="dot critical"></div>
+        <div>
+          <div class="title">Voegwerk gevel west</div>
+          <div class="meta">Gevelrenovatie · MJOP-cyclus 10 jaar · gepland 2026-03-01</div>
+        </div>
+        <span class="badge critical">Kritiek</span>
+        <div class="overdue-cell">89 dagen overdue</div>
+        <div class="meta">24u werk</div>
+        <div class="responsible">
+          <div class="resp-avatar">AE</div>
+          <span>Aldert Ensing</span>
+        </div>
+        <div class="actions">
+          <button class="action-btn primary">📸 Plan</button>
+        </div>
+      </li>
+      <li class="item">
+        <div class="dot high"></div>
+        <div>
+          <div class="title">Dakgoot reinigen + check afvoer</div>
+          <div class="meta">Dakwerk · jaarlijks · gepland 2026-05-01</div>
+        </div>
+        <span class="badge high">Hoog</span>
+        <div class="overdue-cell warn">28 dagen overdue</div>
+        <div class="meta">3u werk</div>
+        <div class="responsible">
+          <div class="resp-avatar">RN</div>
+          <span>Richard N.</span>
+        </div>
+        <div class="actions">
+          <button class="action-btn primary">📸 Plan</button>
+        </div>
+      </li>
+      <li class="item">
+        <div class="dot high"></div>
+        <div>
+          <div class="title">Houtrot kozijnen achterzijde — inspectie</div>
+          <div class="meta">Houtrotherstel · 2-jaarlijks · gepland 2026-05-15</div>
+        </div>
+        <span class="badge high">Hoog</span>
+        <div class="overdue-cell warn">14 dagen overdue</div>
+        <div class="meta">2u inspectie</div>
+        <div class="responsible">
+          <div class="resp-avatar">CW</div>
+          <span>Caspar W.</span>
+        </div>
+        <div class="actions">
+          <button class="action-btn primary">📸 Plan</button>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Project 2 -->
+  <div class="project-block">
+    <div class="project-header">
+      <div>
+        <div class="project-name">Mutatie-onderhoud Stationsbuurt</div>
+        <div class="project-address">Stationsweg 45-67, Den Haag · Eigenaar: Vesteda</div>
+      </div>
+      <div class="project-counts">
+        <span><strong>1</strong> kritiek</span>
+        <span><strong>4</strong> hoog</span>
+        <span><strong>9</strong> totaal open</span>
+      </div>
+    </div>
+    <ul class="items">
+      <li class="item">
+        <div class="dot critical"></div>
+        <div>
+          <div class="title">Sanitair afdichting badkamer #45.A</div>
+          <div class="meta">Installatie · per mutatie · gepland 2026-05-08</div>
+        </div>
+        <span class="badge critical">Kritiek</span>
+        <div class="overdue-cell">21 dagen overdue</div>
+        <div class="meta">4u werk</div>
+        <div class="responsible">
+          <div class="resp-avatar">RR</div>
+          <span>Raymond R.</span>
+        </div>
+        <div class="actions">
+          <button class="action-btn primary">📸 Plan</button>
+        </div>
+      </li>
+      <li class="item">
+        <div class="dot high"></div>
+        <div>
+          <div class="title">Schilderwerk binnenzijde trappenhuis</div>
+          <div class="meta">Schilderwerk · 8-jaarlijks · gepland 2026-05-20</div>
+        </div>
+        <span class="badge high">Hoog</span>
+        <div class="overdue-cell warn">9 dagen overdue</div>
+        <div class="meta">16u werk</div>
+        <div class="responsible">
+          <div class="resp-avatar">JV</div>
+          <span>Jan de Vries</span>
+        </div>
+        <div class="actions">
+          <button class="action-btn primary">📸 Plan</button>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Project 3 -->
+  <div class="project-block">
+    <div class="project-header">
+      <div>
+        <div class="project-name">RGS-project De Hoven</div>
+        <div class="project-address">Lindenlaan 1-30, Schiedam · Eigenaar: Woonbron</div>
+      </div>
+      <div class="project-counts">
+        <span><strong>0</strong> kritiek</span>
+        <span><strong>3</strong> hoog</span>
+        <span><strong>7</strong> totaal open</span>
+      </div>
+    </div>
+    <ul class="items">
+      <li class="item">
+        <div class="dot high"></div>
+        <div>
+          <div class="title">Brandwerende doorvoeren controleren — bouwfase 2</div>
+          <div class="meta">Brandveiligheid · per fase · gepland 2026-05-22</div>
+        </div>
+        <span class="badge high">Hoog</span>
+        <div class="overdue-cell warn">7 dagen overdue</div>
+        <div class="meta">5u inspectie</div>
+        <div class="responsible">
+          <div class="resp-avatar">AE</div>
+          <span>Aldert Ensing</span>
+        </div>
+        <div class="actions">
+          <button class="action-btn primary">📸 Plan</button>
+        </div>
+      </li>
+      <li class="item">
+        <div class="dot medium"></div>
+        <div>
+          <div class="title">Ventilatie eindcontrole appartement 1.05</div>
+          <div class="meta">Installatie · per oplevering · gepland 2026-06-03</div>
+        </div>
+        <span class="badge medium">Medium</span>
+        <div class="overdue-cell" style="color:var(--muted)">over 5 dagen</div>
+        <div class="meta">1u meting</div>
+        <div class="responsible">
+          <div class="resp-avatar">MM</div>
+          <span>Miroslaw M.</span>
+        </div>
+        <div class="actions">
+          <button class="action-btn">Plan</button>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Spee Solutions · SpeeQ WKB Tool · Achterstallig Onderhoud Module<br>
+    Data live uit Supabase · view <code>v_achterstallig_onderhoud</code> · update elke 30 sec
+  </div>
+</div>
+
+<div class="mock-note">
+  <strong>Mock-up</strong> · M2 milestone<br>
+  Echte data komt uit migration<br>
+  <code>004_achterstallig_onderhoud.sql</code>
+</div>
+
+</body>
+</html>

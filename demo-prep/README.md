@@ -1,7 +1,9 @@
-# demo-prep — Sales-voorbereiding voor Combivo · 29 mei 2026
+# demo-prep — Sales-voorbereiding voor Combivo
 
-> Deze map bevat alles wat klaar staat voor de Combivo-meeting van morgen.
-> Aangemaakt 28 mei, alle research + presentatie + backup-materiaal op één plek.
+> Deze map bevat alles wat klaar staat voor de Combivo-meeting (verzet naar volgende week).
+> Aangemaakt 28 mei, in 29 mei sessie uitgebreid met **M1-M5 milestones** voor product-100%.
+> 
+> **Lees `build/m5-e2e/FINAL-REPORT.md` voor het complete overzicht.**
 
 ---
 
@@ -12,7 +14,9 @@
 | `presentation/` | **De 10-slide presentatie + Briefing + PDF** | **Het belangrijkste** — open `index.html` in fullscreen op je laptop, lees BRIEFING.md onderweg |
 | `screenshots/` | Backup-screenshots van de live tool + productie-cijfers | Als de live demo crasht: open `11-production-stats.png` of toon screenshots één voor één |
 | `demo-data/` | SQL-scripts voor schoon demo-project (al uitgevoerd!) + cleanup | Cleanup-script draaien ná de meeting |
-| `migrations/` | Security-hardening SQL — draft | **Ná de meeting** — eerst testen op Supabase branch |
+| `migrations/` | Security-hardening SQL — geverifieerd via dry-run | Klaar voor échte deploy (3 fasen, zie M4 report) |
+| `roadmap/` | 4 design-docs (Adobe PDF, Achterstallig, Concurrent) | Achtergrond bij de meeting |
+| `build/` | Daadwerkelijke implementatie M2-M5 | Wanneer je echt gaat bouwen — code-stubs klaar |
 
 ---
 
