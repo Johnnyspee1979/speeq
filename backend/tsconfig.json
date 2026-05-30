@@ -1,5 +1,15 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
+  //
+  // ts-node draait in productie de broncode rechtstreeks (start: "ts-node src/index.ts").
+  // De productie-image heeft devDependencies (incl. @types/*) gepruned, dus
+  // ts-node's standaard type-check faalt daar op ontbrekende declaraties
+  // (bijv. TS7016 voor 'express'). transpileOnly slaat de runtime-typecheck
+  // over -> snelle start, geen @types nodig. Type-veiligheid blijft bewaakt via
+  // `npm run typecheck` in dev/CI.
+  "ts-node": {
+    "transpileOnly": true
+  },
   "compilerOptions": {
     // File Layout
     // "rootDir": "./src",
