@@ -1,0 +1,11 @@
+# SpeeQ backend draait in productie via `ts-node src/index.ts` (zie package.json
+# "start" + railway.json startCommand). De gecompileerde `dist/`-output wordt
+# nooit gebruikt. De standaard Nixpacks-build draait echter `npm run build`
+# (tsc), en die faalt op een GitHub-source build omdat devDependencies
+# (@types/jest) daar ontbreken -> TS2688 "Cannot find type definition file for 'jest'".
+#
+# Oplossing: sla de overbodige tsc-build over. De app start gewoon op de
+# broncode met ts-node. Dit deblokkeert GitHub auto-deploy zonder de werkende
+# runtime te raken.
+[phases.build]
+cmds = ["echo 'SpeeQ: tsc-build overgeslagen — runtime gebruikt ts-node op broncode'"]
