@@ -71,9 +71,10 @@ const buildSystemPrompt = (template?: WkbTemplate) => {
 const validateEvidenceWithGemini = async (
   imageUrl: string,
   inspectionPoint: string,
-  template?: WkbTemplate
+  template?: WkbTemplate,
+  apiKeyOverride?: string
 ): Promise<WkbValidationResult> => {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = apiKeyOverride || process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     throw new Error('No GEMINI_API_KEY provided.');
@@ -218,9 +219,28 @@ const validateEvidenceImage = async (
       return geminiResult;
     } catch (geminiError: any) {
       geminiErrorMsg = geminiError?.message ?? String(geminiError);
-      console.warn('[AI Service] Gemini API gefaald of niet ingesteld. Fallback naar OpenAI...', geminiErrorMsg);
+      console.warn('[AI Service] Gemini (primair) gefaald of niet ingesteld.', geminiErrorMsg);
 
-      // Fallback to OpenAI
+      // Reservelijn 1: tweede Gemini-sleutel (aparte quota / vangt key-uitval op)
+      const fallbackGeminiKey = process.env.GEMINI_FALLBACK_API_KEY;
+      if (fallbackGeminiKey) {
+        try {
+          console.log('[AI Service] Proberen met Gemini fallback-sleutel...');
+          const geminiFallbackResult = await validateEvidenceWithGemini(
+            imageUrl,
+            inspectionPoint,
+            template,
+            fallbackGeminiKey
+          );
+          return geminiFallbackResult;
+        } catch (geminiFallbackError: any) {
+          const msg = geminiFallbackError?.message ?? String(geminiFallbackError);
+          console.warn('[AI Service] Gemini fallback-sleutel ook gefaald.', msg);
+          geminiErrorMsg = `${geminiErrorMsg} | fallback-key: ${msg}`;
+        }
+      }
+
+      // Reservelijn 2: OpenAI (indien geconfigureerd)
       try {
         console.log('[AI Service] Proberen met OpenAI API fallback...');
         const openaiResult = await validateEvidenceWithOpenAI(imageUrl, inspectionPoint, template);
