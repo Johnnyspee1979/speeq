@@ -85,7 +85,10 @@ export const FEATURE_META: Record<FeatureKey, FeatureMeta> = {
     description:
       'Werkt zonder netwerk — foto\'s, GPS en lokale AI-precheck draaien op het toestel. Sync zodra het netwerk er weer is. Vereist eenmalige download van AI-modellen (~40 MB).',
     icon: '📡',
-    defaultOn: false,
+    // Standaard aan: nieuwe tenants krijgen direct de offline-first fotowachtrij
+    // (lokale opslag + auto-sync). De ~40 MB AI-modellen zijn lazy-loaded en
+    // worden pas bij de eerste lokale classificatie gedownload, niet bij activatie.
+    defaultOn: true,
   },
   simple_mode: {
     key: 'simple_mode',

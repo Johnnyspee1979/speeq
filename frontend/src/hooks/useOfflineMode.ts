@@ -6,7 +6,7 @@
  * offline-first paden (zie EvidenceRepository / useEvidenceRepository).
  *
  * Bron-van-waarheid: tenant_features.feature_key = 'offline_mode'.
- * Default = uit. Aanzetten via TenantFeaturesScreen (KEYUSER).
+ * Default = aan (nieuwe tenants). Uitzetten kan via TenantFeaturesScreen (KEYUSER).
  */
 
 import { useTenantFeature } from './useTenantFeature';
