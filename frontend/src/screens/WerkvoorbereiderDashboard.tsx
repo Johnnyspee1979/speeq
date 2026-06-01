@@ -32,6 +32,7 @@ import { getBrandingSync } from '../services/TenantBrandingService';
 import QRStickerSheet from '../components/QRStickerSheet';
 import TaskAssignmentPanel from '../components/TaskAssignmentPanel';
 import RapportagePanel from '../components/RapportagePanel';
+import { KypPlanningCard } from '../components/kyp/KypPlanningCard';
 import type { ReviewStatus, StoredWkbEvidence } from '../types/Evidence';
 import {
   approveEvidence,
@@ -107,7 +108,7 @@ import {
 
 type AiStatus = 'PASSED' | 'FAILED' | 'NEEDS_REVIEW' | 'PENDING' | null;
 type FilterStatus = 'alle' | 'review' | 'akkoord' | 'afgekeurd' | 'pending';
-type WvTab = 'dashboard' | 'bewijs' | 'checklist' | 'kaart' | 'tekening' | 'stickers' | 'taken' | 'rapportage' | 'documenten';
+type WvTab = 'dashboard' | 'bewijs' | 'checklist' | 'kaart' | 'tekening' | 'stickers' | 'taken' | 'rapportage' | 'documenten' | 'kyp';
 
 interface EvidenceRow {
   id: string;
@@ -774,6 +775,7 @@ export default function WerkvoorbereiderDashboard({
     { id: 'stickers',   label: `🏷️ ${t('nav.stickers')}` },
     { id: 'taken',      label: `📋 ${t('nav.taken')}` },
     { id: 'rapportage', label: `📑 ${t('nav.rapportage')}` },
+    { id: 'kyp',        label: `📅 KYP-planning` },
   ];
   // Auto-expand wanneer een secundaire tab actief is (na refresh / deep-link)
   const activeIsSecondary = SECONDARY_TABS.some((tab) => tab.id === activeTab);
@@ -1430,6 +1432,13 @@ export default function WerkvoorbereiderDashboard({
             evidence={evidence}
             theme={theme}
           />
+        )}
+
+        {/* ── Tab: KYP-planning (read-only sync) ── */}
+        {activeTab === 'kyp' && (
+          <View style={{ minHeight: 400 }}>
+            <KypPlanningCard speeqProjectId={projectId ?? ''} />
+          </View>
         )}
 
       </ScrollView>
