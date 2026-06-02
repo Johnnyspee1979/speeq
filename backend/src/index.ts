@@ -32,6 +32,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const voiceRoutes = require('./routes/voiceRoutes');
 const makerRoutes = require('./routes/makerRoutes');
 const { startKiKRetryJob } = require('./jobs/kikRetryCron');
+const { startDossierRefreshJob } = require('./jobs/dossierRefreshCron');
 const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
 const tenantRoutes = require('./routes/tenant.routes');
@@ -569,6 +570,7 @@ app.get('/api/dso/stam/status/:referenceId', async (req: Request, res: Response)
 const server = app.listen(backendConfig.port, () => {
   console.log(`🚀 Wkb Backend Server draait op port ${backendConfig.port}`);
   startKiKRetryJob();
+  startDossierRefreshJob();
 });
 
 server.on('error', (err: any) => {

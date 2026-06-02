@@ -17,6 +17,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@adobe/pdfservices-node-sdk": "^4.1.0",
     "@supabase/supabase-js": "^2.99.2",
     "axios": "^1.13.6",
     "cors": "^2.8.6",
