@@ -67,7 +67,18 @@ const backendConfig = {
   // productie-degradatie niet onopgemerkt blijft.
   alertEmail: process.env.ALERT_EMAIL ?? 'johnny@speesolutions.com',
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? '',
+  // Adobe Document Generation API (dossiermotor)
+  pdfServicesClientId: process.env.PDF_SERVICES_CLIENT_ID ?? '',
+  pdfServicesClientSecret: process.env.PDF_SERVICES_CLIENT_SECRET ?? '',
+  dossierTemplateBucket: process.env.DOSSIER_TEMPLATE_BUCKET ?? 'dossier-templates',
+  dossierTemplatePath: process.env.DOSSIER_TEMPLATE_PATH ?? 'dossier-sjabloon.docx',
+  dossierBucket: process.env.DOSSIER_BUCKET ?? 'dossiers',
+  dossierRefreshEnabled: parseBoolean(process.env.DOSSIER_REFRESH_ENABLED, false),
+  dossierRefreshSchedule: process.env.DOSSIER_REFRESH_SCHEDULE ?? '0 3 * * *',
 };
+
+const hasAdobeConfig = () =>
+  Boolean(backendConfig.pdfServicesClientId && backendConfig.pdfServicesClientSecret);
 
 const hasSupabaseConfig = () =>
   Boolean(backendConfig.supabaseUrl && backendConfig.supabaseServiceKey);
@@ -75,4 +86,5 @@ const hasSupabaseConfig = () =>
 module.exports = {
   backendConfig,
   hasSupabaseConfig,
+  hasAdobeConfig,
 };
