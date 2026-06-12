@@ -67,8 +67,15 @@ cd frontend && npm run typecheck
   **fail-closed** bij ontbrekende config (503), tenzij `ALLOW_AUTH_BYPASS`.
 - `backend/src/services/authContextService.ts`: rol + projecttoegang voor
   reviewacties (reviewers = AANNEMER, KWALITEITSBORGER).
-- Beschermde mounts: `/api/integrations/bim`, `/api/wkb-ai/ocr`, `/api/review`,
-  `/api/notifications`, en tenant-write/list (`/api/v1/tenants` behalve resolve).
+- Beschermde mounts (`requireAuth`): `/api/wkb-evidence`, `/api/wkb-dossier`,
+  `/api/stam`, `/api/integrations/bim`, `/api/wkb-ai/ocr`, `/api/review`,
+  `/api/notifications`, `/api/voice`, `/api/maker` (laatste twee intern in de
+  router). Inline beschermd: `/api/admin/ai-stats`, `/api/dossier/:projectId`
+  (+`/export`), `/api/ai/validate`, `/api/dso/stam/submit`+`/status`. Tenant-
+  write/list achter auth; `/api/v1/tenants/resolve` blijft publiek (login).
+- Bewust **publiek/extern** gelaten: `/api/integrations/dso|kik`, `/api/kik`,
+  `/api/erp/afas`, `/api/integrations/erp|exact-online` (eigen API-key-auth),
+  `/health`, `/api/health`, en `/qr` (achter `ENABLE_QR_DEMO`).
 
 ## Bekende open punten (zie hardening-rapport)
 - ~~Dossier-export en DSO-meldingen zonder token~~ → **opgelost**: routes
