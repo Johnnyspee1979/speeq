@@ -9,6 +9,8 @@ describe('TenantService', () => {
   });
 
   it('throws an error for unknown tenants', async () => {
-    await expect(TenantService.resolveTenant('unknown')).rejects.toThrow('Tenant not found');
+    await expect(TenantService.resolveTenant('unknown')).rejects.toThrow(
+      'Bedrijfs-ID niet gevonden. Controleer je licentie.'
+    );
   });
 });
