@@ -1,0 +1,80 @@
+# SpeeQ — projectgeheugen voor Claude Code
+
+Interne tool van Spee Solutions. Foto-gebaseerde **Wkb** (Wet kwaliteitsborging
+bouw) bewijs- en dossier-app, multi-tenant. Vakman maakt foto's → AI valideert →
+werkvoorbereider beoordeelt → dossier (consument + bevoegd gezag) → DSO/STAM-
+melding bij bevoegd gezag.
+
+## Stack
+| Laag | Tech |
+|---|---|
+| Backend | Node.js + TypeScript + Express 5, op Railway |
+| Frontend | React Native / Expo (draait ook als web/PWA) |
+| Data | Supabase (Postgres + Storage); master `tenants`-DB + per-tenant DB's |
+| AI | OpenAI Vision (backend), TensorFlow.js/MobileNet + Tesseract (frontend) |
+
+## Starten (binnen 5 min)
+```bash
+# Backend (poort 4103)
+cd backend && npm install && npm run dev      # ts-node + nodemon
+#   build/prod: npm run build && npm run start:prod
+
+# Frontend
+cd frontend && npm install && npm run web     # of: npm run ios / android
+```
+Beide hebben een `.env` nodig (zie hieronder). Zonder Supabase-config weigert de
+backend-auth nu bewust (fail-closed) — zet voor lokaal werken
+`ALLOW_AUTH_BYPASS=true`.
+
+## Env-vars (backend, `.env`)
+Kern: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`.
+Integraties: `DIGIKOPPELING_API_URL/KEY` (DSO/STAM), `KIK_API_URL/KEY`,
+`AFAS_*`, `EXACT_*`, `BCF_*`, `ELEVENLABS_API_KEY`, `PDF_SERVICES_CLIENT_ID/SECRET`.
+
+Security-flags (beide **standaard uit**):
+| Flag | Effect |
+|---|---|
+| `ALLOW_AUTH_BYPASS=true` | Sla auth over als Supabase niet geconfigureerd is. **Alleen lokaal.** |
+| `ENABLE_QR_DEMO=true` | Zet de publieke `/qr` demo-pagina aan (toont demo-inloggegevens). |
+
+Frontend gebruikt `EXPO_PUBLIC_*` (o.a. `EXPO_PUBLIC_SUPABASE_URL/ANON_KEY`,
+`BACKEND_URL`).
+
+## Tests & checks
+```bash
+# Backend
+cd backend && npm test                 # jest --runInBand
+npx jest <naam> --runInBand --forceExit # gericht; --forceExit i.v.m. open handles
+npm run typecheck                       # tsc --noEmit
+
+# Frontend
+cd frontend && npm run typecheck
+```
+
+## Valkuilen (hard geleerd)
+- **CommonJS + `verbatimModuleSyntax`**: backend-modules gebruiken
+  `const x = require(...)` + `module.exports`, en `import type` voor types.
+  Géén `export const` op waarde-niveau in deze modules → TS1287. Exporteer
+  waarden via `module.exports`, types via `export type`.
+- **macOS**: `timeout` bestaat niet standaard. Gebruik jest `--forceExit`.
+- **Volledige `jest --runInBand` kan hangen** op open handles — `--forceExit`.
+- **Geen `supertest`** als dependency. Voor route-tests: óf router-stack
+  inspecteren, óf een wegwerp-Express-app + Node's globale `fetch`/`FormData`.
+- **zsh expandt globs** zoals `*.ts` in bash-`grep`; gebruik de Grep-tool.
+
+## Auth-model (kort)
+- `backend/src/middleware/auth.ts` → `requireAuth`: verifieert Supabase-JWT,
+  **fail-closed** bij ontbrekende config (503), tenzij `ALLOW_AUTH_BYPASS`.
+- `backend/src/services/authContextService.ts`: rol + projecttoegang voor
+  reviewacties (reviewers = AANNEMER, KWALITEITSBORGER).
+- Beschermde mounts: `/api/integrations/bim`, `/api/wkb-ai/ocr`, `/api/review`,
+  `/api/notifications`, en tenant-write/list (`/api/v1/tenants` behalve resolve).
+
+## Bekende open punten (zie hardening-rapport)
+- Dossier-export en DSO-meldingen worden door de frontend **zonder token**
+  aangeroepen (`window.open`/`downloadAsync`/plain fetch) → nog niet achter
+  auth; vergt signed/getokende URLs.
+- Anon-Supabase-keys staan als fallback in `frontend/src/lib/supabase.ts` en
+  `MasterSupabase.ts` (publiek-by-design, maar idealiter env-only).
+- Route-aliassen (`/api/integrations/kik|dso`, exact/erp) zijn ongebruikt door
+  de frontend; mogelijk voor externe integraties — niet zomaar verwijderen.
