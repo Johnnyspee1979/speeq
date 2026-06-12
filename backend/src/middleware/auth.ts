@@ -15,9 +15,20 @@ const requireAuth = async (
 ) => {
   try {
     if (!backendConfig.supabaseUrl || !backendConfig.supabaseServiceKey) {
-      console.warn('⚠️ Supabase niet geconfigureerd in backend, auth verificatie wordt overgeslagen.');
-      req.user = { id: 'mock-user', role: 'KWALITEITSBORGER' };
-      return next();
+      // Fail-closed: zonder Supabase-config kan een token niet geverifieerd
+      // worden. We laten alleen door als de dev expliciet de ontsnappingsklep
+      // heeft aangezet; anders weigeren we (geen stille mock-gebruiker).
+      if (backendConfig.allowAuthBypass) {
+        console.warn(
+          '⚠️ ALLOW_AUTH_BYPASS staat aan: auth-verificatie wordt overgeslagen (alleen voor lokale dev).'
+        );
+        req.user = { id: 'dev-bypass-user', role: 'KWALITEITSBORGER' };
+        return next();
+      }
+      console.error('❌ Auth niet mogelijk: Supabase is niet geconfigureerd in de backend.');
+      return res.status(503).json({
+        error: 'Authenticatie is tijdelijk niet beschikbaar. Probeer het later opnieuw.',
+      });
     }
 
     if (!supabase) {

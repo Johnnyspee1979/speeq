@@ -27,6 +27,12 @@ const backendConfig = {
   port: parseNumber(process.env.PORT, 4103),
   supabaseUrl: process.env.SUPABASE_URL ?? '',
   supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY ?? '',
+  // Expliciete, standaard-uitgeschakelde ontsnappingsklep voor lokale dev.
+  // Wanneer Supabase niet geconfigureerd is, slaat de auth-middleware ALLEEN
+  // over als dit bewust op true staat (ALLOW_AUTH_BYPASS=true in .env). In
+  // productie (vlag afwezig) is auth fail-closed: ontbrekende config = 503,
+  // nooit een stille mock-gebruiker.
+  allowAuthBypass: parseBoolean(process.env.ALLOW_AUTH_BYPASS, false),
   dsoAdapterUrl:
     process.env.DIGIKOPPELING_API_URL ?? process.env.DSO_ADAPTER_URL ?? '',
   digikoppelingApiUrl:
