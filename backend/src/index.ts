@@ -71,7 +71,7 @@ let supabaseClient: any | null = null;
 app.use(cors());
 app.use(express.json());
 app.use('/api/v1/tenants', tenantRoutes);
-app.use('/api/wkb-evidence', evidenceRoutes);
+app.use('/api/wkb-evidence', requireAuth, evidenceRoutes);
 app.use('/api/wkb-dossier', requireAuth, dossierRoutes);
 app.use('/api/erp/afas', afasRoutes);
 app.use('/api/integrations/erp', erpRoutes);
