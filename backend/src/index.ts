@@ -194,6 +194,11 @@ const normalizeInspectionPointId = (inspectionPointId: string) => {
 };
 
 app.get('/qr', (req: Request, res: Response) => {
+  // Demo-pagina toont demo-inloggegevens; alleen beschikbaar wanneer expliciet
+  // aangezet. Standaard doen we alsof de route niet bestaat (404).
+  if (!backendConfig.enableQrDemo) {
+    return res.status(404).send('Not found');
+  }
   const QRCode = require('qrcode');
   const tunnelUrl = 'https://wkb-snap-sync.vercel.app';
   QRCode.toDataURL(tunnelUrl, { width: 300, margin: 2 }, (err: any, dataUrl: string) => {

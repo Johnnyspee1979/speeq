@@ -33,6 +33,10 @@ const backendConfig = {
   // productie (vlag afwezig) is auth fail-closed: ontbrekende config = 503,
   // nooit een stille mock-gebruiker.
   allowAuthBypass: parseBoolean(process.env.ALLOW_AUTH_BYPASS, false),
+  // Publieke /qr demo-pagina (toont demo-inloggegevens). Standaard UIT zodat
+  // die credentials niet ongevraagd publiek bereikbaar zijn. Zet alleen aan
+  // (ENABLE_QR_DEMO=true) tijdens een live demo.
+  enableQrDemo: parseBoolean(process.env.ENABLE_QR_DEMO, false),
   dsoAdapterUrl:
     process.env.DIGIKOPPELING_API_URL ?? process.env.DSO_ADAPTER_URL ?? '',
   digikoppelingApiUrl:
