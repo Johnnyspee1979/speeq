@@ -71,9 +71,14 @@ cd frontend && npm run typecheck
   `/api/notifications`, en tenant-write/list (`/api/v1/tenants` behalve resolve).
 
 ## Bekende open punten (zie hardening-rapport)
-- Dossier-export en DSO-meldingen worden door de frontend **zonder token**
-  aangeroepen (`window.open`/`downloadAsync`/plain fetch) → nog niet achter
-  auth; vergt signed/getokende URLs.
+- ~~Dossier-export en DSO-meldingen zonder token~~ → **opgelost**: routes
+  (`/api/wkb-dossier`, `/api/stam`, inline `/api/dso/stam/*`) zitten nu achter
+  `requireAuth`; de frontend stuurt de Supabase-JWT mee (`services/dso.ts` +
+  `services/dossierAuth.ts`). Web haalt PDF's als blob mét Bearer op (i.p.v.
+  `window.open` zónder header), native geeft de header door aan
+  `downloadAsync`. **Aanname:** downloads zijn login-only — géén deelbare
+  login-loze links. Wil je die wél, dan zijn signed/getokende URLs nodig.
+  De `/api/integrations/dso`-mount is bewust ongemoeid (mogelijk extern vlak).
 - Anon-Supabase-keys staan als fallback in `frontend/src/lib/supabase.ts` en
   `MasterSupabase.ts` (publiek-by-design, maar idealiter env-only).
 - Route-aliassen (`/api/integrations/kik|dso`, exact/erp) zijn ongebruikt door
