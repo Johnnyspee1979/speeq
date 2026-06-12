@@ -38,9 +38,12 @@ interface LoginScreenProps {
   onDevBypass?: () => void;
 }
 
+// Demo-accounts voor klant-demo's. BEWUST alleen wegwerp-demo-accounts hier —
+// nooit een echte productie-login. Een ontbrekende rol (bv. Werkvoorbereider)
+// voeg je toe met een dedicated demo-account, niet met een persoonlijk
+// admin-wachtwoord (dat zou meegebakken worden in de publieke web-bundle).
 const DEMO_ACCOUNTS: ReadonlyArray<{ role: string; emoji: string; email: string; password: string }> = [
   { role: 'Vakman',           emoji: '👷', email: 'vakman@combivo.nl',          password: 'combivo2026' },
-  { role: 'Werkvoorbereider', emoji: '🛠️', email: 'johnny@speesolutions.com',    password: 'Val7118!?' },
   { role: 'Projectleider',    emoji: '👔', email: 'projectleider@speedemo.nl',  password: 'demo2026' },
 ];
 
