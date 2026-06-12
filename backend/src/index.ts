@@ -78,7 +78,7 @@ app.use('/api/integrations/erp', erpRoutes);
 app.use('/api/integrations/exact-online', exactRoutes);
 app.use('/api/kik', kikRoutes);
 app.use('/api/integrations/kik', kikRoutes);
-app.use('/api/stam', stamRoutes);
+app.use('/api/stam', requireAuth, stamRoutes);
 app.use('/api/integrations/dso', dsoRoutes);
 app.use('/api/integrations/bim', requireAuth, bimRoutes);
 app.use('/api/wkb-ai/ocr', requireAuth, ocrRoutes);
@@ -547,7 +547,7 @@ app.post('/api/ai/validate', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/dso/stam/submit', async (req: Request, res: Response) => {
+app.post('/api/dso/stam/submit', requireAuth, async (req: Request, res: Response) => {
   try {
     const payload = mapToStamPayload(req.body ?? {});
     const response = await submitToDSO(payload);
@@ -560,7 +560,7 @@ app.post('/api/dso/stam/submit', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dso/stam/status/:referenceId', async (req: Request, res: Response) => {
+app.get('/api/dso/stam/status/:referenceId', requireAuth, async (req: Request, res: Response) => {
   try {
     const response = await fetchDsoStatus(req.params.referenceId);
     res.json({
