@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View, ScrollView, RefreshControl } from 'react-native';
 import { BarChart, BrainCircuit, CheckCircle, Search, Server, ShieldCheck, XCircle } from 'lucide-react-native';
 import { BACKEND_URL } from '../config/app';
+import { supabase } from '../lib/supabase';
 import { useTheme } from '../theme/ThemeProvider';
 import { getDeviceType } from '../lib/platform';
 
@@ -27,7 +28,13 @@ export default function AiValidationDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/admin/ai-stats`);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const headers: Record<string, string> = session?.access_token
+        ? { Authorization: `Bearer ${session.access_token}` }
+        : {};
+      const response = await fetch(`${BACKEND_URL}/api/admin/ai-stats`, { headers });
       if (!response.ok) {
         throw new Error('Kon AI statistieken niet ophalen');
       }

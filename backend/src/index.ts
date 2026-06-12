@@ -276,7 +276,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-app.get('/api/admin/ai-stats', async (req: Request, res: Response) => {
+app.get('/api/admin/ai-stats', requireAuth, async (req: Request, res: Response) => {
   try {
     const supabase = getSupabaseAdminClient();
 
@@ -317,7 +317,7 @@ app.get('/api/admin/ai-stats', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dossier/:projectId', async (req: Request, res: Response) => {
+app.get('/api/dossier/:projectId', requireAuth, async (req: Request, res: Response) => {
   try {
     const projectId = String(req.params.projectId ?? '');
     const supabase = getSupabaseAdminClient();
@@ -340,7 +340,7 @@ app.get('/api/dossier/:projectId', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dossier/:projectId/export', async (req: Request, res: Response) => {
+app.get('/api/dossier/:projectId/export', requireAuth, async (req: Request, res: Response) => {
   try {
     const projectId = String(req.params.projectId ?? '');
     const dossierType = (req.query.type as string) ?? 'bevoegd-gezag';
@@ -490,7 +490,7 @@ app.get('/api/dossier/:projectId/export', async (req: Request, res: Response) =>
   }
 });
 
-app.post('/api/ai/validate', async (req: Request, res: Response) => {
+app.post('/api/ai/validate', requireAuth, async (req: Request, res: Response) => {
   try {
     const payload =
       req.body && typeof req.body === 'object'
