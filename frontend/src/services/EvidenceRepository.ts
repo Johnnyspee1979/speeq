@@ -131,17 +131,15 @@ export const cloudEvidenceRepository: EvidenceRepository = {
         return null;
       }
 
-      const { data: publicData } = supabase.storage
-        .from(EVIDENCE_BUCKET)
-        .getPublicUrl(fileName);
-
+      // Bewaar het PAD, niet een publieke URL. Bij het ophalen tekent
+      // fetchEvidenceForReview() dit pad tot een kortlevende signed URL.
       const { data, error } = await supabase
         .from('evidence')
         .insert({
           project_id: input.projectId,
           inspection_point_id: input.inspectionPointId ?? null,
-          photo_uri: publicData.publicUrl,
-          media_uri: publicData.publicUrl,
+          photo_uri: fileName,
+          media_uri: fileName,
           timestamp: input.timestamp ?? new Date().toISOString(),
           latitude: input.latitude ?? null,
           longitude: input.longitude ?? null,

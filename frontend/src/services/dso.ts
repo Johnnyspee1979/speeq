@@ -1,4 +1,21 @@
 import { BACKEND_URL } from '../config/app';
+import { supabase } from '../lib/supabase';
+
+// DSO/STAM-meldingen gaan naar bevoegd gezag; deze backend-routes vereisen auth.
+// We sturen de Supabase-JWT mee als Bearer-token (zelfde patroon als
+// NotificationService/cloudEvidenceService).
+const authHeaders = async (
+  base: Record<string, string> = {}
+): Promise<Record<string, string>> => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) {
+    throw new Error('Je bent niet (meer) ingelogd. Log opnieuw in om de melding te versturen.');
+  }
+  return { ...base, Authorization: `Bearer ${token}` };
+};
 
 type DsoSubmitResponse = {
   success: boolean;
@@ -41,7 +58,7 @@ export const submitStam = async (
 ): Promise<DsoSubmitResponse> => {
   const response = await fetch(`${BACKEND_URL}/api/dso/stam/submit`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
 
@@ -55,7 +72,9 @@ export const submitStam = async (
 export const fetchStamStatus = async (
   referenceId: string
 ): Promise<DsoStatusResponse> => {
-  const response = await fetch(`${BACKEND_URL}/api/dso/stam/status/${referenceId}`);
+  const response = await fetch(`${BACKEND_URL}/api/dso/stam/status/${referenceId}`, {
+    headers: await authHeaders(),
+  });
   if (!response.ok) {
     throw new Error(await readErrorMessage(response, 'DSO STAM status failed'));
   }
@@ -67,7 +86,7 @@ export const submitBouwmelding = async (
 ): Promise<StamMeldingResponse> => {
   const response = await fetch(`${BACKEND_URL}/api/stam/bouwmelding`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
 
@@ -83,7 +102,7 @@ export const submitGereedmelding = async (
 ): Promise<StamMeldingResponse> => {
   const response = await fetch(`${BACKEND_URL}/api/stam/gereedmelding`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
 

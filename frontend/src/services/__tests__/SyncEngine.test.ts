@@ -5,6 +5,7 @@ const syncEvidenceQueueMock = jest.fn();
 const getUserMock = jest.fn();
 const storageUploadMock = jest.fn();
 const storageGetPublicUrlMock = jest.fn();
+const storageCreateSignedUrlMock = jest.fn();
 const storageFromMock = jest.fn();
 const singleMock = jest.fn();
 const updateEqMock = jest.fn();
@@ -117,9 +118,14 @@ describe('Wkb Sync-Engine', () => {
     storageGetPublicUrlMock.mockReturnValue({
       data: { publicUrl: 'https://cdn.example.com/evidence-1.jpg' },
     });
+    storageCreateSignedUrlMock.mockResolvedValue({
+      data: { signedUrl: 'https://signed.example.com/evidence-1.jpg' },
+      error: null,
+    });
     storageFromMock.mockReturnValue({
       upload: storageUploadMock,
       getPublicUrl: storageGetPublicUrlMock,
+      createSignedUrl: storageCreateSignedUrlMock,
     });
     singleMock.mockResolvedValue({ data: { id: 77 }, error: null });
     updateEqMock.mockResolvedValue({ error: null });

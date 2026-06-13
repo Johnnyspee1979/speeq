@@ -31,6 +31,7 @@ import {
 } from '../config/app';
 import { syncEvidenceToCloud } from '../services/sync';
 import { submitStam, fetchStamStatus } from '../services/dso';
+import { authHeader, openPdfInNewTab } from '../services/dossierAuth';
 import { getDeviceType, isWeb } from '../lib/platform';
 import { exportDossierAsPdf } from '../services/BorgingsDossierService';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
@@ -408,9 +409,12 @@ export default function EvidenceList() {
           : `${BACKEND_URL}/api/wkb-dossier/bevoegd-gezag/${activeProjectId}`;
       const exportUrl = `${exportBasePath}?${params.toString()}`;
 
-      // Op web: open in nieuw tabblad (browser download)
+      // Op web: haal de PDF mét token op (blob) en open in nieuw tabblad.
       if (isWeb) {
-        const available = await fetch(exportBasePath, { method: 'GET' })
+        const available = await fetch(exportBasePath, {
+          method: 'GET',
+          headers: await authHeader(),
+        })
           .then((r) => r.status < 500)
           .catch(() => false);
 
@@ -421,7 +425,7 @@ export default function EvidenceList() {
           );
           return;
         }
-        window.open(exportUrl, '_blank');
+        await openPdfInNewTab(exportUrl);
         return;
       }
 
@@ -458,7 +462,9 @@ export default function EvidenceList() {
         '';
       const fileUri = `${baseDir}wkb-dossier-${activeProjectId}-${Date.now()}.pdf`;
 
-      const download = await FileSystem.downloadAsync(exportUrl, fileUri);
+      const download = await FileSystem.downloadAsync(exportUrl, fileUri, {
+        headers: await authHeader(),
+      });
       const canShare = await Sharing.isAvailableAsync();
 
       if (canShare) {

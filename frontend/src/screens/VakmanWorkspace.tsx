@@ -834,7 +834,7 @@ function EvidenceCard({
 
           {item.latitude != null && (
             <Text style={{ color: theme.colors.textSecondary, fontSize: 11, marginTop: 4 }}>
-              📍 {item.latitude.toFixed(4)}, {item.longitude?.toFixed(4)}
+              📍 Locatie vastgelegd
             </Text>
           )}
 

@@ -38,6 +38,7 @@ import {
   type StoredConsumerDossierItem,
 } from '../services/wkbCompliance';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { authHeader, openPdfInNewTab } from '../services/dossierAuth';
 import {
   syncEvidenceQueue,
   syncProjectDeliveryStateToCloud,
@@ -143,9 +144,12 @@ export default function ConsumentenDossierScherm({
     setIsDownloading(true);
 
     try {
-      // Op web: open direct via browser (geen FileSystem nodig)
+      // Op web: haal de PDF mét token op (blob) en open in nieuw tabblad.
       if (isWeb) {
-        const backendAvailable = await fetch(consumerDossierStatusUrl, { method: 'GET' })
+        const backendAvailable = await fetch(consumerDossierStatusUrl, {
+          method: 'GET',
+          headers: await authHeader(),
+        })
           .then((r) => r.ok)
           .catch(() => false);
 
@@ -157,8 +161,8 @@ export default function ConsumentenDossierScherm({
           return;
         }
 
-        window.open(consumerDossierUrl, '_blank');
-        setPdfUri(consumerDossierUrl);
+        const blobUrl = await openPdfInNewTab(consumerDossierUrl);
+        setPdfUri(blobUrl);
         setLastDownloadedAt(new Date().toISOString());
         return;
       }
@@ -198,7 +202,9 @@ export default function ConsumentenDossierScherm({
         }
       }
 
-      const statusResponse = await fetch(consumerDossierStatusUrl);
+      const statusResponse = await fetch(consumerDossierStatusUrl, {
+        headers: await authHeader(),
+      });
       const statusPayload = (await statusResponse.json().catch(() => null)) as
         | {
             error?: string;
@@ -229,7 +235,8 @@ export default function ConsumentenDossierScherm({
       const localFilePath = `${baseDir}consumentendossier-${sanitizedProjectId}-${Date.now()}.pdf`;
       const downloadResult = await FileSystem.downloadAsync(
         consumerDossierUrl,
-        localFilePath
+        localFilePath,
+        { headers: await authHeader() }
       );
 
       if (downloadResult.status !== 200) {

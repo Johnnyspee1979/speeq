@@ -5,6 +5,9 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { resolveStorageUrl, resolveStorageUrls } from '../lib/storageUrl';
+
+const FLOOR_PLANS_BUCKET = 'floor-plans';
 
 export interface FloorPlan {
   id: string;
@@ -31,7 +34,7 @@ export async function uploadFloorPlan(
     const path = `${projectId}/${Date.now()}_${file.name}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('floor-plans')
+      .from(FLOOR_PLANS_BUCKET)
       .upload(path, file, { upsert: false, contentType: file.type });
 
     if (uploadError) {
@@ -39,11 +42,8 @@ export async function uploadFloorPlan(
       return null;
     }
 
-    const { data: urlData } = supabase.storage
-      .from('floor-plans')
-      .getPublicUrl(path);
-
-    const fileUrl = urlData.publicUrl;
+    // Bewaar het PAD (niet een publieke URL). Bij het ophalen tekenen we dit
+    // pad tot een kortlevende signed URL. Werkt ook op een privé-bucket.
     const fileType = ext === 'pdf' ? 'PDF' : 'PNG';
 
     const { data: row, error: insertError } = await supabase
@@ -51,7 +51,7 @@ export async function uploadFloorPlan(
       .insert({
         project_id: projectId,
         name,
-        file_url: fileUrl,
+        file_url: path,
         file_type: fileType,
       })
       .select()
@@ -66,7 +66,8 @@ export async function uploadFloorPlan(
       id: row.id,
       projectId: row.project_id,
       name: row.name,
-      fileUrl: row.file_url,
+      fileUrl:
+        (await resolveStorageUrl(FLOOR_PLANS_BUCKET, row.file_url)) ?? row.file_url,
       fileType: row.file_type,
       widthPx: row.width_px ?? null,
       heightPx: row.height_px ?? null,
@@ -92,11 +93,18 @@ export async function getFloorPlansForProject(
 
   if (error || !data) return [];
 
-  return data.map((row) => ({
+  // Paden → kortlevende signed URLs (privé-bucket). Oude/volledige URLs blijven
+  // ongemoeid (passthrough). Eén batch-call voor de hele lijst.
+  const signedUrls = await resolveStorageUrls(
+    FLOOR_PLANS_BUCKET,
+    data.map((row) => row.file_url),
+  );
+
+  return data.map((row, i) => ({
     id: row.id,
     projectId: row.project_id,
     name: row.name,
-    fileUrl: row.file_url,
+    fileUrl: signedUrls[i] ?? row.file_url,
     fileType: row.file_type,
     widthPx: row.width_px ?? null,
     heightPx: row.height_px ?? null,

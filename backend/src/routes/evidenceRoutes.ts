@@ -49,7 +49,46 @@ type MulterRequest = Request & {
 };
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
+
+// Foto-uploads worden volledig in geheugen gebufferd; zonder limiet kan één
+// grote upload het geheugen laten vollopen. 15 MB is ruim voldoende voor
+// telefoonfoto's (typisch 2–8 MB). Alleen afbeeldingen toegestaan.
+const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_BYTES },
+  fileFilter: (_req: any, file: any, cb: any) => {
+    if (typeof file?.mimetype === 'string' && file.mimetype.startsWith('image/')) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('ONLY_IMAGES'));
+  },
+});
+
+// Wrappt multer zodat een te groot of niet-toegestaan bestand een nette
+// Nederlandse foutmelding geeft i.p.v. een generieke 500.
+const uploadPhoto = (req: Request, res: Response, next: () => void) => {
+  upload.single('photo')(req, res, (err: any) => {
+    if (!err) {
+      next();
+      return;
+    }
+    if (err?.code === 'LIMIT_FILE_SIZE') {
+      res.status(413).json({
+        error: 'De foto is te groot (max 15 MB). Maak de foto kleiner en probeer opnieuw.',
+      });
+      return;
+    }
+    if (err?.message === 'ONLY_IMAGES') {
+      res.status(415).json({
+        error: 'Alleen afbeeldingen zijn toegestaan als bewijs.',
+      });
+      return;
+    }
+    res.status(400).json({ error: 'Uploaden van de foto is mislukt. Probeer het opnieuw.' });
+  });
+};
 
 let supabaseClient: any | null = null;
 
@@ -156,7 +195,7 @@ const getFileExtension = (mimeType?: string) => {
 
 router.post(
   '/upload',
-  upload.single('photo'),
+  uploadPhoto,
   async (req: MulterRequest, res: Response): Promise<void> => {
     try {
       if (!req.file || !req.body?.evidenceData) {
@@ -241,19 +280,22 @@ router.post(
         throw new Error(`Supabase Storage fout: ${storageError.message}`);
       }
 
-      const { data: publicUrlData } = supabase.storage
+      // Bewaar het PAD (niet een publieke URL). De frontend tekent dit pad bij
+      // het ophalen (fetchEvidenceForReview) tot een kortlevende signed URL.
+      // Voor de respons tekenen we hier alvast een signed URL (service_role).
+      const { data: signedData } = await supabase.storage
         .from('wkb-evidence')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
-      const mediaUrl = publicUrlData.publicUrl;
+      const mediaUrl = signedData?.signedUrl ?? fileName;
       const aiFindingsText = aiResult.findings.join(' | ');
 
       const richPayload = {
         evidence_id: evidenceId,
         project_id: projectId,
         inspection_point_id: inspectionPointId,
-        media_uri: mediaUrl,
-        photo_uri: mediaUrl,
+        media_uri: fileName,
+        photo_uri: fileName,
         timestamp,
         latitude,
         longitude,
@@ -272,7 +314,7 @@ router.post(
       };
 
       const legacyPayload = {
-        photo_uri: mediaUrl,
+        photo_uri: fileName,
         timestamp,
         latitude,
         longitude,

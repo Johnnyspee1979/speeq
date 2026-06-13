@@ -1,4 +1,22 @@
 import { BACKEND_URL } from '../config/app';
+import { supabase } from '../lib/supabase';
+
+// Zachte token-attach: deze call draait tijdens cloud-sync (achtergrond). We
+// sturen de Supabase-JWT mee als die er is; ontbreekt 'ie, dan weigert de
+// backend met 401 en vangt de per-item sync-foutafhandeling dat netjes af.
+const optionalAuthHeaders = async (
+  base: Record<string, string>
+): Promise<Record<string, string>> => {
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    return token ? { ...base, Authorization: `Bearer ${token}` } : base;
+  } catch {
+    return base;
+  }
+};
 
 export type CloudAiResponse = {
   status: 'PASSED' | 'FAILED' | 'NEEDS_REVIEW';
@@ -24,9 +42,7 @@ export const requestCloudAiValidation = async (
 ): Promise<CloudAiResponse> => {
   const response = await fetch(`${BACKEND_URL}/api/ai/validate`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: await optionalAuthHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(payload),
   });
 

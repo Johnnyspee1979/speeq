@@ -11,6 +11,22 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { resolveStorageUrl } from '../lib/storageUrl';
+
+// Bonnen gaan normaal naar 'project-documents'. Valt die upload weg, dan een
+// fallback naar 'floor-plans'. Omdat de DB geen bucket-kolom heeft, prefixen we
+// een fallback-referentie zodat het tekenen bij het ophalen de juiste bucket kiest.
+const FALLBACK_BUCKET = 'floor-plans';
+const FALLBACK_PREFIX = 'floor-plans:';
+
+/** Teken een opgeslagen photo_url-referentie tot een toonbare URL. */
+async function resolveDocumentUrl(stored: string): Promise<string> {
+  if (stored.startsWith(FALLBACK_PREFIX)) {
+    const path = stored.slice(FALLBACK_PREFIX.length);
+    return (await resolveStorageUrl(FALLBACK_BUCKET, path)) ?? path;
+  }
+  return (await resolveStorageUrl(STORAGE_BUCKET, stored)) ?? stored;
+}
 
 export type DocType =
   | 'BON'
@@ -317,14 +333,13 @@ export async function saveScannedDocument(args: {
         console.error('BonScannerService: beide buckets faalden', uploadError, fallbackError);
         return null;
       }
-      const { data: urlData } = supabase.storage
-        .from('floor-plans')
-        .getPublicUrl(fallbackPath);
-      return await insertRow(args, urlData.publicUrl);
+      // Bewaar een gemarkeerd fallback-PAD; resolveDocumentUrl tekent het later.
+      return await insertRow(args, `${FALLBACK_PREFIX}${fallbackPath}`);
     }
 
-    const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-    return await insertRow(args, urlData.publicUrl);
+    // Bewaar het PAD (niet een publieke URL). Bij het ophalen tekent
+    // resolveDocumentUrl het tot een kortlevende signed URL.
+    return await insertRow(args, path);
   } catch (err) {
     console.error('BonScannerService: unexpected error', err);
     return null;
@@ -361,13 +376,13 @@ async function insertRow(
   return rowToDoc(row);
 }
 
-function rowToDoc(row: Record<string, unknown>): ProjectDocument {
+async function rowToDoc(row: Record<string, unknown>): Promise<ProjectDocument> {
   return {
     id: String(row.id),
     projectId: String(row.project_id),
     docType: (row.doc_type as DocType) ?? 'OVERIG',
     title: (row.title as string) ?? null,
-    photoUrl: String(row.photo_url),
+    photoUrl: await resolveDocumentUrl(String(row.photo_url)),
     ocrText: (row.ocr_text as string) ?? null,
     ocrConfidence: (row.ocr_confidence as number) ?? null,
     detectedFields: (row.detected_fields as Record<string, string>) ?? null,
@@ -382,7 +397,7 @@ export async function getDocumentsForProject(projectId: string): Promise<Project
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
   if (error || !data) return [];
-  return data.map(rowToDoc);
+  return Promise.all(data.map(rowToDoc));
 }
 
 export async function deleteDocument(id: string): Promise<void> {

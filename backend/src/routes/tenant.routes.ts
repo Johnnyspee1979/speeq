@@ -1,10 +1,12 @@
 const { Router } = require('express');
 const { TenantService } = require('../services/TenantService');
+const { requireAuth } = require('../middleware/auth');
 import type { Request, Response } from 'express';
 
 const router = Router();
 
-// GET /api/v1/tenants/resolve/:companyId
+// GET /api/v1/tenants/resolve/:companyId — PUBLIEK: de login-flow heeft dit
+// nodig vóórdat er een sessie bestaat. Geeft alleen de connect-config terug.
 router.get('/resolve/:companyId', async (req: Request, res: Response) => {
   try {
     const { companyId } = req.params;
@@ -22,8 +24,9 @@ router.get('/resolve/:companyId', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/v1/tenants
-router.get('/', async (req: Request, res: Response) => {
+// GET /api/v1/tenants — BESCHERMD: geeft alle tenants terug, inclusief
+// Supabase-connectgegevens. Mag nooit publiek bereikbaar zijn.
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const tenants = await TenantService.getAllTenants();
     res.json({ success: true, data: tenants });
@@ -32,10 +35,10 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/v1/tenants
+// POST /api/v1/tenants — BESCHERMD: maakt een nieuwe tenant aan.
 // Sprint 5 — body kan { companyName, adminEmail } zijn (nieuw)
 // of de oude shape { companyId, name, supabaseUrl, supabaseAnonKey }
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const tenant = await TenantService.createTenant(req.body);
     res.status(201).json({ success: true, data: tenant });
@@ -44,8 +47,8 @@ router.post('/', async (req: Request, res: Response) => {
   }
 });
 
-// PUT /api/v1/tenants/:companyId — voor handmatige Supabase-koppeling later
-router.put('/:companyId', async (req: Request, res: Response) => {
+// PUT /api/v1/tenants/:companyId — BESCHERMD: wijzigt tenant-config.
+router.put('/:companyId', requireAuth, async (req: Request, res: Response) => {
   try {
     const tenant = await TenantService.updateTenant(req.params.companyId, req.body);
     res.json({ success: true, data: tenant });

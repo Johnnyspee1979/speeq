@@ -23,10 +23,32 @@ const parseBoolean = (rawValue: string | undefined, fallback: boolean) => {
   return fallback;
 };
 
+// Welke omgeving draait deze instance? Bewust een losse vlag (APP_ENV) zodat
+// staging en productie elk hun eigen Railway-variable zetten en je in /health
+// kunt zien wélke je raakt — voorkomt per ongeluk naar prod deployen/testen.
+// Valt terug op NODE_ENV en uiteindelijk 'development' voor lokaal werk.
+const normalizeEnv = (raw: string | undefined): 'production' | 'staging' | 'development' => {
+  const v = (raw ?? '').trim().toLowerCase();
+  if (['production', 'prod'].includes(v)) return 'production';
+  if (['staging', 'stage', 'test'].includes(v)) return 'staging';
+  return 'development';
+};
+
 const backendConfig = {
+  appEnv: normalizeEnv(process.env.APP_ENV ?? process.env.NODE_ENV),
   port: parseNumber(process.env.PORT, 4103),
   supabaseUrl: process.env.SUPABASE_URL ?? '',
   supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY ?? '',
+  // Expliciete, standaard-uitgeschakelde ontsnappingsklep voor lokale dev.
+  // Wanneer Supabase niet geconfigureerd is, slaat de auth-middleware ALLEEN
+  // over als dit bewust op true staat (ALLOW_AUTH_BYPASS=true in .env). In
+  // productie (vlag afwezig) is auth fail-closed: ontbrekende config = 503,
+  // nooit een stille mock-gebruiker.
+  allowAuthBypass: parseBoolean(process.env.ALLOW_AUTH_BYPASS, false),
+  // Publieke /qr demo-pagina (toont demo-inloggegevens). Standaard UIT zodat
+  // die credentials niet ongevraagd publiek bereikbaar zijn. Zet alleen aan
+  // (ENABLE_QR_DEMO=true) tijdens een live demo.
+  enableQrDemo: parseBoolean(process.env.ENABLE_QR_DEMO, false),
   dsoAdapterUrl:
     process.env.DIGIKOPPELING_API_URL ?? process.env.DSO_ADAPTER_URL ?? '',
   digikoppelingApiUrl:

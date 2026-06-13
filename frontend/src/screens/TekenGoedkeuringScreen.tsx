@@ -27,6 +27,7 @@ import {
   type DrawingChangeRequest,
 } from '../services/DrawingChangeRequestService';
 import { supabase } from '../lib/supabase';
+import { resolveStorageUrl } from '../lib/storageUrl';
 import { useTenantBranding } from '../hooks/useTenantBranding';
 import { useTheme } from '../theme/ThemeProvider';
 import { PrimaryButton } from '../components/ui/PrimaryButton';
@@ -68,7 +69,12 @@ export default function TekenGoedkeuringScreen({ token }: Props) {
           .select('file_url')
           .eq('id', req.floorPlanId)
           .single();
-        if (data?.file_url) setFloorPlanUrl(data.file_url as string);
+        if (data?.file_url) {
+          // file_url is een opslag-pad → teken tot een kortlevende signed URL
+          // (oude volledige URLs blijven via passthrough ongemoeid).
+          const signed = await resolveStorageUrl('floor-plans', data.file_url as string);
+          setFloorPlanUrl((signed as string) ?? (data.file_url as string));
+        }
       }
 
       setScreen('form');

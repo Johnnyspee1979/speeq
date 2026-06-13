@@ -38,9 +38,16 @@ interface LoginScreenProps {
   onDevBypass?: () => void;
 }
 
+// Demo-accounts voor klant-demo's. BEWUST alleen WEGWERP-demo-accounts hier
+// (eigen speedemo.nl-tenant zonder echte data) — NOOIT een echt klant-account.
+// Een echt account (bv. vakman@combivo.nl) hoort hier niet: de inlogknop logt
+// dan elke bezoeker in op de klant-tenant (RLS scope = die klant) en het
+// wachtwoord wordt meegebakken in de publieke web-bundle.
+//
+// De demo-rij wordt bovendien alleen getoond als EXPO_PUBLIC_ENABLE_DEMO_LOGIN
+// === 'true' (standaard UIT in productie). Zet 'm aan op een demo-URL.
+const DEMO_LOGIN_ENABLED = process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
 const DEMO_ACCOUNTS: ReadonlyArray<{ role: string; emoji: string; email: string; password: string }> = [
-  { role: 'Vakman',           emoji: '👷', email: 'vakman@combivo.nl',          password: 'combivo2026' },
-  { role: 'Werkvoorbereider', emoji: '🛠️', email: 'johnny@speesolutions.com',    password: 'Val7118!?' },
   { role: 'Projectleider',    emoji: '👔', email: 'projectleider@speedemo.nl',  password: 'demo2026' },
 ];
 
@@ -135,6 +142,35 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
       setLoading(false);
       Alert.alert('Inloggen mislukt', error.message);
     }
+  };
+
+  // Wachtwoord-herstel via Supabase. Stuurt een recovery-mail naar het
+  // ingevulde adres; de gebruiker kiest na de mail-link een nieuw wachtwoord.
+  // Bewust géén bevestiging of het adres bestaat (voorkomt account-enumeratie).
+  const handleForgotPassword = async () => {
+    if (!email || !EMAIL_RE.test(email)) {
+      setEmailValid(false);
+      Alert.alert(
+        'Wachtwoord vergeten',
+        'Vul eerst je e-mailadres in het veld hierboven in, dan sturen we je een herstellink.'
+      );
+      return;
+    }
+    setLoading(true);
+    const redirectTo =
+      Platform.OS === 'web' && typeof window !== 'undefined'
+        ? window.location.origin
+        : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    setLoading(false);
+    if (error) {
+      Alert.alert('Herstel mislukt', error.message);
+      return;
+    }
+    Alert.alert(
+      'Check je mail',
+      `Als er een account bij ${email} hoort, ontvang je een mail met een link om je wachtwoord opnieuw in te stellen.`
+    );
   };
 
   const labelStyle = (anim: Animated.Value, hasError: boolean) => ({
@@ -235,7 +271,7 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
           </View>
           <Text style={styles.rememberText}>Onthoud mij</Text>
         </Pressable>
-        <Pressable onPress={() => Alert.alert('Wachtwoord vergeten', 'Neem contact op met Spee Solutions.')}>
+        <Pressable onPress={handleForgotPassword} disabled={loading}>
           <Text style={styles.forgot}>Wachtwoord vergeten?</Text>
         </Pressable>
       </View>
@@ -256,25 +292,29 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
         )}
       </Pressable>
 
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>of demo</Text>
-        <View style={styles.dividerLine} />
-      </View>
+      {DEMO_LOGIN_ENABLED && DEMO_ACCOUNTS.length > 0 ? (
+        <>
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>of demo</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
-      <View style={styles.demoRow}>
-        {DEMO_ACCOUNTS.map((acc) => (
-          <Pressable
-            key={acc.email}
-            style={({ pressed }) => [styles.demoBtn, pressed && { opacity: 0.7 }]}
-            onPress={() => handleQuickLogin(acc)}
-            disabled={loading}
-          >
-            <Text style={styles.demoEmoji}>{acc.emoji}</Text>
-            <Text style={styles.demoText}>{acc.role}</Text>
-          </Pressable>
-        ))}
-      </View>
+          <View style={styles.demoRow}>
+            {DEMO_ACCOUNTS.map((acc) => (
+              <Pressable
+                key={acc.email}
+                style={({ pressed }) => [styles.demoBtn, pressed && { opacity: 0.7 }]}
+                onPress={() => handleQuickLogin(acc)}
+                disabled={loading}
+              >
+                <Text style={styles.demoEmoji}>{acc.emoji}</Text>
+                <Text style={styles.demoText}>{acc.role}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
 
       {onDevBypass ? (
         <Pressable

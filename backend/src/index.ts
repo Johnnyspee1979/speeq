@@ -35,6 +35,7 @@ const { startKiKRetryJob } = require('./jobs/kikRetryCron');
 const { startDossierRefreshJob } = require('./jobs/dossierRefreshCron');
 const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
+const { requireReviewer } = require('./middleware/requireReviewer');
 const tenantRoutes = require('./routes/tenant.routes');
 
 dotenv.config();
@@ -71,14 +72,14 @@ let supabaseClient: any | null = null;
 app.use(cors());
 app.use(express.json());
 app.use('/api/v1/tenants', tenantRoutes);
-app.use('/api/wkb-evidence', evidenceRoutes);
-app.use('/api/wkb-dossier', dossierRoutes);
+app.use('/api/wkb-evidence', requireAuth, evidenceRoutes);
+app.use('/api/wkb-dossier', requireAuth, dossierRoutes);
 app.use('/api/erp/afas', afasRoutes);
 app.use('/api/integrations/erp', erpRoutes);
 app.use('/api/integrations/exact-online', exactRoutes);
 app.use('/api/kik', kikRoutes);
 app.use('/api/integrations/kik', kikRoutes);
-app.use('/api/stam', stamRoutes);
+app.use('/api/stam', requireAuth, requireReviewer, stamRoutes);
 app.use('/api/integrations/dso', dsoRoutes);
 app.use('/api/integrations/bim', requireAuth, bimRoutes);
 app.use('/api/wkb-ai/ocr', requireAuth, ocrRoutes);
@@ -194,6 +195,11 @@ const normalizeInspectionPointId = (inspectionPointId: string) => {
 };
 
 app.get('/qr', (req: Request, res: Response) => {
+  // Demo-pagina toont demo-inloggegevens; alleen beschikbaar wanneer expliciet
+  // aangezet. Standaard doen we alsof de route niet bestaat (404).
+  if (!backendConfig.enableQrDemo) {
+    return res.status(404).send('Not found');
+  }
   const QRCode = require('qrcode');
   const tunnelUrl = 'https://wkb-snap-sync.vercel.app';
   QRCode.toDataURL(tunnelUrl, { width: 300, margin: 2 }, (err: any, dataUrl: string) => {
@@ -254,13 +260,14 @@ h1 span{color:#E8500A}
 });
 
 app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', env: backendConfig.appEnv });
 });
 
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'online',
     service: 'Wkb Aggregation Engine',
+    env: backendConfig.appEnv,
     timestamp: new Date().toISOString(),
     config: {
       supabaseConfigured: hasSupabaseConfig(),
@@ -271,7 +278,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-app.get('/api/admin/ai-stats', async (req: Request, res: Response) => {
+app.get('/api/admin/ai-stats', requireAuth, async (req: Request, res: Response) => {
   try {
     const supabase = getSupabaseAdminClient();
 
@@ -312,7 +319,7 @@ app.get('/api/admin/ai-stats', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dossier/:projectId', async (req: Request, res: Response) => {
+app.get('/api/dossier/:projectId', requireAuth, async (req: Request, res: Response) => {
   try {
     const projectId = String(req.params.projectId ?? '');
     const supabase = getSupabaseAdminClient();
@@ -335,7 +342,7 @@ app.get('/api/dossier/:projectId', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dossier/:projectId/export', async (req: Request, res: Response) => {
+app.get('/api/dossier/:projectId/export', requireAuth, requireReviewer, async (req: Request, res: Response) => {
   try {
     const projectId = String(req.params.projectId ?? '');
     const dossierType = (req.query.type as string) ?? 'bevoegd-gezag';
@@ -485,7 +492,7 @@ app.get('/api/dossier/:projectId/export', async (req: Request, res: Response) =>
   }
 });
 
-app.post('/api/ai/validate', async (req: Request, res: Response) => {
+app.post('/api/ai/validate', requireAuth, async (req: Request, res: Response) => {
   try {
     const payload =
       req.body && typeof req.body === 'object'
@@ -542,7 +549,7 @@ app.post('/api/ai/validate', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/api/dso/stam/submit', async (req: Request, res: Response) => {
+app.post('/api/dso/stam/submit', requireAuth, requireReviewer, async (req: Request, res: Response) => {
   try {
     const payload = mapToStamPayload(req.body ?? {});
     const response = await submitToDSO(payload);
@@ -555,7 +562,7 @@ app.post('/api/dso/stam/submit', async (req: Request, res: Response) => {
   }
 });
 
-app.get('/api/dso/stam/status/:referenceId', async (req: Request, res: Response) => {
+app.get('/api/dso/stam/status/:referenceId', requireAuth, async (req: Request, res: Response) => {
   try {
     const response = await fetchDsoStatus(req.params.referenceId);
     res.json({
