@@ -84,6 +84,9 @@ export default function MakerNewTenantScreen({ onBack }: Props) {
   const [copied, setCopied] = useState(false);
   const [sendStatus, setSendStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [sendError, setSendError] = useState<string | null>(null);
+  // Auto-provisioning keyuser via backend (vervangt de handmatige SQL-paste).
+  const [activateStatus, setActivateStatus] = useState<'idle' | 'activating' | 'done' | 'error'>('idle');
+  const [activateError, setActivateError] = useState<string | null>(null);
   // Web-Alert is op Expo Web stil → toon submit-error als zichtbare banner.
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -305,6 +308,45 @@ VALUES (
     }
   };
 
+  /**
+   * Auto-provisioning keyuser via backend /api/maker/create-keyuser.
+   * Vervangt de handmatige copy/paste-SQL: de backend maakt de auth-user
+   * (service_role) + profiles-rij in één call, met rollback bij fout.
+   * Backend gate't op Maker-email (johnny@).
+   */
+  const handleActivateKeyuser = async () => {
+    if (!result) return;
+    setActivateStatus('activating');
+    setActivateError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('Niet ingelogd');
+      const res = await fetch(`${BACKEND_URL}/api/maker/create-keyuser`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          email: keyuserEmail.trim().toLowerCase(),
+          displayName: keyuserNaam.trim(),
+          companyName: bedrijfsnaam.trim(),
+          tenantId: result.slug,
+          password: result.password,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || body.ok === false) {
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      setActivateStatus('done');
+    } catch (err) {
+      setActivateStatus('error');
+      setActivateError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   // ─── Render: succes-scherm ─────────────────────────────────────────────
   if (result) {
     return (
@@ -330,7 +372,54 @@ VALUES (
             <Text style={styles.code}>{result.password}</Text>
           </View>
 
-          <Text style={styles.sectionTitle}>Activeer keyuser via Supabase SQL Editor</Text>
+          <Text style={styles.sectionTitle}>Activeer keyuser-account</Text>
+
+          {/* PRIMARY: auto-provisioning via backend (service_role).
+              Maakt auth-user + profiles-rij in één klik, met rollback. */}
+          <Pressable
+            onPress={handleActivateKeyuser}
+            disabled={activateStatus === 'activating' || activateStatus === 'done'}
+            style={({ pressed }) => [
+              {
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                backgroundColor:
+                  activateStatus === 'done'  ? '#16A34A' :
+                  activateStatus === 'error' ? '#DC2626' :
+                  '#1B3A5C',
+                paddingVertical: 14,
+                paddingHorizontal: 18,
+                borderRadius: 10,
+                marginBottom: 10,
+              },
+              (activateStatus === 'activating' || activateStatus === 'done') && { opacity: 0.85 },
+              pressed && { opacity: 0.85 },
+            ]}
+          >
+            {activateStatus === 'activating' ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : activateStatus === 'done' ? (
+              <CheckCircle2 size={18} color="#FFFFFF" />
+            ) : (
+              <Send size={18} color="#FFFFFF" />
+            )}
+            <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 }}>
+              {activateStatus === 'activating' ? 'Aanmaken…' :
+               activateStatus === 'done'       ? '✓ Keyuser geactiveerd' :
+               activateStatus === 'error'      ? 'Fout — probeer opnieuw' :
+               '⚡ Activeer keyuser automatisch'}
+            </Text>
+          </Pressable>
+          {activateStatus === 'error' && activateError ? (
+            <Text style={{ color: '#DC2626', fontSize: 12, marginBottom: 8 }}>{activateError}</Text>
+          ) : null}
+
+          {/* FALLBACK: handmatige SQL voor als de backend-route faalt. */}
+          <Text style={{ fontSize: 12, color: theme.colors.textSecondary, marginBottom: 6 }}>
+            Lukt de knop niet? Plak deze SQL handmatig in de Supabase SQL Editor:
+          </Text>
           <View style={styles.sqlBox}>
             <Text style={styles.sqlText}>{result.sql}</Text>
           </View>
