@@ -29,7 +29,9 @@ const EVIDENCE_BUCKET = 'wkb-evidence';
 
 /**
  * Lift een lokale foto-URI (file:// of blob:) naar Supabase Storage.
- * Returns de publieke remote URL die in evidence.photo_uri komt te staan.
+ * Returns het opslag-PAD (niet een publieke URL) dat in evidence.photo_uri
+ * komt te staan; fetchEvidenceForReview tekent dat pad bij het ophalen tot
+ * een kortlevende signed URL. Werkt ook op een privé-bucket.
  */
 async function uploadLocalPhotoToCloud(
   uuid: string,
@@ -65,10 +67,9 @@ async function uploadLocalPhotoToCloud(
       // Conflict op filename (zeldzaam) → genereer nieuwe naam en retry
       throw uploadError;
     }
-    const { data: publicData } = supabase.storage
-      .from(EVIDENCE_BUCKET)
-      .getPublicUrl(fileName);
-    return publicData.publicUrl ?? null;
+    // Bewaar het PAD (niet een publieke URL). Bij het ophalen tekent
+    // fetchEvidenceForReview() dit pad tot een kortlevende signed URL.
+    return fileName;
   } catch (err) {
     console.warn('[OfflineSyncEngine] photo-upload faalt:', err);
     return null;
@@ -179,12 +180,12 @@ async function pushOperation(op: SyncQueueRow): Promise<void> {
     if (error) throw error;
     if (!data?.id) throw new Error('Geen ID terug van Supabase na insert');
 
-    // Stap 3: lokale row update met remote_id + remote URL's (vrij maken
-    // van de lokale photo-cache mag — sync is voltooid)
+    // Stap 3: lokale row update met remote_id + sync-status. De LOKALE
+    // photo_uri/media_uri (file://-pad op het toestel) houden we bewust
+    // ongemoeid: dat blijft de bron voor offline-weergave. In de cloud staat
+    // nu het opslag-PAD (remotePhotoUrl), dat bij het ophalen wordt getekend.
     await store.updateEvidence(op.evidence_uuid, {
       remote_id: data.id,
-      photo_uri: remotePhotoUrl ?? localRow.photo_uri,
-      media_uri: remoteMediaUrl ?? localRow.media_uri,
       sync_status: 'synced',
       last_sync_at: new Date().toISOString(),
     });
