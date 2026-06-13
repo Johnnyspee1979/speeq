@@ -1179,6 +1179,7 @@ export default function WerkvoorbereiderDashboard({
             categoryStats={categoryStats}
             trendDays={trendDays}
             vakmanStats={vakmanStats}
+            projectId={projectId}
           />
         )}
 
@@ -1715,9 +1716,10 @@ interface DashboardTabProps {
   categoryStats: { label: string; passed: number; total: number }[];
   trendDays: { day: string; count: number }[];
   vakmanStats: { userId: string; label: string; total: number; akkoord: number; vandaag: number }[];
+  projectId?: string;
 }
 
-function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview, categoryStats, trendDays, vakmanStats }: DashboardTabProps) {
+function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview, categoryStats, trendDays, vakmanStats, projectId }: DashboardTabProps) {
   if (loading) {
     return <View style={tabSt.centered}><ActivityIndicator size="large" color={theme.colors.accent} /></View>;
   }
@@ -1725,7 +1727,7 @@ function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview,
   if (borgingspuntGrid.length === 0) {
     return (
       <View style={tabSt.emptyBox}>
-        <EmptyProjectWizard />
+        <EmptyProjectWizard projectId={projectId === 'default' ? undefined : projectId} />
       </View>
     );
   }

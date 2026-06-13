@@ -795,7 +795,7 @@ function DetailPanel({ project, stats, evidence, onBack, onProjectUpdated, theme
         </View>
 
         {/* Tab inhoud */}
-        {activeTab === 'bewijs'   && <BewijsTab evidence={evidence} theme={theme} isDark={isDark} />}
+        {activeTab === 'bewijs'   && <BewijsTab evidence={evidence} theme={theme} isDark={isDark} projectId={project.id} />}
         {activeTab === 'bonnen'   && <BonnenTab projectId={project.id} theme={theme} />}
         {activeTab === 'notities' && <NotitiesTab projectId={project.id} theme={theme} />}
 
@@ -806,7 +806,7 @@ function DetailPanel({ project, stats, evidence, onBack, onProjectUpdated, theme
 
 // ─── Tab: Bewijs ─────────────────────────────────────────────────────────────
 
-function BewijsTab({ evidence, theme, isDark }: { evidence: EvidenceRow[]; theme: { colors: Record<string, string> }; isDark: boolean }) {
+function BewijsTab({ evidence, theme, isDark, projectId }: { evidence: EvidenceRow[]; theme: { colors: Record<string, string> }; isDark: boolean; projectId?: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [noteMap, setNoteMap]       = useState<Record<string, string>>({});
   const [savingId, setSavingId]     = useState<string | null>(null);
@@ -815,7 +815,7 @@ function BewijsTab({ evidence, theme, isDark }: { evidence: EvidenceRow[]; theme
   if (evidence.length === 0) {
     return (
       <View style={tabSt.emptyBox}>
-        <EmptyProjectWizard />
+        <EmptyProjectWizard projectId={projectId} />
       </View>
     );
   }
