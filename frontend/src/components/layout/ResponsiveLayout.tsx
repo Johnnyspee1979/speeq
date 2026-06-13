@@ -27,6 +27,7 @@ interface ResponsiveLayoutProps {
   statusLabel?: string;
   desktopSubtitle?: string;
   userName?: string | null;
+  headerRightAddon?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -57,6 +58,7 @@ export function ResponsiveLayout({
   statusLabel,
   desktopSubtitle,
   userName,
+  headerRightAddon,
   children,
 }: ResponsiveLayoutProps) {
   const { theme, toggleTheme } = useTheme();
@@ -167,6 +169,7 @@ export function ResponsiveLayout({
           </View>
 
           <View style={styles.headerRight}>
+            {headerRightAddon}
             {statusLabel ? (
               <View
                 style={styles.statusPill}

@@ -48,6 +48,7 @@ import {
 import { subscribeToRejections } from './src/services/VakmanFeedbackService';
 import { useNotificationRouting } from './src/hooks/useNotificationRouting';
 import { useWkbAuth } from './src/hooks/useWkbAuth';
+import type { WkbUserRole } from './src/types/Auth';
 import { useTheme } from './src/theme/ThemeProvider';
 import { TenantProvider } from './src/providers/TenantProvider';
 import { useActiveTenantId } from './src/hooks/useActiveTenantId';
@@ -309,8 +310,19 @@ function TenantGate({ children }: { children: React.ReactNode }) {
 
 function AppShell() {
   const { theme } = useTheme();
-  const { user, loading: authLoading, enableDevBypass } = useWkbAuth();
+  const { user: realUser, loading: authLoading, enableDevBypass } = useWkbAuth();
   const { activeProject } = useProject();
+
+  // Demo-rolwisselaar: laat een admin/maker tijdens een verkoopgesprek de app
+  // als een andere rol bekijken zonder uit te loggen. De override is puur
+  // client-side (bepaalt alleen welke tabs/schermen renderen); de backend
+  // blijft op de echte JWT-rol handhaven. Gate: alleen ADMIN/KEYUSER/Maker.
+  const [roleOverride, setRoleOverride] = useState<WkbUserRole | null>(null);
+  const user = useMemo(() => {
+    if (!realUser) return null;
+    if (!roleOverride) return realUser;
+    return { ...realUser, role: roleOverride };
+  }, [realUser, roleOverride]);
 
   // Detecteer ?join=TOKEN in URL voor vakman-uitnodiging
   const joinToken = useMemo(() => {
@@ -438,6 +450,47 @@ function AppShell() {
     }
     return items;
   }, [user, isMobile, simpleMode]);
+
+  // Na een rolwissel (of nav-filter) kan de actieve tab wegvallen voor de
+  // nieuwe rol → reset naar het eerste beschikbare item zodat het scherm niet
+  // leeg blijft. Voorkomt een "lege" weergave direct na het schakelen.
+  useEffect(() => {
+    if (navItems.length > 0 && !navItems.some((item) => item.key === activeTab)) {
+      setActiveTab(navItems[0].key as Tab);
+    }
+  }, [navItems, activeTab]);
+
+  // Gate op de ECHTE rol (niet de override) zodat je na het schakelen naar bv.
+  // Vakman de wisselaar houdt om terug te keren. Alleen web + admin/maker.
+  const canSwitchRole = realUser?.role === 'ADMIN'
+    || realUser?.role === 'KEYUSER'
+    || realUser?.email === 'johnny@speesolutions.com'
+    || realUser?.email === 'johnny@speesolutions.nl';
+  const headerAddon = canSwitchRole && Platform.OS === 'web' ? (
+    <select
+      value={roleOverride ?? realUser?.role ?? 'ADMIN'}
+      onChange={(e) => setRoleOverride(e.target.value as WkbUserRole)}
+      title="Demo: bekijk de app als een andere rol"
+      style={{
+        backgroundColor: theme.name === 'dark' ? '#1E293B' : '#FAFAFA',
+        color: theme.name === 'dark' ? '#F8FAFC' : '#18181B',
+        border: `1px solid ${theme.colors.border}`,
+        borderRadius: '6px',
+        padding: '6px 10px',
+        fontSize: '12px',
+        marginRight: '10px',
+        cursor: 'pointer',
+        outline: 'none',
+      }}
+    >
+      <option value="ADMIN">👑 Beheerder (Admin)</option>
+      <option value="WERKVOORBEREIDER">📋 Werkvoorbereider</option>
+      <option value="PROJECTLEIDER">💼 Projectleider</option>
+      <option value="VAKMAN">🔨 Vakman (Bouwplaats)</option>
+      <option value="OPDRACHTGEVER">🏠 Opdrachtgever</option>
+      <option value="KWALITEITSBORGER">🛡️ Kwaliteitsborger</option>
+    </select>
+  ) : null;
 
   const handleSelectTask = (task: CaptureTask, context?: StartFlowResumeContext) => {
     setCameraEntryContext('selector');
@@ -959,6 +1012,7 @@ function AppShell() {
         statusLabel={syncLabel}
         desktopSubtitle="Offline-first Wkb workflow voor desktop, laptop en mobiel."
         userName={user?.displayName ? user.displayName.split(' ')[0] : undefined}
+        headerRightAddon={headerAddon}
       >
         {/* Camera-tab inhoud (StartFlow OF CameraView) blijft altijd gemount →
             tab-wissel naar Kaart en terug houdt foto, wizard-stap, project-keuze
