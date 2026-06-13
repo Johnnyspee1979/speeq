@@ -260,13 +260,14 @@ h1 span{color:#E8500A}
 });
 
 app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', env: backendConfig.appEnv });
 });
 
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'online',
     service: 'Wkb Aggregation Engine',
+    env: backendConfig.appEnv,
     timestamp: new Date().toISOString(),
     config: {
       supabaseConfigured: hasSupabaseConfig(),

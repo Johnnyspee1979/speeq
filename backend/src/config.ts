@@ -23,7 +23,19 @@ const parseBoolean = (rawValue: string | undefined, fallback: boolean) => {
   return fallback;
 };
 
+// Welke omgeving draait deze instance? Bewust een losse vlag (APP_ENV) zodat
+// staging en productie elk hun eigen Railway-variable zetten en je in /health
+// kunt zien wélke je raakt — voorkomt per ongeluk naar prod deployen/testen.
+// Valt terug op NODE_ENV en uiteindelijk 'development' voor lokaal werk.
+const normalizeEnv = (raw: string | undefined): 'production' | 'staging' | 'development' => {
+  const v = (raw ?? '').trim().toLowerCase();
+  if (['production', 'prod'].includes(v)) return 'production';
+  if (['staging', 'stage', 'test'].includes(v)) return 'staging';
+  return 'development';
+};
+
 const backendConfig = {
+  appEnv: normalizeEnv(process.env.APP_ENV ?? process.env.NODE_ENV),
   port: parseNumber(process.env.PORT, 4103),
   supabaseUrl: process.env.SUPABASE_URL ?? '',
   supabaseServiceKey: process.env.SUPABASE_SERVICE_KEY ?? '',
