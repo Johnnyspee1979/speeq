@@ -107,6 +107,34 @@ const toTransformUrl = (publicUrl: string): string => {
   return `${rendered}${sep}width=1600&quality=80&resize=contain`;
 };
 
+/**
+ * Opgeslagen foto-verwijzing → bruikbare URL voor download.
+ *
+ * Sinds de storage-hardening bewaart de app het opslag-PAD (bv.
+ * `project/evidence.jpg`) en staat de `wkb-evidence`-bucket privé. Een kaal pad
+ * is niet rechtstreeks op te halen; we tekenen het hier met service_role tot een
+ * kortlevende signed URL (signen mag op een privé-bucket). Al-volledige of
+ * externe verwijzingen (http/https/data/blob/file) gaan ongemoeid door.
+ */
+const PHOTO_SIGN_TTL_SECONDS = 600;
+
+const resolveEvidencePhotoUrl = async (
+  supabase: any,
+  storedUri?: string | null
+): Promise<string | null> => {
+  const uri = String(storedUri ?? '').trim();
+  if (!uri) return null;
+  if (/^(https?:|data:|blob:|file:|local:)/i.test(uri)) return uri;
+  try {
+    const { data } = await supabase.storage
+      .from(EVIDENCE_BUCKET)
+      .createSignedUrl(uri, PHOTO_SIGN_TTL_SECONDS);
+    return data?.signedUrl ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const fetchAsBase64 = async (
   url: string
 ): Promise<{ base64: string; contentType: string } | null> => {
@@ -147,12 +175,14 @@ const fetchPhotoBase64 = async (mediaUri?: string | null): Promise<string | null
 // ── Template-data bouwen (sleutels = docs/dossier-sjabloon.md) ───────────────
 
 const buildTemplateData = async (
+  supabase: any,
   project: ProjectRow | null,
   evidence: EvidenceRow[]
 ) => {
   const evidenceBlocks = [];
   for (const item of evidence) {
-    const foto = await fetchPhotoBase64(item.photo_uri ?? item.media_uri);
+    const photoUrl = await resolveEvidencePhotoUrl(supabase, item.photo_uri ?? item.media_uri);
+    const foto = await fetchPhotoBase64(photoUrl);
     evidenceBlocks.push({
       omschrijving: item.field_note ?? '',
       timestamp: formatDateTimeNL(item.timestamp),
@@ -287,7 +317,7 @@ const buildDossier = async (projectId: string): Promise<BuildDossierResult> => {
   // 4. JSON bouwen + Adobe-merge. Faalt Adobe → log + oude dossier blijft staan.
   let pdfBuffer: Buffer;
   try {
-    const data = await buildTemplateData((project ?? null) as ProjectRow | null, evidenceList);
+    const data = await buildTemplateData(supabase, (project ?? null) as ProjectRow | null, evidenceList);
     pdfBuffer = await runAdobeMerge(templateBuffer, data);
   } catch (error: any) {
     console.error(
