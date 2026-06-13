@@ -1,0 +1,12 @@
+# Railway bouwt alleen backend/ (rootDirectory=backend/). Sluit de rest uit
+# zodat `railway up` vanaf de repo-root geen 200 MB+ aan worktrees/node_modules
+# uploadt (anders 413 Payload Too Large).
+.claude/
+frontend/
+www/
+demo-prep/
+.playwright-mcp/
+.git/
+**/node_modules/
+**/dist/
+**/.expo/
