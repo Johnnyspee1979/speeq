@@ -2,6 +2,7 @@ import { File } from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
 import { Platform } from 'react-native';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { resolveStorageUrl } from '../lib/storageUrl';
 import { getOfflinePhotoBlob } from './OfflinePhotoStore';
 import {
   getConsumerDossierDocuments,
@@ -103,13 +104,16 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
           throw new Error(`Storage upload gefaald: ${uploadError.message}`);
         }
 
-        const { data: publicUrlData } = supabase.storage
-          .from('wkb-evidence')
-          .getPublicUrl(fileName);
+        // Kortlevende signed URL — alleen nodig voor de cloud-AI-validatie
+        // (die de foto fetcht). Werkt ook op een privé-bucket.
+        const signedUrl =
+          (await resolveStorageUrl('wkb-evidence', fileName)) ?? fileName;
 
+        // Bewaar het PAD (niet een publieke URL). Bij het ophalen tekent
+        // fetchEvidenceForReview() dit pad tot een kortlevende signed URL.
         const richPayload = {
-          photo_uri: publicUrlData.publicUrl,
-          media_uri: publicUrlData.publicUrl,
+          photo_uri: fileName,
+          media_uri: fileName,
           latitude: item.latitude,
           longitude: item.longitude,
           gps_accuracy: item.gpsAccuracy ?? null,
@@ -148,7 +152,7 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
           review_note: item.reviewNote ?? null,
         };
         const legacyPayload = {
-          photo_uri: publicUrlData.publicUrl,
+          photo_uri: fileName,
           latitude: item.latitude,
           longitude: item.longitude,
           timestamp: item.timestamp,
@@ -207,7 +211,7 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
 
               const aiResponse = await requestCloudAiValidation({
                 id: item.id,
-                photo_uri: publicUrlData.publicUrl,
+                photo_uri: signedUrl,
                 latitude: item.latitude,
                 longitude: item.longitude,
                 gps_accuracy: item.gpsAccuracy ?? null,
@@ -304,7 +308,7 @@ export const syncEvidenceToCloud = async (onProgress?: (msg: string) => void) =>
 export const uploadEvidenceDirectly = async (
   evidence: import('../types/Evidence').WkbEvidence,
   photoUri: string
-): Promise<{ supabaseId: number; publicUrl: string } | null> => {
+): Promise<{ supabaseId: number; storagePath: string } | null> => {
   if (!isSupabaseConfigured()) return null;
 
   try {
@@ -335,15 +339,14 @@ export const uploadEvidenceDirectly = async (
 
     if (uploadError) throw new Error(`Storage upload gefaald: ${uploadError.message}`);
 
-    const { data: urlData } = supabase.storage.from('wkb-evidence').getPublicUrl(fileName);
-    const publicUrl = urlData.publicUrl;
-
+    // Bewaar het PAD (niet een publieke URL). fetchEvidenceForReview() tekent
+    // dit pad bij het ophalen tot een kortlevende signed URL.
     const { getEvidenceComplianceContext } = await import('./wkbCompliance');
     const complianceContext = getEvidenceComplianceContext(evidence.inspectionPointId);
 
     const payload = {
-      photo_uri: publicUrl,
-      media_uri: publicUrl,
+      photo_uri: fileName,
+      media_uri: fileName,
       latitude: evidence.latitude,
       longitude: evidence.longitude,
       gps_accuracy: evidence.gpsAccuracy ?? null,
@@ -388,7 +391,7 @@ export const uploadEvidenceDirectly = async (
     if (dbError || !data) throw new Error(`Database insert gefaald: ${dbError?.message}`);
 
     console.log(`✅ Direct geüpload naar Supabase: ID ${(data as { id: number }).id}`);
-    return { supabaseId: (data as { id: number }).id, publicUrl };
+    return { supabaseId: (data as { id: number }).id, storagePath: fileName };
   } catch (err) {
     console.error('❌ uploadEvidenceDirectly fout:', err);
     return null;
