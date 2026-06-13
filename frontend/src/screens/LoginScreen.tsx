@@ -140,6 +140,35 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
     }
   };
 
+  // Wachtwoord-herstel via Supabase. Stuurt een recovery-mail naar het
+  // ingevulde adres; de gebruiker kiest na de mail-link een nieuw wachtwoord.
+  // Bewust géén bevestiging of het adres bestaat (voorkomt account-enumeratie).
+  const handleForgotPassword = async () => {
+    if (!email || !EMAIL_RE.test(email)) {
+      setEmailValid(false);
+      Alert.alert(
+        'Wachtwoord vergeten',
+        'Vul eerst je e-mailadres in het veld hierboven in, dan sturen we je een herstellink.'
+      );
+      return;
+    }
+    setLoading(true);
+    const redirectTo =
+      Platform.OS === 'web' && typeof window !== 'undefined'
+        ? window.location.origin
+        : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    setLoading(false);
+    if (error) {
+      Alert.alert('Herstel mislukt', error.message);
+      return;
+    }
+    Alert.alert(
+      'Check je mail',
+      `Als er een account bij ${email} hoort, ontvang je een mail met een link om je wachtwoord opnieuw in te stellen.`
+    );
+  };
+
   const labelStyle = (anim: Animated.Value, hasError: boolean) => ({
     position: 'absolute' as const,
     left: anim.interpolate({ inputRange: [0, 1], outputRange: [16, 12] }),
@@ -238,7 +267,7 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
           </View>
           <Text style={styles.rememberText}>Onthoud mij</Text>
         </Pressable>
-        <Pressable onPress={() => Alert.alert('Wachtwoord vergeten', 'Neem contact op met Spee Solutions.')}>
+        <Pressable onPress={handleForgotPassword} disabled={loading}>
           <Text style={styles.forgot}>Wachtwoord vergeten?</Text>
         </Pressable>
       </View>
