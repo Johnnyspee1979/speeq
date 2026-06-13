@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 
 const { Router } = require('express');
+const { requireReviewer } = require('../middleware/requireReviewer');
 const { generateBevoegdGezagDossier } = require('../services/dossierGenerator');
 const { buildDossier } = require('../services/dossierService');
 const {
@@ -15,6 +16,7 @@ const router = Router();
 // sla het op in de `dossiers`-bucket en koppel het aan het project (dossier_url).
 router.post(
   '/genereer/:projectId',
+  requireReviewer,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const projectId = String(req.params.projectId ?? '').trim();
@@ -50,6 +52,7 @@ router.post(
 
 router.get(
   '/bevoegd-gezag/:projectId',
+  requireReviewer,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const projectId = String(req.params.projectId ?? '').trim();
@@ -153,9 +156,14 @@ router.get(
 
 router.get(
   '/consument/:projectId',
+  requireReviewer,
   handleConsumerDossierDownload
 );
 
-router.get('/consument/export/:projectId', handleConsumerDossierDownload);
+router.get(
+  '/consument/export/:projectId',
+  requireReviewer,
+  handleConsumerDossierDownload
+);
 
 module.exports = router;

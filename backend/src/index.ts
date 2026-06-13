@@ -35,6 +35,7 @@ const { startKiKRetryJob } = require('./jobs/kikRetryCron');
 const { startDossierRefreshJob } = require('./jobs/dossierRefreshCron');
 const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
+const { requireReviewer } = require('./middleware/requireReviewer');
 const tenantRoutes = require('./routes/tenant.routes');
 
 dotenv.config();
@@ -78,7 +79,7 @@ app.use('/api/integrations/erp', erpRoutes);
 app.use('/api/integrations/exact-online', exactRoutes);
 app.use('/api/kik', kikRoutes);
 app.use('/api/integrations/kik', kikRoutes);
-app.use('/api/stam', requireAuth, stamRoutes);
+app.use('/api/stam', requireAuth, requireReviewer, stamRoutes);
 app.use('/api/integrations/dso', dsoRoutes);
 app.use('/api/integrations/bim', requireAuth, bimRoutes);
 app.use('/api/wkb-ai/ocr', requireAuth, ocrRoutes);
@@ -340,7 +341,7 @@ app.get('/api/dossier/:projectId', requireAuth, async (req: Request, res: Respon
   }
 });
 
-app.get('/api/dossier/:projectId/export', requireAuth, async (req: Request, res: Response) => {
+app.get('/api/dossier/:projectId/export', requireAuth, requireReviewer, async (req: Request, res: Response) => {
   try {
     const projectId = String(req.params.projectId ?? '');
     const dossierType = (req.query.type as string) ?? 'bevoegd-gezag';
@@ -547,7 +548,7 @@ app.post('/api/ai/validate', requireAuth, async (req: Request, res: Response) =>
   }
 });
 
-app.post('/api/dso/stam/submit', requireAuth, async (req: Request, res: Response) => {
+app.post('/api/dso/stam/submit', requireAuth, requireReviewer, async (req: Request, res: Response) => {
   try {
     const payload = mapToStamPayload(req.body ?? {});
     const response = await submitToDSO(payload);

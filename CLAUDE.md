@@ -67,6 +67,13 @@ cd frontend && npm run typecheck
   **fail-closed** bij ontbrekende config (503), tenzij `ALLOW_AUTH_BYPASS`.
 - `backend/src/services/authContextService.ts`: rol + projecttoegang voor
   reviewacties (reviewers = AANNEMER, KWALITEITSBORGER).
+- `backend/src/middleware/requireReviewer.ts`: rol-gate bóven `requireAuth`.
+  Alleen reviewers mogen **exporteren/melden** → 403 NL anders. Toegepast op
+  dossier-download/genereer (`bevoegd-gezag`, `consument(/export)`, `genereer`),
+  `/api/stam/*`, `/api/dso/stam/submit` en legacy `/api/dossier/:id/export`.
+  Status- en leesroutes blijven op alleen `requireAuth`. Respecteert de
+  dev-bypass (rol komt dan van `requireAuth`). Rol-gebaseerd, niet
+  project-ownership — wil je per-project, dan `assertProjectReviewAccess`.
 - Beschermde mounts (`requireAuth`): `/api/wkb-evidence`, `/api/wkb-dossier`,
   `/api/stam`, `/api/integrations/bim`, `/api/wkb-ai/ocr`, `/api/review`,
   `/api/notifications`, `/api/voice`, `/api/maker` (laatste twee intern in de
