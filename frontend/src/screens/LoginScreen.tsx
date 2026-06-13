@@ -38,12 +38,16 @@ interface LoginScreenProps {
   onDevBypass?: () => void;
 }
 
-// Demo-accounts voor klant-demo's. BEWUST alleen wegwerp-demo-accounts hier —
-// nooit een echte productie-login. Een ontbrekende rol (bv. Werkvoorbereider)
-// voeg je toe met een dedicated demo-account, niet met een persoonlijk
-// admin-wachtwoord (dat zou meegebakken worden in de publieke web-bundle).
+// Demo-accounts voor klant-demo's. BEWUST alleen WEGWERP-demo-accounts hier
+// (eigen speedemo.nl-tenant zonder echte data) — NOOIT een echt klant-account.
+// Een echt account (bv. vakman@combivo.nl) hoort hier niet: de inlogknop logt
+// dan elke bezoeker in op de klant-tenant (RLS scope = die klant) en het
+// wachtwoord wordt meegebakken in de publieke web-bundle.
+//
+// De demo-rij wordt bovendien alleen getoond als EXPO_PUBLIC_ENABLE_DEMO_LOGIN
+// === 'true' (standaard UIT in productie). Zet 'm aan op een demo-URL.
+const DEMO_LOGIN_ENABLED = process.env.EXPO_PUBLIC_ENABLE_DEMO_LOGIN === 'true';
 const DEMO_ACCOUNTS: ReadonlyArray<{ role: string; emoji: string; email: string; password: string }> = [
-  { role: 'Vakman',           emoji: '👷', email: 'vakman@combivo.nl',          password: 'combivo2026' },
   { role: 'Projectleider',    emoji: '👔', email: 'projectleider@speedemo.nl',  password: 'demo2026' },
 ];
 
@@ -288,25 +292,29 @@ export default function LoginScreen({ onDevBypass }: LoginScreenProps) {
         )}
       </Pressable>
 
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>of demo</Text>
-        <View style={styles.dividerLine} />
-      </View>
+      {DEMO_LOGIN_ENABLED && DEMO_ACCOUNTS.length > 0 ? (
+        <>
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>of demo</Text>
+            <View style={styles.dividerLine} />
+          </View>
 
-      <View style={styles.demoRow}>
-        {DEMO_ACCOUNTS.map((acc) => (
-          <Pressable
-            key={acc.email}
-            style={({ pressed }) => [styles.demoBtn, pressed && { opacity: 0.7 }]}
-            onPress={() => handleQuickLogin(acc)}
-            disabled={loading}
-          >
-            <Text style={styles.demoEmoji}>{acc.emoji}</Text>
-            <Text style={styles.demoText}>{acc.role}</Text>
-          </Pressable>
-        ))}
-      </View>
+          <View style={styles.demoRow}>
+            {DEMO_ACCOUNTS.map((acc) => (
+              <Pressable
+                key={acc.email}
+                style={({ pressed }) => [styles.demoBtn, pressed && { opacity: 0.7 }]}
+                onPress={() => handleQuickLogin(acc)}
+                disabled={loading}
+              >
+                <Text style={styles.demoEmoji}>{acc.emoji}</Text>
+                <Text style={styles.demoText}>{acc.role}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      ) : null}
 
       {onDevBypass ? (
         <Pressable
