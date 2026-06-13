@@ -1,5 +1,8 @@
 import { BACKEND_URL } from '../config/app';
 import { supabase } from '../lib/supabase';
+import { resolveStorageUrls } from '../lib/storageUrl';
+
+const EVIDENCE_BUCKET = 'wkb-evidence';
 
 export type ReviewableEvidenceStatus =
   | 'PENDING'
@@ -72,7 +75,20 @@ export const fetchEvidenceForReview = async (
     return [];
   }
 
-  return (data ?? []) as CloudEvidence[];
+  const rows = (data ?? []) as CloudEvidence[];
+
+  // Paden → kortlevende signed URLs (privé-bucket). Oude/volledige/externe
+  // URLs blijven ongemoeid (passthrough in resolveStorageUrls). Twee batches.
+  const [photoUrls, mediaUrls] = await Promise.all([
+    resolveStorageUrls(EVIDENCE_BUCKET, rows.map((r) => r.photo_uri)),
+    resolveStorageUrls(EVIDENCE_BUCKET, rows.map((r) => r.media_uri)),
+  ]);
+
+  return rows.map((row, i) => ({
+    ...row,
+    photo_uri: photoUrls[i] ?? row.photo_uri,
+    media_uri: mediaUrls[i] ?? row.media_uri,
+  }));
 };
 
 export const updateEvidenceStatus = async (

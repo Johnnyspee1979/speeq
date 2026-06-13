@@ -202,10 +202,13 @@ describe('cloudEvidenceRepository', () => {
 
       expect(id).toBe(42);
       expect(mockStorageUpload).toHaveBeenCalledTimes(1);
+      // Voortaan bewaren we het PAD (niet meer een publieke URL); het tekenen
+      // tot signed URL gebeurt bij het ophalen.
       expect(mockDbInsert).toHaveBeenCalledWith(
         expect.objectContaining({
           project_id: 'proj-1',
-          photo_uri: 'https://cdn.example.com/foo.jpg',
+          photo_uri: expect.stringContaining('wkb_foto_uuid-fixed-for-test_'),
+          media_uri: expect.stringContaining('wkb_foto_uuid-fixed-for-test_'),
           client_uuid: 'uuid-fixed-for-test',
           client_version: 1,
         }),
