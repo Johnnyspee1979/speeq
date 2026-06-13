@@ -280,19 +280,22 @@ router.post(
         throw new Error(`Supabase Storage fout: ${storageError.message}`);
       }
 
-      const { data: publicUrlData } = supabase.storage
+      // Bewaar het PAD (niet een publieke URL). De frontend tekent dit pad bij
+      // het ophalen (fetchEvidenceForReview) tot een kortlevende signed URL.
+      // Voor de respons tekenen we hier alvast een signed URL (service_role).
+      const { data: signedData } = await supabase.storage
         .from('wkb-evidence')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
-      const mediaUrl = publicUrlData.publicUrl;
+      const mediaUrl = signedData?.signedUrl ?? fileName;
       const aiFindingsText = aiResult.findings.join(' | ');
 
       const richPayload = {
         evidence_id: evidenceId,
         project_id: projectId,
         inspection_point_id: inspectionPointId,
-        media_uri: mediaUrl,
-        photo_uri: mediaUrl,
+        media_uri: fileName,
+        photo_uri: fileName,
         timestamp,
         latitude,
         longitude,
@@ -311,7 +314,7 @@ router.post(
       };
 
       const legacyPayload = {
-        photo_uri: mediaUrl,
+        photo_uri: fileName,
         timestamp,
         latitude,
         longitude,

@@ -85,6 +85,10 @@ const buildSupabaseMock = (opts: MockOptions) => {
   const getPublicUrlFn = jest.fn((path: string) => ({
     data: { publicUrl: `https://example.supabase.co/storage/v1/object/public/dossiers/${path}` },
   }));
+  const createSignedUrlFn = jest.fn(async (path: string) => ({
+    data: { signedUrl: `https://example.supabase.co/storage/v1/object/sign/dossiers/${path}?token=abc` },
+    error: null,
+  }));
   const downloadFn = jest.fn(async () => {
     if (opts.templateError) return { data: null, error: opts.templateError };
     return {
@@ -124,10 +128,11 @@ const buildSupabaseMock = (opts: MockOptions) => {
           download: downloadFn,
           upload: uploadFn,
           getPublicUrl: getPublicUrlFn,
+          createSignedUrl: createSignedUrlFn,
         })),
       },
     },
-    spies: { uploadFn, updateFn, updateEqFn, getPublicUrlFn, downloadFn, from },
+    spies: { uploadFn, updateFn, updateEqFn, getPublicUrlFn, createSignedUrlFn, downloadFn, from },
   };
 };
 
@@ -200,9 +205,9 @@ describe('dossierService.buildDossier', () => {
     const uploadCall = mock.spies.uploadFn.mock.calls[0] as any[];
     expect(uploadCall[2]).toMatchObject({ contentType: 'application/pdf', upsert: false });
 
-    // dossier_url teruggeschreven naar het project.
+    // Het PAD (niet een publieke URL) wordt teruggeschreven naar het project.
     expect(mock.spies.updateFn).toHaveBeenCalledWith(
-      expect.objectContaining({ dossier_url: expect.stringContaining('/dossiers/p1/') })
+      expect.objectContaining({ dossier_url: expect.stringMatching(/^p1\/dossier-.*\.pdf$/) })
     );
   });
 

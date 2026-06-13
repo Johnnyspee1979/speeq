@@ -311,16 +311,19 @@ const buildDossier = async (projectId: string): Promise<BuildDossierResult> => {
     return { ok: false, reason: `Upload van dossier mislukt: ${uploadError.message}` };
   }
 
-  const { data: publicUrlData } = supabase.storage
+  // Bewaar het PAD in projects.dossier_url (niet een publieke URL); bij gebruik
+  // wordt het pad getekend tot een kortlevende signed URL. Voor de respons
+  // tekenen we hier alvast een signed URL (service_role; werkt op privé-bucket).
+  const { data: signedData } = await supabase.storage
     .from(backendConfig.dossierBucket)
-    .getPublicUrl(objectPath);
-  const dossierUrl = publicUrlData?.publicUrl ?? objectPath;
+    .createSignedUrl(objectPath, 3600);
+  const dossierUrl = signedData?.signedUrl ?? objectPath;
 
-  // 6. URL terugschrijven. Lukt dit niet (bv. kolom ontbreekt), dan blijft de
+  // 6. PAD terugschrijven. Lukt dit niet (bv. kolom ontbreekt), dan blijft de
   //    PDF gewoon in de bucket staan — geen harde fout.
   const { error: updateError } = await supabase
     .from('projects')
-    .update({ dossier_url: dossierUrl })
+    .update({ dossier_url: objectPath })
     .eq('id', pid);
   if (updateError) {
     console.warn(
