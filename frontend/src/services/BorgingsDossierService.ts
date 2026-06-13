@@ -984,6 +984,13 @@ export async function exportWkbReportAsPdf(
 // ────────────────────────────────────────────────
 
 import { supabase } from '../lib/supabase';
+import { resolveStorageUrl } from '../lib/storageUrl';
+
+// Het borgingsdossier wordt als link naar de consument gemaild en moet lang
+// werken. We bewaren het opslag-PAD en geven een langlevende signed URL terug
+// (1 jaar). Werkt ook nadat de bucket privé is gezet. Eindplaatje voor de
+// WKB-bewaarplicht is een getokende backend-route; dit is de veilige tussenstap.
+const DOSSIER_URL_TTL_SECONDS = 60 * 60 * 24 * 365; // 1 jaar
 
 export async function uploadDossierHtml(
   evidence: StoredWkbEvidence[],
@@ -1008,8 +1015,10 @@ export async function uploadDossierHtml(
       return null;
     }
 
-    const { data } = supabase.storage.from('wkb-evidence').getPublicUrl(fileName);
-    return data.publicUrl ?? null;
+    // Langlevende signed URL i.p.v. permanente publieke URL: pad blijft privé,
+    // mail-link blijft een jaar werken.
+    const signed = await resolveStorageUrl('wkb-evidence', fileName, DOSSIER_URL_TTL_SECONDS);
+    return (signed as string) ?? null;
   } catch (err) {
     console.error('Dossier upload mislukt:', err);
     return null;
