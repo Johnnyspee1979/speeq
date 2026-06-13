@@ -1249,7 +1249,10 @@ export default function CameraView({
       };
     } catch (error) {
       console.error('Desktop bewijs opslaan faalde:', error);
-      Alert.alert('Opslaan mislukt', String(error));
+      Alert.alert(
+        'Opslaan mislukt',
+        'De foto kon niet worden opgeslagen. Controleer je verbinding en probeer het opnieuw.'
+      );
       return null;
     } finally {
       setIsCapturing(false);
