@@ -25,6 +25,10 @@ import {
   getCachedPlanning,
   saveKypConfig,
   saveProjectMapping,
+  buildWritebackPayload,
+  mapAction,
+  pushStatus,
+  getWritebackLog,
 } from '../KypService';
 
 // Helper: bouw een fetch-Response-achtig object.
@@ -235,11 +239,21 @@ describe('getProjectMapping', () => {
   }
 
   it('geeft de koppeling terug', async () => {
-    setMappingQuery({ data: { kyp_project_id: 42, kyp_project_name: 'Nieuwbouw X' }, error: null });
+    setMappingQuery({
+      data: { kyp_project_id: 42, kyp_project_name: 'Nieuwbouw X', writeback_enabled: true },
+      error: null,
+    });
     expect(await getProjectMapping('speeq-1')).toEqual({
       kypProjectId: 42,
       kypProjectName: 'Nieuwbouw X',
+      writebackEnabled: true,
     });
+  });
+
+  it('writeback staat default uit als de kolom leeg is', async () => {
+    setMappingQuery({ data: { kyp_project_id: 42, kyp_project_name: 'X' }, error: null });
+    const m = await getProjectMapping('speeq-1');
+    expect(m?.writebackEnabled).toBe(false);
   });
 
   it('geeft null als er geen koppeling is', async () => {
@@ -458,5 +472,191 @@ describe('saveProjectMapping', () => {
     const res = await saveProjectMapping('speeq-1', 42);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error).toBe('rls denied');
+  });
+});
+
+// ── V2: buildWritebackPayload ────────────────────────────────────────────────
+describe('buildWritebackPayload', () => {
+  const nu = new Date('2026-06-14T09:00:00.000Z');
+
+  it('gereed_melden vult dateFinished met de tijd', () => {
+    expect(buildWritebackPayload('gereed_melden', nu)).toEqual({
+      dateFinished: '2026-06-14T09:00:00.000Z',
+    });
+  });
+
+  it('heropenen zet dateFinished op null', () => {
+    expect(buildWritebackPayload('heropenen', nu)).toEqual({ dateFinished: null });
+  });
+
+  it('schrijft uitsluitend het statusveld (geen planning/documenten)', () => {
+    expect(Object.keys(buildWritebackPayload('gereed_melden', nu))).toEqual(['dateFinished']);
+  });
+});
+
+// ── V2: mapAction ────────────────────────────────────────────────────────────
+describe('mapAction', () => {
+  it('upsert de statusmapping met onConflict op project+controlepunt', async () => {
+    const upsertSpy = jest.fn().mockResolvedValue({ error: null });
+    fromMock.mockReturnValue({ upsert: upsertSpy });
+
+    const res = await mapAction({
+      speeqProjectId: 'speeq-1',
+      speeqControlepuntId: 'cp-7',
+      kypProjectId: 42,
+      kypActivityId: 101,
+    });
+    expect(res.ok).toBe(true);
+    expect(upsertSpy.mock.calls[0][0]).toMatchObject({
+      speeq_project_id: 'speeq-1',
+      speeq_controlepunt_id: 'cp-7',
+      kyp_project_id: 42,
+      kyp_activity_id: 101,
+    });
+    expect(upsertSpy.mock.calls[0][1]).toEqual({
+      onConflict: 'speeq_project_id,speeq_controlepunt_id',
+    });
+  });
+});
+
+// ── V2: pushStatus ───────────────────────────────────────────────────────────
+describe('pushStatus', () => {
+  // Wire config + mapping + statusmapping + writeback-log per tabel.
+  function wire(opts: {
+    config: unknown;
+    mapping: unknown;
+    statusMap: unknown;
+    logInsertSpy?: jest.Mock;
+  }) {
+    const configMaybeSingle = jest.fn().mockResolvedValue({ data: opts.config, error: null });
+    const mappingMaybeSingle = jest.fn().mockResolvedValue({ data: opts.mapping, error: null });
+    const statusMaybeSingle = jest.fn().mockResolvedValue({ data: opts.statusMap, error: null });
+    const logInsertSpy = opts.logInsertSpy ?? jest.fn().mockResolvedValue({ error: null });
+
+    fromMock.mockImplementation((table: string) => {
+      if (table === 'kyp_integration_config') {
+        return {
+          select: () => ({
+            eq: () => ({ order: () => ({ limit: () => ({ maybeSingle: configMaybeSingle }) }) }),
+          }),
+        };
+      }
+      if (table === 'kyp_project_mapping') {
+        return { select: () => ({ eq: () => ({ maybeSingle: mappingMaybeSingle }) }) };
+      }
+      if (table === 'kyp_status_mapping') {
+        return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: statusMaybeSingle }) }) }) };
+      }
+      if (table === 'kyp_writeback_log') {
+        return { insert: logInsertSpy };
+      }
+      return {};
+    });
+    return { logInsertSpy };
+  }
+
+  const activeConfig = { kyp_token: 'tok', base_url: 'https://kyp.nl/rest', is_active: true };
+
+  it('weigert zonder actief token', async () => {
+    wire({ config: null, mapping: null, statusMap: null });
+    const res = await pushStatus({ speeqProjectId: 'p1', speeqControlepuntId: 'cp1', actie: 'gereed_melden' });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toMatch(/token/i);
+  });
+
+  it('weigert als write-back uit staat (opt-in)', async () => {
+    wire({
+      config: activeConfig,
+      mapping: { kyp_project_id: 42, writeback_enabled: false },
+      statusMap: { kyp_project_id: 42, kyp_activity_id: 101 },
+    });
+    const res = await pushStatus({ speeqProjectId: 'p1', speeqControlepuntId: 'cp1', actie: 'gereed_melden' });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toMatch(/staat uit/i);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('weigert als het controlepunt geen KYP-actie heeft', async () => {
+    wire({
+      config: activeConfig,
+      mapping: { kyp_project_id: 42, writeback_enabled: true },
+      statusMap: null,
+    });
+    const res = await pushStatus({ speeqProjectId: 'p1', speeqControlepuntId: 'cp1', actie: 'gereed_melden' });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toMatch(/geen kyp-actie/i);
+  });
+
+  it('PUT naar de juiste activiteit + log "gelukt" bij 200', async () => {
+    const { logInsertSpy } = wire({
+      config: activeConfig,
+      mapping: { kyp_project_id: 42, writeback_enabled: true },
+      statusMap: { kyp_project_id: 42, kyp_activity_id: 101 },
+    });
+    fetchMock.mockResolvedValue(mockFetchResponse(200, { id: 101 }));
+
+    const res = await pushStatus({
+      speeqProjectId: 'p1',
+      speeqControlepuntId: 'cp1',
+      actie: 'gereed_melden',
+      nu: new Date('2026-06-14T09:00:00.000Z'),
+    });
+    expect(res.ok).toBe(true);
+
+    const [url, optsArg] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://kyp.nl/rest/projects/42/activities/101');
+    expect(optsArg.method).toBe('PUT');
+    expect(JSON.parse(optsArg.body)).toEqual({ dateFinished: '2026-06-14T09:00:00.000Z' });
+
+    expect(logInsertSpy).toHaveBeenCalledTimes(1);
+    expect(logInsertSpy.mock.calls[0][0]).toMatchObject({ status: 'gelukt', http_status: 200 });
+  });
+
+  it('log "mislukt" en blokkeert de workflow niet bij een fout', async () => {
+    const { logInsertSpy } = wire({
+      config: activeConfig,
+      mapping: { kyp_project_id: 42, writeback_enabled: true },
+      statusMap: { kyp_project_id: 42, kyp_activity_id: 101 },
+    });
+    fetchMock.mockResolvedValue(mockFetchResponse(500, {}));
+
+    const res = await pushStatus({ speeqProjectId: 'p1', speeqControlepuntId: 'cp1', actie: 'gereed_melden' });
+    expect(res.ok).toBe(false);
+    expect(logInsertSpy.mock.calls[0][0]).toMatchObject({ status: 'mislukt' });
+  });
+});
+
+// ── V2: getWritebackLog ──────────────────────────────────────────────────────
+describe('getWritebackLog', () => {
+  function setLogQuery(result: { data: unknown; error: unknown }) {
+    const order = jest.fn().mockResolvedValue(result);
+    const eq = jest.fn().mockReturnValue({ order });
+    const select = jest.fn().mockReturnValue({ eq });
+    fromMock.mockReturnValue({ select });
+  }
+
+  it('mapt de logrijen', async () => {
+    setLogQuery({
+      data: [
+        {
+          speeq_controlepunt_id: 'cp1',
+          kyp_activity_id: 101,
+          actie: 'gereed_melden',
+          status: 'gelukt',
+          http_status: 200,
+          foutmelding: null,
+          uitgevoerd_at: '2026-06-14T09:00:00.000Z',
+        },
+      ],
+      error: null,
+    });
+    const rows = await getWritebackLog('p1');
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ kypActivityId: 101, status: 'gelukt', httpStatus: 200 });
+  });
+
+  it('lege array bij error', async () => {
+    setLogQuery({ data: null, error: { message: 'boom' } });
+    expect(await getWritebackLog('p1')).toEqual([]);
   });
 });
