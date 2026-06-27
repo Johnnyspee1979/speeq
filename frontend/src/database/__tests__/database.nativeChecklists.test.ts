@@ -49,6 +49,14 @@ import {
   getPunchlistItems,
   savePunchlistItems,
   markPunchlistItemsSynced,
+  getGereedmeldingItems,
+  saveGereedmeldingItems,
+  markGereedmeldingItemsSynced,
+  getConsumerDossierItems,
+  saveConsumerDossierItems,
+  markConsumerDossierItemsSynced,
+  getConsumerDossierDocuments,
+  markConsumerDossierDocumentsSynced,
   saveConsumerDossierDocuments,
   insertDsoLog,
   getDsoLogs,
@@ -140,7 +148,76 @@ describe('nativeAdapter — punchlist', () => {
   });
 });
 
+describe('nativeAdapter — gereedmelding', () => {
+  it('saveGereedmeldingItems upsert in gereedmelding_checks met checked→1', async () => {
+    const updatedAt = await saveGereedmeldingItems('P', [{ id: 'g1', title: 'G', checked: true }]);
+    const [sql, params] = runAsync.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('INSERT INTO gereedmelding_checks');
+    expect(params).toEqual(['P', 'g1', 'G', 1, updatedAt]);
+  });
+
+  it('getGereedmeldingItems filtert op project en sorteert op item_id', async () => {
+    getAllAsync.mockResolvedValueOnce([]);
+    await getGereedmeldingItems('P');
+    const [sql, params] = getAllAsync.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('FROM gereedmelding_checks');
+    expect(sql).toContain('ORDER BY item_id ASC');
+    expect(params).toEqual(['P']);
+  });
+
+  it('markGereedmeldingItemsSynced zet SYNCED op het project', async () => {
+    await markGereedmeldingItemsSynced('P');
+    const [sql, params] = runAsync.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('UPDATE gereedmelding_checks');
+    expect(sql).toContain("sync_status = 'SYNCED'");
+    expect(params).toEqual(['P']);
+  });
+});
+
+describe('nativeAdapter — consumentendossier-items', () => {
+  it('saveConsumerDossierItems upsert in consumer_dossier_checks met checked→0', async () => {
+    const updatedAt = await saveConsumerDossierItems('P', [{ id: 'c1', title: 'C', checked: false }]);
+    const [sql, params] = runAsync.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('INSERT INTO consumer_dossier_checks');
+    expect(params).toEqual(['P', 'c1', 'C', 0, updatedAt]);
+  });
+
+  it('getConsumerDossierItems filtert op project en sorteert op item_id', async () => {
+    getAllAsync.mockResolvedValueOnce([]);
+    await getConsumerDossierItems('P');
+    const [sql, params] = getAllAsync.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('FROM consumer_dossier_checks');
+    expect(sql).toContain('ORDER BY item_id ASC');
+    expect(params).toEqual(['P']);
+  });
+
+  it('markConsumerDossierItemsSynced zet SYNCED op het project', async () => {
+    await markConsumerDossierItemsSynced('P');
+    const [sql, params] = runAsync.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('UPDATE consumer_dossier_checks');
+    expect(sql).toContain("sync_status = 'SYNCED'");
+    expect(params).toEqual(['P']);
+  });
+});
+
 describe('nativeAdapter — consumentendossier-documenten', () => {
+  it('getConsumerDossierDocuments filtert op project en sorteert op document_id', async () => {
+    getAllAsync.mockResolvedValueOnce([]);
+    await getConsumerDossierDocuments('P');
+    const [sql, params] = getAllAsync.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('FROM consumer_dossier_documents');
+    expect(sql).toContain('ORDER BY document_id ASC');
+    expect(params).toEqual(['P']);
+  });
+
+  it('markConsumerDossierDocumentsSynced zet SYNCED op het project', async () => {
+    await markConsumerDossierDocumentsSynced('P');
+    const [sql, params] = runAsync.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain('UPDATE consumer_dossier_documents');
+    expect(sql).toContain("sync_status = 'SYNCED'");
+    expect(params).toEqual(['P']);
+  });
+
   it('saveConsumerDossierDocuments stuurt 8 kolomwaarden in volgorde', async () => {
     const updatedAt = await saveConsumerDossierDocuments('P', [
       { id: 'd1', requirementId: 'R1', title: 'A', category: 'AS_BUILT', referenceValue: 'ref', notes: 'n' },
