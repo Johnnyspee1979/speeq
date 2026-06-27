@@ -207,3 +207,28 @@ describe('updateEvidenceAiStatus(ByCloudId)', () => {
     expect(a.aiConfidence).toBe(0.8);
   });
 });
+
+describe('edge-cases — onbekende doelen laten bestaande rijen ongemoeid', () => {
+  it('markEvidenceSyncedWithCloudId op een onbekende rowId is een veilige no-op', async () => {
+    await saveEvidenceLocally(ev({ id: 'a' }));
+    await markEvidenceSyncedWithCloudId(999, 12);
+    const a = (await getAllEvidence()).find((e) => e.id === 'a')!;
+    expect(a.syncStatus).toBe('PENDING');
+    expect(a.cloudRecordId).not.toBe(12);
+    expect((await getUnsyncedEvidence()).some((e) => e.id === 'a')).toBe(true);
+  });
+
+  it('updateEvidenceAiStatus op een onbekende rowId raakt bestaande rijen niet', async () => {
+    await saveEvidenceLocally(ev({ id: 'a' }));
+    await updateEvidenceAiStatus(999, 'PASSED', 0.9, 'x');
+    const a = (await getAllEvidence()).find((e) => e.id === 'a')!;
+    expect(a.aiStatus).not.toBe('PASSED');
+  });
+
+  it('updateEvidenceAiStatusByCloudId op een onbekende cloudId raakt bestaande rijen niet', async () => {
+    await saveEvidenceLocally(ev({ id: 'a' }));
+    await updateEvidenceAiStatusByCloudId(999, 'PASSED', 0.9, 'x');
+    const a = (await getAllEvidence()).find((e) => e.id === 'a')!;
+    expect(a.aiStatus).not.toBe('PASSED');
+  });
+});
