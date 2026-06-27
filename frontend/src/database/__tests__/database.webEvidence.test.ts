@@ -208,6 +208,35 @@ describe('updateEvidenceAiStatus(ByCloudId)', () => {
   });
 });
 
+describe('herstel- en her-sync-stromen', () => {
+  it('een FAILED bewijs kan alsnog SYNCED worden en verlaat de wachtrij', async () => {
+    const rowId = (await saveEvidenceLocally(ev({ id: 'a' })))!;
+    await markEvidenceSyncFailed(rowId);
+    expect((await getAllEvidence()).find((e) => e.id === 'a')!.syncStatus).toBe('FAILED');
+    expect((await getUnsyncedEvidence()).some((e) => e.id === 'a')).toBe(true);
+
+    await markEvidenceSyncedWithCloudId(rowId, 42);
+    const a = (await getAllEvidence()).find((e) => e.id === 'a')!;
+    expect(a.syncStatus).toBe('SYNCED');
+    expect(a.cloudRecordId).toBe(42);
+    expect((await getUnsyncedEvidence()).some((e) => e.id === 'a')).toBe(false);
+  });
+
+  it('her-opslaan van een gesynct bewijs zet het terug in de wachtrij maar behoudt cloudRecordId', async () => {
+    const rowId = (await saveEvidenceLocally(ev({ id: 'a' })))!;
+    await markEvidenceSyncedWithCloudId(rowId, 99);
+    expect((await getUnsyncedEvidence()).some((e) => e.id === 'a')).toBe(false);
+
+    // Vakman bewerkt het bewijs → her-opslaan (default syncStatus PENDING).
+    await saveEvidenceLocally(ev({ id: 'a', fieldNote: 'bijgewerkt' }));
+    const a = (await getAllEvidence()).find((e) => e.id === 'a')!;
+    expect(a.syncStatus).toBe('PENDING');
+    expect(a.fieldNote).toBe('bijgewerkt');
+    expect(a.cloudRecordId).toBe(99); // koppeling met de cloud blijft behouden
+    expect((await getUnsyncedEvidence()).some((e) => e.id === 'a')).toBe(true);
+  });
+});
+
 describe('edge-cases — onbekende doelen laten bestaande rijen ongemoeid', () => {
   it('markEvidenceSyncedWithCloudId op een onbekende rowId is een veilige no-op', async () => {
     await saveEvidenceLocally(ev({ id: 'a' }));
