@@ -103,9 +103,10 @@ maar is **standaard uit** zodat hij nooit per ongeluk live klanten blokkeert.
 Aanzetten:
 
 1. Zorg dat alle betalende tenants een `abonnement_status` hebben (via §5).
-2. Zorg dat de frontend de tenant meestuurt via de **`x-company-id`-header** op
-   de calls naar `/api/wkb-dossier` en `/api/stam` (nu nog niet bedraad — voeg de
-   header toe in `frontend/src/services/dossierAuth.ts` / `dso.ts`).
+2. ✅ **Al gedaan in code**: de frontend stuurt de tenant-slug mee als
+   **`x-company-id`-header** op de gated calls (`dossierAuth.ts` + `dso.ts`,
+   uit `config/tenant.ts` → `getActiveTenantId()`, de slug die de master
+   `tenants.company_id` keyt). Additief — met de muur uit genegeerd.
 3. Zet `ENFORCE_SUBSCRIPTION=true` op de backend.
 4. Test met een tenant zónder abonnement → moet `402` geven met NL-melding.
 
