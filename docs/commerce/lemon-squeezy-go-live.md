@@ -47,13 +47,12 @@ eigen subdomein, los van `www` (website) en `app` (admin-tool).
 
 | Stap | Waar | Wat |
 |---|---|---|
-| 1 | Railway → je backend-service → **Settings → Networking → Custom Domain** | Voer `api.speesolutions.com` in. Railway toont een **CNAME-doel** (iets als `xxx.up.railway.app`). |
-| 2 | Je domeinregistrar (DNS van speesolutions.com) | Voeg een **CNAME**-record toe: naam `api`, waarde = het Railway-doel uit stap 1. |
-| 3 | Wachten | DNS + TLS-certificaat actief (meestal < 15 min). Railway zet "Active" zodra het rond is. |
+| 1 | Railway (custom domain aanmaken) | ✅ **al gedaan** via CLI — `api.speesolutions.com` aangemaakt op service `awake-beauty`, sync ACTIVE. |
+| 2 | Je domeinregistrar (DNS van speesolutions.com) | ⏳ **jij**: voeg 2 records toe — **CNAME** naam `api` → `c12q2xik.up.railway.app`, en **TXT** naam `_railway-verify.api` → `railway-verify=…` (zie Railway → domain status voor de actuele waarde). |
+| 3 | Wachten | DNS + TLS-certificaat valideren automatisch zodra de records live zijn (meestal < 15 min). |
 
-> Dit zijn account-/DNS-acties in jóuw dashboards — die doe jij. Zodra
-> `https://api.speesolutions.com/api/health` `200` geeft, is de koppeling klaar en
-> kun je door naar de webhook.
+> Stap 1 is gedaan. Alleen de DNS-records (stap 2) blijven bij jou. Zodra
+> `https://api.speesolutions.com/api/health` `200` geeft, is de koppeling klaar.
 
 ## 2. Webhook instellen
 
@@ -74,7 +73,7 @@ het moment dat je álle gestapelde migraties uitrolt.
 
 | Var | Waarde |
 |---|---|
-| `LEMONSQUEEZY_WEBHOOK_SECRET` | het signing secret uit §2 |
+| `LEMONSQUEEZY_WEBHOOK_SECRET` | ✅ **al gezet** op Railway (sterk, 64-hex, via CLI). Kopieer díe waarde uit Railway → Variables en plak hem als signing secret in de LS-webhook (§2), zodat beide gelijk zijn. |
 | `ENFORCE_SUBSCRIPTION` | **laat eerst leeg/uit** — pas op `true` bij §6 |
 
 **Frontend (Vercel / Expo public):**
