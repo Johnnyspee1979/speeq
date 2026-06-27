@@ -42,7 +42,7 @@ Wanneer je SpeeQ gebruikt, verwerken wij de volgende categorieën persoonsgegeve
 **Facturatiegegevens:**
 - Bedrijfsnaam, KvK, BTW-nummer
 - Factuuradres
-- Betalingsgegevens (verwerkt door Mollie/Stripe — wij slaan géén creditcard- of bankgegevens op)
+- Betalingsgegevens (verwerkt door Lemon Squeezy als Merchant of Record — wij slaan géén creditcard- of bankgegevens op)
 
 ## 3. Waarom verwerken wij deze gegevens?
 
@@ -73,7 +73,7 @@ Wij delen gegevens uitsluitend met sub-verwerkers die noodzakelijk zijn voor het
 |---|---|---|
 | Supabase Inc. | Database, authenticatie, bestandsopslag | EU (Frankfurt/Amsterdam) |
 | Vercel Inc. | Hosting van de webapplicatie | EU |
-| Mollie/Stripe | Betalingsverwerking | EU |
+| Lemon Squeezy (Merchant of Record) | Facturatie, betalingsverwerking en BTW-afdracht | VS (met EU-standaardcontractbepalingen) |
 | Resend / e-mail provider | Transactionele e-mails | EU |
 
 **Elke klant krijgt een eigen Supabase-database in de EU.** Data is fysiek gescheiden.

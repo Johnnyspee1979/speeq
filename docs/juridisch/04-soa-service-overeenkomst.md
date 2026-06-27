@@ -95,7 +95,7 @@ Support omvat **geen** training, consultancy, of inhoudelijke Wkb-advisering. Di
 1. Prijzen zijn **exclusief BTW**.
 2. **Facturatie:** maandelijks vooraf óf jaarlijks vooruit (2 maanden gratis bij jaarbetaling).
 3. **Betalingstermijn:** 14 dagen na factuurdatum.
-4. Betaalmethoden: automatische incasso (SEPA), iDEAL, bankoverschrijving, creditcard via Mollie/Stripe.
+4. Betaling verloopt via Lemon Squeezy als _Merchant of Record_ (factureert namens Leverancier en draagt de BTW af); betaalmethoden o.a. iDEAL, creditcard en bankoverschrijving.
 5. **Prijsindexatie:** jaarlijks per 1 januari volgens CBS dienstenprijsindex, maximaal +5%.
 6. Wezenlijke prijswijzigingen worden 60 dagen vooraf aangekondigd; Klant heeft opzegrecht tegen ingangsdatum.
 

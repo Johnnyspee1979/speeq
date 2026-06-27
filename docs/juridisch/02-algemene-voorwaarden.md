@@ -50,7 +50,7 @@
 ## Artikel 6 — Prijzen en betaling
 
 1. Alle genoemde prijzen zijn **exclusief BTW**, tenzij anders vermeld.
-2. Facturatie maandelijks vooraf, automatische incasso of factuur via Mollie/Stripe.
+2. Facturatie en betaling verlopen via Lemon Squeezy, die als _Merchant of Record_ optreedt: Lemon Squeezy factureert namens Leverancier, int de betaling (o.a. iDEAL, creditcard) en draagt de verschuldigde BTW af. Facturatie maandelijks vooraf of jaarlijks vooruit.
 3. Betalingstermijn: 14 dagen na factuurdatum.
 4. Bij niet-tijdige betaling: 1 herinnering kosteloos, daarna €25 administratiekosten per herinnering en wettelijke rente.
 5. **Jaarbetaling:** bij betaling van 12 maanden vooruit krijgt Klant 2 maanden gratis (~17% korting).
