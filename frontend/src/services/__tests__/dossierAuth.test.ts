@@ -15,6 +15,11 @@ jest.mock('../../lib/supabase', () => ({
   },
 }));
 
+const mockGetActiveTenantId = jest.fn();
+jest.mock('../../config/tenant', () => ({
+  getActiveTenantId: () => mockGetActiveTenantId(),
+}));
+
 const { authHeader, openPdfInNewTab } = require('../dossierAuth');
 
 const mockFetch = jest.fn();
@@ -32,13 +37,22 @@ beforeEach(() => {
   mockGetSession.mockReset().mockResolvedValue({
     data: { session: { access_token: 'tok-123' } },
   });
+  mockGetActiveTenantId.mockReset().mockReturnValue('bouwgroep-bv');
   mockFetch.mockReset();
   mockOpen.mockReset();
   mockCreateObjectURL.mockReset().mockReturnValue('blob:fake-url');
 });
 
 describe('authHeader', () => {
-  it('geeft Bearer-header met geldige sessie', async () => {
+  it('geeft Bearer-header + x-company-id met geldige sessie en tenant', async () => {
+    await expect(authHeader()).resolves.toEqual({
+      Authorization: 'Bearer tok-123',
+      'x-company-id': 'bouwgroep-bv',
+    });
+  });
+
+  it('laat x-company-id weg als er geen actieve tenant is', async () => {
+    mockGetActiveTenantId.mockReturnValue(null);
     await expect(authHeader()).resolves.toEqual({ Authorization: 'Bearer tok-123' });
   });
 
@@ -57,6 +71,7 @@ describe('openPdfInNewTab', () => {
 
     const [, opts] = mockFetch.mock.calls[0];
     expect(opts.headers.Authorization).toBe('Bearer tok-123');
+    expect(opts.headers['x-company-id']).toBe('bouwgroep-bv');
     expect(mockCreateObjectURL).toHaveBeenCalledWith(fakeBlob);
     expect(mockOpen).toHaveBeenCalledWith('blob:fake-url', '_blank');
     expect(url).toBe('blob:fake-url');

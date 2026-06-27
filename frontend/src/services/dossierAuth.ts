@@ -13,6 +13,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { getActiveTenantId } from '../config/tenant';
 
 export const authHeader = async (): Promise<Record<string, string>> => {
   const {
@@ -22,7 +23,13 @@ export const authHeader = async (): Promise<Record<string, string>> => {
   if (!token) {
     throw new Error('Je bent niet (meer) ingelogd. Log opnieuw in om het dossier te openen.');
   }
-  return { Authorization: `Bearer ${token}` };
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  // Tenant-slug meesturen zodat de backend-betaalmuur (requireActiveSubscription,
+  // env-gated) de juiste tenant kan vinden. Met de muur uit negeert de backend
+  // de header — puur additief, geen gedragswijziging tot ENFORCE_SUBSCRIPTION aan.
+  const companyId = getActiveTenantId();
+  if (companyId) headers['x-company-id'] = companyId;
+  return headers;
 };
 
 /**

@@ -20,6 +20,11 @@ jest.mock('../../lib/supabase', () => ({
   },
 }));
 
+const mockGetActiveTenantId = jest.fn();
+jest.mock('../../config/tenant', () => ({
+  getActiveTenantId: () => mockGetActiveTenantId(),
+}));
+
 const {
   submitStam,
   fetchStamStatus,
@@ -40,6 +45,7 @@ beforeEach(() => {
   mockGetSession.mockReset().mockResolvedValue({
     data: { session: { access_token: 'tok-123' } },
   });
+  mockGetActiveTenantId.mockReset().mockReturnValue('bouwgroep-bv');
   mockFetch.mockReset().mockResolvedValue(okJson({ success: true, status: 'QUEUED' }));
 });
 
@@ -72,6 +78,19 @@ describe('dso-client — auth-header', () => {
   it('submitGereedmelding stuurt Bearer-token mee', async () => {
     await submitGereedmelding({ projectData: {} });
     expect(mockFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer tok-123');
+  });
+});
+
+describe('dso-client — x-company-id (betaalmuur)', () => {
+  it('stuurt de tenant-slug mee als x-company-id', async () => {
+    await submitStam({ foo: 'bar' });
+    expect(mockFetch.mock.calls[0][1].headers['x-company-id']).toBe('bouwgroep-bv');
+  });
+
+  it('laat x-company-id weg als er geen actieve tenant is', async () => {
+    mockGetActiveTenantId.mockReturnValue(null);
+    await submitStam({ foo: 'bar' });
+    expect(mockFetch.mock.calls[0][1].headers['x-company-id']).toBeUndefined();
   });
 });
 
