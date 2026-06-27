@@ -52,6 +52,7 @@ jest.mock('localforage', () => ({
 
 import {
   saveEvidenceLocally,
+  insertEvidence,
   getAllEvidence,
   getUnsyncedEvidence,
   markEvidenceSyncedWithCloudId,
@@ -59,6 +60,7 @@ import {
   updateEvidenceAiStatus,
   updateEvidenceAiStatusByCloudId,
 } from '../database';
+import type { StoredWkbEvidence } from '../../types/Evidence';
 
 const ev = (over: Partial<WkbEvidence> & Pick<WkbEvidence, 'id'>): WkbEvidence => ({
   projectId: 'P',
@@ -104,6 +106,40 @@ describe('saveEvidenceLocally — rowId + dedupe', () => {
     expect(a.aiStatus).toBe('PASSED');
     expect(a.aiConfidence).toBe(0.91);
     expect(a.fieldNote).toBe('nieuwe notitie');
+  });
+});
+
+describe('insertEvidence — veld-mapping', () => {
+  it('mapt het gedocumenteerde subset en is terugleesbaar', async () => {
+    const rowId = await insertEvidence({
+      ...ev({ id: 'ie1' }),
+      userId: 'u-9',
+      fieldNote: 'notitie',
+    } as StoredWkbEvidence);
+    expect(rowId).toBe(1);
+
+    const a = (await getAllEvidence()).find((e) => e.id === 'ie1')!;
+    expect(a.mediaUri).toBe('file://x.jpg');
+    expect(a.userId).toBe('u-9');
+    expect(a.fieldNote).toBe('notitie');
+    expect(a.syncStatus).toBe('PENDING');
+  });
+
+  it('zet userId/fieldNote op null wanneer afwezig', async () => {
+    await insertEvidence(ev({ id: 'ie2' }) as StoredWkbEvidence);
+    const a = (await getAllEvidence()).find((e) => e.id === 'ie2')!;
+    expect(a.userId ?? null).toBeNull();
+    expect(a.fieldNote ?? null).toBeNull();
+  });
+
+  it('draagt AI-velden niet mee (worden pas later via update gezet)', async () => {
+    await insertEvidence({
+      ...ev({ id: 'ie3' }),
+      aiStatus: 'PASSED',
+      aiConfidence: 0.99,
+    } as StoredWkbEvidence);
+    const a = (await getAllEvidence()).find((e) => e.id === 'ie3')!;
+    expect(a.aiStatus).not.toBe('PASSED');
   });
 });
 
