@@ -30,12 +30,14 @@ backend-auth nu bewust (fail-closed) — zet voor lokaal werken
 Kern: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`.
 Integraties: `DIGIKOPPELING_API_URL/KEY` (DSO/STAM), `KIK_API_URL/KEY`,
 `AFAS_*`, `EXACT_*`, `BCF_*`, `ELEVENLABS_API_KEY`, `PDF_SERVICES_CLIENT_ID/SECRET`.
+Commerce: `LEMONSQUEEZY_WEBHOOK_SECRET` (signing secret voor de webhook).
 
-Security-flags (beide **standaard uit**):
+Security-flags (alle **standaard uit**):
 | Flag | Effect |
 |---|---|
 | `ALLOW_AUTH_BYPASS=true` | Sla auth over als Supabase niet geconfigureerd is. **Alleen lokaal.** |
 | `ENABLE_QR_DEMO=true` | Zet de publieke `/qr` demo-pagina aan (toont demo-inloggegevens). |
+| `ENFORCE_SUBSCRIPTION=true` | Zet de betaalmuur (`requireActiveSubscription`) aan op dossier-export + STAM. Standaard uit → no-op. Aanzetten = bewuste go-live-stap (zie `docs/commerce/lemon-squeezy-go-live.md`); frontend moet dan `x-company-id` meesturen. |
 
 Frontend gebruikt `EXPO_PUBLIC_*` (o.a. `EXPO_PUBLIC_SUPABASE_URL/ANON_KEY`,
 `BACKEND_URL`).
