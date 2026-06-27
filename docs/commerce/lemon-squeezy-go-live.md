@@ -40,10 +40,25 @@ account, producten, keys, de migratie en de aan-schakelaar. Geen code meer nodig
 > Stop hier en geef de store-subdomein + variant-ID's door, dan kan de
 > Pricing-knop config ingevuld worden.
 
+## 1b. Backend-domein koppelen (`api.speesolutions.com`)
+
+De webhook moet bij de backend op Railway uitkomen. Daarvoor krijgt de backend een
+eigen subdomein, los van `www` (website) en `app` (admin-tool).
+
+| Stap | Waar | Wat |
+|---|---|---|
+| 1 | Railway → je backend-service → **Settings → Networking → Custom Domain** | Voer `api.speesolutions.com` in. Railway toont een **CNAME-doel** (iets als `xxx.up.railway.app`). |
+| 2 | Je domeinregistrar (DNS van speesolutions.com) | Voeg een **CNAME**-record toe: naam `api`, waarde = het Railway-doel uit stap 1. |
+| 3 | Wachten | DNS + TLS-certificaat actief (meestal < 15 min). Railway zet "Active" zodra het rond is. |
+
+> Dit zijn account-/DNS-acties in jóuw dashboards — die doe jij. Zodra
+> `https://api.speesolutions.com/api/health` `200` geeft, is de koppeling klaar en
+> kun je door naar de webhook.
+
 ## 2. Webhook instellen
 
 1. Lemon Squeezy → Settings → Webhooks → **+ Add endpoint**.
-2. URL: `https://<jouw-backend>/api/billing/lemon-squeezy/webhook`
+2. URL: `https://api.speesolutions.com/api/billing/lemon-squeezy/webhook`
 3. Signing secret: kies een sterke string → zet die als env-var (zie §4).
 4. Events aanvinken: alle `subscription_*` events.
 
