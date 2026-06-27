@@ -36,7 +36,9 @@ const { startDossierRefreshJob } = require('./jobs/dossierRefreshCron');
 const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
 const { requireReviewer } = require('./middleware/requireReviewer');
+const { requireActiveSubscription } = require('./middleware/requireActiveSubscription');
 const tenantRoutes = require('./routes/tenant.routes');
+const billingRoutes = require('./routes/billingRoutes');
 
 dotenv.config();
 
@@ -70,16 +72,22 @@ type EvidenceRow = {
 let supabaseClient: any | null = null;
 
 app.use(cors());
+// Lemon-Squeezy-webhook vóór de globale JSON-parser: de HMAC-handtekening wordt
+// over de RUWE body berekend, dus deze route krijgt een Buffer (express.raw).
+app.use('/api/billing', express.raw({ type: '*/*' }), billingRoutes);
 app.use(express.json());
 app.use('/api/v1/tenants', tenantRoutes);
 app.use('/api/wkb-evidence', requireAuth, evidenceRoutes);
-app.use('/api/wkb-dossier', requireAuth, dossierRoutes);
+// requireActiveSubscription is een betaalmuur die alleen actief is met
+// ENFORCE_SUBSCRIPTION=true (standaard uit → no-op). Op de betaalde acties
+// (dossier-export en STAM/DSO-melding), náást de rol-gate.
+app.use('/api/wkb-dossier', requireAuth, requireActiveSubscription, dossierRoutes);
 app.use('/api/erp/afas', afasRoutes);
 app.use('/api/integrations/erp', erpRoutes);
 app.use('/api/integrations/exact-online', exactRoutes);
 app.use('/api/kik', kikRoutes);
 app.use('/api/integrations/kik', kikRoutes);
-app.use('/api/stam', requireAuth, requireReviewer, stamRoutes);
+app.use('/api/stam', requireAuth, requireReviewer, requireActiveSubscription, stamRoutes);
 app.use('/api/integrations/dso', dsoRoutes);
 app.use('/api/integrations/bim', requireAuth, bimRoutes);
 app.use('/api/wkb-ai/ocr', requireAuth, ocrRoutes);
