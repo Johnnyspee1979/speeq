@@ -1,5 +1,12 @@
 import type { Request, Response } from 'express';
 
+// Forceer NL-tijdzone vóór elke datum-operatie. Railway-containers draaien in UTC,
+// waardoor toLocaleString('nl-NL') zonder timeZone-optie de bewijstijdstempels in
+// de officiële Wkb-PDF's 1–2 uur (en na middernacht zelfs een dag) verkeerd zette,
+// en de date-fns Wkb-termijnchecks (4 weken / 2 weken) op de verkeerde dag­grens
+// rekenden. Een expliciete Railway TZ-env overschrijft dit desgewenst nog.
+process.env.TZ = process.env.TZ || 'Europe/Amsterdam';
+
 process.on('uncaughtException', (err) => {
   console.error('[FATAL] Uncaught Exception:', err);
 });
