@@ -82,9 +82,16 @@ cd frontend && npm run typecheck
   router). Inline beschermd: `/api/admin/ai-stats`, `/api/dossier/:projectId`
   (+`/export`), `/api/ai/validate`, `/api/dso/stam/submit`+`/status`. Tenant-
   write/list achter auth; `/api/v1/tenants/resolve` blijft publiek (login).
-- Bewust **publiek/extern** gelaten: `/api/integrations/dso|kik`, `/api/kik`,
+- Bewust **publiek/extern** gelaten: `/api/integrations/kik`, `/api/kik`,
   `/api/erp/afas`, `/api/integrations/erp|exact-online` (eigen API-key-auth),
   `/health`, `/api/health`, en `/qr` (achter `ENABLE_QR_DEMO`).
+- **Project-scope** (naast rol): de gebruikte dossier-routes (`/api/wkb-dossier/*`:
+  genereer, bevoegd-gezag, consument(/export)) én de inline `/api/dossier/:projectId`
+  (+`/export`) roepen nu `assertProjectReviewAccess` aan — alleen eigenaar/
+  kwaliteitsborger, niet elke reviewer. `/consument/status` blijft rol-open.
+- `/api/integrations/dso` is **niet langer publiek**: nu achter `requireAuth` +
+  `requireReviewer` (de eerder aangenomen "eigen API-key-auth" bestond niet in de
+  handlers). De frontend gebruikt deze alias niet.
 
 ## Bekende open punten (zie hardening-rapport)
 - ~~Dossier-export en DSO-meldingen zonder token~~ → **opgelost**: routes
@@ -94,7 +101,8 @@ cd frontend && npm run typecheck
   `window.open` zónder header), native geeft de header door aan
   `downloadAsync`. **Aanname:** downloads zijn login-only — géén deelbare
   login-loze links. Wil je die wél, dan zijn signed/getokende URLs nodig.
-  De `/api/integrations/dso`-mount is bewust ongemoeid (mogelijk extern vlak).
+  De `/api/integrations/dso`-mount zit nu achter `requireAuth` + `requireReviewer`
+  (was ongeauthenticeerd; iedereen kon STAM-meldingen indienen — audit jul '26).
 - Anon-Supabase-keys staan als fallback in `frontend/src/lib/supabase.ts` en
   `MasterSupabase.ts` (publiek-by-design, maar idealiter env-only).
 - Route-aliassen (`/api/integrations/kik|dso`, exact/erp) zijn ongebruikt door
