@@ -23,6 +23,8 @@ const mockBuildDossier = jest.fn();
 const mockGenBevoegd = jest.fn();
 const mockGenConsumer = jest.fn();
 const mockConsumerStatus = jest.fn();
+const mockGetContext = jest.fn();
+const mockAssertAccess = jest.fn();
 
 class MockIncompleteError extends Error {
   statusCode: number | undefined;
@@ -36,6 +38,10 @@ class MockIncompleteError extends Error {
 
 jest.mock('../../middleware/requireReviewer', () => ({
   requireReviewer: (_req: unknown, _res: unknown, next: () => void) => next(),
+}));
+jest.mock('../../services/authContextService', () => ({
+  getAuthenticatedUserContext: mockGetContext,
+  assertProjectReviewAccess: mockAssertAccess,
 }));
 jest.mock('../../services/dossierService', () => ({ buildDossier: mockBuildDossier }));
 jest.mock('../../services/dossierGenerator', () => ({
@@ -76,9 +82,15 @@ const mockRes = () => {
 
 const call = async (method: string, path: string, params: Record<string, unknown> = {}) => {
   const res = mockRes();
-  await findHandler(method, path)({ params } as unknown as Request, res);
+  await findHandler(method, path)({ params, headers: {} } as unknown as Request, res);
   return res;
 };
+
+// Project-scope slaagt standaard; individuele tests overschrijven met een reject.
+beforeEach(() => {
+  mockGetContext.mockResolvedValue({ userId: 'u1', role: 'AANNEMER', email: '', companyName: '' });
+  mockAssertAccess.mockResolvedValue({ isOwner: true, isQualityAssurer: false });
+});
 
 describe('POST /genereer/:projectId', () => {
   const path = '/genereer/:projectId';
@@ -184,5 +196,34 @@ describe('GET /consument/:projectId — download', () => {
     mockGenConsumer.mockRejectedValueOnce(new Error('iets anders'));
     const res = await call('get', path, { projectId: 'P' });
     expect(res.status).toHaveBeenCalledWith(500);
+  });
+});
+
+describe('project-scope (assertProjectReviewAccess)', () => {
+  const httpErr = (statusCode: number, message: string) => {
+    const err: any = new Error(message);
+    err.statusCode = statusCode;
+    return err;
+  };
+
+  it('weigert met 403 als de gebruiker geen recht op het project heeft', async () => {
+    mockAssertAccess.mockRejectedValueOnce(httpErr(403, 'Gebruiker heeft geen rechten op dit project.'));
+    const res = await call('get', '/bevoegd-gezag/:projectId', { projectId: 'P-1' });
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockGenBevoegd).not.toHaveBeenCalled();
+  });
+
+  it('weigert met 401 bij een ontbrekend token op /genereer', async () => {
+    mockGetContext.mockRejectedValueOnce(httpErr(401, 'Authorization Bearer token ontbreekt.'));
+    const res = await call('post', '/genereer/:projectId', { projectId: 'P-1' });
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(mockBuildDossier).not.toHaveBeenCalled();
+  });
+
+  it('weigert met 403 op de consument-download', async () => {
+    mockAssertAccess.mockRejectedValueOnce(httpErr(403, 'Geen rechten.'));
+    const res = await call('get', '/consument/:projectId', { projectId: 'P-1' });
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockGenConsumer).not.toHaveBeenCalled();
   });
 });
