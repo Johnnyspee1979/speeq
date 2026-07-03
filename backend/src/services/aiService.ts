@@ -281,8 +281,23 @@ const validateEvidenceImage = async (
       openaiError: error?.openaiError,
     }).catch(() => undefined);
 
-    // Fallback naar mock mocht alles falen
-    return getMockResult(normalizedInspectionPoint);
+    // Fallback: FAIL-CLOSED. Bij totale AI-uitval mag niets automatisch worden
+    // goedgekeurd — een PASSED-mock wordt gedegradeerd naar NEEDS_REVIEW zodat een
+    // werkvoorbereider het bewijs altijd handmatig beoordeelt. Anders zou bewijs
+    // (bijv. 'wapening') als goedgekeurd in het Wkb-dossier belanden zonder dat er
+    // ooit een analyse heeft plaatsgevonden.
+    const mock = getMockResult(normalizedInspectionPoint);
+    if (mock.status === 'PASSED') {
+      return {
+        ...mock,
+        status: 'NEEDS_REVIEW',
+        confidence: 0.5,
+        feedback:
+          'AI-analyse tijdelijk niet beschikbaar — automatische goedkeuring is uitgeschakeld. Handmatige review vereist (fail-closed fallback).',
+        checks: [...mock.checks, 'fail-closed-geen-auto-goedkeuring'],
+      };
+    }
+    return mock;
   }
 };
 

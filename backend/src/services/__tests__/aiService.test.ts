@@ -8,7 +8,7 @@
  * en de alert-mail, en borgen:
  *   - Gemini-pad: parse van de generateContent-JSON, met veilige defaults;
  *   - fallback naar OpenAI als Gemini niet is ingesteld;
- *   - volledige degradatie → mock-resultaat (PASSED voor wapening, NEEDS_REVIEW
+ *   - volledige degradatie → fail-closed mock (wapening PASSED→NEEDS_REVIEW, NEEDS_REVIEW
  *     voor isolatie/brand, anders FAILED) én een fire-and-forget alert-mail;
  *   - normalisatie van het inspectiepunt (WAPENING-1 → wapening).
  */
@@ -119,12 +119,13 @@ describe('Fallback naar OpenAI', () => {
 });
 
 describe('Volledige degradatie → mock + alert', () => {
-  it('levert het wapening-mockresultaat (PASSED) en stuurt een alert', async () => {
-    // geen Gemini-key, geen OpenAI-key → beide gefaald → mock
+  it('degradeert het wapening-mockresultaat fail-closed naar NEEDS_REVIEW en stuurt een alert', async () => {
+    // geen Gemini-key, geen OpenAI-key → beide gefaald → fail-closed mock.
+    // Bij totale AI-uitval mag 'wapening' NOOIT automatisch PASSED worden.
     const res = await validateEvidenceImage('https://x/a.jpg', 'WAPENING-1');
-    expect(res.status).toBe('PASSED');
-    expect(res.confidence).toBe(0.92);
-    expect(res.feedback).toMatch(/MOCK fallback/);
+    expect(res.status).toBe('NEEDS_REVIEW');
+    expect(res.confidence).toBe(0.5);
+    expect(res.feedback).toMatch(/fail-closed/i);
     expect(mockSendAlert).toHaveBeenCalledTimes(1);
     expect((mockSendAlert.mock.calls[0]![0] as any).inspectionPoint).toBe('wapening');
   });
@@ -142,7 +143,7 @@ describe('Volledige degradatie → mock + alert', () => {
   it('breekt niet als de alert-mail zelf faalt', async () => {
     mockSendAlert.mockRejectedValue(new Error('resend down'));
     await expect(validateEvidenceImage('https://x/a.jpg', 'wapening')).resolves.toMatchObject({
-      status: 'PASSED',
+      status: 'NEEDS_REVIEW',
     });
   });
 });
