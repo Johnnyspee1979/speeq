@@ -37,6 +37,10 @@ const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
 const { requireReviewer } = require('./middleware/requireReviewer');
 const { requireActiveSubscription } = require('./middleware/requireActiveSubscription');
+const {
+  getAuthenticatedUserContext,
+  assertProjectReviewAccess,
+} = require('./services/authContextService');
 const tenantRoutes = require('./routes/tenant.routes');
 const billingRoutes = require('./routes/billingRoutes');
 
@@ -88,7 +92,11 @@ app.use('/api/integrations/exact-online', exactRoutes);
 app.use('/api/kik', kikRoutes);
 app.use('/api/integrations/kik', kikRoutes);
 app.use('/api/stam', requireAuth, requireReviewer, requireActiveSubscription, stamRoutes);
-app.use('/api/integrations/dso', dsoRoutes);
+// Was publiek gemount met de aanname 'eigen API-key-auth', maar die auth stond
+// nergens in de handlers → iedereen kon STAM-bouw/gereedmeldingen indienen. Nu
+// achter requireAuth + requireReviewer (zelfde niveau als /api/stam). De frontend
+// gebruikt deze alias niet; alleen /api/stam en /api/dso/stam/* worden aangeroepen.
+app.use('/api/integrations/dso', requireAuth, requireReviewer, dsoRoutes);
 app.use('/api/integrations/bim', requireAuth, bimRoutes);
 app.use('/api/wkb-ai/ocr', requireAuth, ocrRoutes);
 app.use('/api/review', requireAuth, reviewRoutes);
@@ -330,6 +338,13 @@ app.get('/api/admin/ai-stats', requireAuth, async (req: Request, res: Response) 
 app.get('/api/dossier/:projectId', requireAuth, async (req: Request, res: Response) => {
   try {
     const projectId = String(req.params.projectId ?? '');
+
+    // Project-scope: alleen de eigenaar/kwaliteitsborger van dit project mag het
+    // dossier (met GPS, foto-paden en notities) lezen — voorkomt IDOR waarbij een
+    // willekeurige ingelogde gebruiker door projectId's kan itereren.
+    const context = await getAuthenticatedUserContext(req.headers.authorization);
+    await assertProjectReviewAccess(projectId, context);
+
     const supabase = getSupabaseAdminClient();
 
     const { data: evidence, error } = await supabase
@@ -346,13 +361,19 @@ app.get('/api/dossier/:projectId', requireAuth, async (req: Request, res: Respon
   } catch (error: any) {
     const message = error?.message ?? 'Kon Wkb-dossier niet genereren.';
     console.error('Fout bij ophalen dossier:', message);
-    res.status(message.includes('configuratie') ? 503 : 500).json({ error: message });
+    const status = error?.statusCode ?? (message.includes('configuratie') ? 503 : 500);
+    res.status(status).json({ error: message });
   }
 });
 
 app.get('/api/dossier/:projectId/export', requireAuth, requireReviewer, async (req: Request, res: Response) => {
   try {
     const projectId = String(req.params.projectId ?? '');
+
+    // Project-scope naast de reviewer-rolcheck: alleen eigen projecten exporteren.
+    const context = await getAuthenticatedUserContext(req.headers.authorization);
+    await assertProjectReviewAccess(projectId, context);
+
     const dossierType = (req.query.type as string) ?? 'bevoegd-gezag';
     const aannemer = (req.query.aannemer as string) ?? '—';
     const adres = (req.query.adres as string) ?? '—';
@@ -496,7 +517,8 @@ app.get('/api/dossier/:projectId/export', requireAuth, requireReviewer, async (r
   } catch (error: any) {
     const message = error?.message ?? 'Kon PDF dossier niet genereren.';
     console.error('Fout bij exporteren PDF:', message);
-    res.status(message.includes('configuratie') ? 503 : 500).json({ error: message });
+    const status = error?.statusCode ?? (message.includes('configuratie') ? 503 : 500);
+    res.status(status).json({ error: message });
   }
 });
 
