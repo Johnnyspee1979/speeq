@@ -46,4 +46,19 @@ describe('reviewNotificationService', () => {
       },
     });
   });
+
+  it('gebruikt een eigen event-type voor NEEDS_REVIEW (aparte melding, geen "afgekeurd")', () => {
+    const payload = buildReviewNotificationPayload({
+      evidenceId: 7,
+      projectId: '104A',
+      inspectionPointId: 'isolatie-03',
+      reviewStatus: 'NEEDS_REVIEW',
+      reviewerId: 'reviewer-1',
+      reviewerRole: 'KWALITEITSBORGER',
+      occurredAt: '2026-03-14T10:15:00.000Z',
+    });
+
+    expect(payload.eventType).toBe('evidence.review.needs_review');
+    expect(payload.review.status).toBe('NEEDS_REVIEW');
+  });
 });
