@@ -586,7 +586,11 @@ app.post('/api/ai/validate', requireAuth, async (req: Request, res: Response) =>
   }
 });
 
-app.post('/api/dso/stam/submit', requireAuth, requireReviewer, async (req: Request, res: Response) => {
+// STAM/DSO-melding is een betaalde actie → zelfde betaalmuur als /api/stam
+// (zie docs/commerce/lemon-squeezy-go-live.md §6). requireActiveSubscription is
+// env-gated (ENFORCE_SUBSCRIPTION); met de muur uit een no-op. De frontend stuurt
+// de tenant al mee via de x-company-id-header (services/dso.ts).
+app.post('/api/dso/stam/submit', requireAuth, requireReviewer, requireActiveSubscription, async (req: Request, res: Response) => {
   try {
     const payload = mapToStamPayload(req.body ?? {});
     const response = await submitToDSO(payload);
