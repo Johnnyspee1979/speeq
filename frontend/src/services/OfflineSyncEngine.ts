@@ -46,8 +46,18 @@ async function uploadLocalPhotoToCloud(
     // Laad als blob/file
     let blob: Blob;
     if (localUri.startsWith('blob:') || localUri.startsWith('file://') || localUri.startsWith('data:')) {
-      const r = await fetch(localUri);
-      blob = await r.blob();
+      try {
+        const r = await fetch(localUri);
+        blob = await r.blob();
+      } catch (fetchErr) {
+        // Een blob:-object-URL kan dood zijn na een page-reload (web). Val terug
+        // op de duurzame kopie in de offline photo-store (via uuid), zodat de foto
+        // alsnog geüpload kan worden i.p.v. verloren te gaan.
+        const refreshed = await photoStore.loadPhoto(uuid);
+        if (!refreshed) throw fetchErr;
+        const r = await fetch(refreshed);
+        blob = await r.blob();
+      }
     } else {
       // Onbekend pad — probeer photoStore lookup als fallback
       const refreshed = await photoStore.loadPhoto(uuid);
@@ -151,6 +161,27 @@ async function pushOperation(op: SyncQueueRow): Promise<void> {
       localRow.media_uri && localRow.media_uri !== localRow.photo_uri
         ? await uploadLocalPhotoToCloud(localRow.uuid + '-media', localRow.media_uri)
         : remotePhotoUrl;
+
+    // FAIL-CLOSED: als er een lokale foto was maar de upload faalde (null), NIET de
+    // row als 'synced' wegschrijven met een lokaal (file://blob:) pad dat de cloud
+    // niet kan lezen. Gooien zodat de bestaande backoff/retry het opnieuw probeert;
+    // anders verdwijnt het Wkb-bewijs zodra de opschoning de lokale foto weghaalt.
+    const hadLocalPhoto = !!localRow.photo_uri && !localRow.photo_uri.startsWith('http');
+    if (hadLocalPhoto && !remotePhotoUrl) {
+      throw new Error(
+        `Foto-upload naar cloud mislukt voor evidence ${localRow.uuid}; ` +
+          `sync wordt opnieuw geprobeerd (bewijs blijft lokaal behouden).`,
+      );
+    }
+    const hadLocalMedia =
+      !!localRow.media_uri &&
+      localRow.media_uri !== localRow.photo_uri &&
+      !localRow.media_uri.startsWith('http');
+    if (hadLocalMedia && !remoteMediaUrl) {
+      throw new Error(
+        `Media-upload naar cloud mislukt voor evidence ${localRow.uuid}; sync wordt opnieuw geprobeerd.`,
+      );
+    }
 
     // Stap 2: evidence-row insert met de remote URLs
     const { data, error } = await supabase

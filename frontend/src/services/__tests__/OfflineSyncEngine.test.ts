@@ -325,6 +325,48 @@ describe('delete-operation zonder remote_id', () => {
 
 // ─── State-subscribe ────────────────────────────────────────────────────────
 
+describe('create met gefaalde foto-upload → fail-closed', () => {
+  it('gooit en laat de operatie in de queue staan i.p.v. met een lokaal pad te syncen', async () => {
+    const op = makeQueueRow({
+      id: 7,
+      operation: 'create',
+      evidence_uuid: 'uuid-foto',
+      attempts: 0,
+    });
+    const localRow = makeLocalRow({
+      uuid: 'uuid-foto',
+      remote_id: null,
+      photo_uri: 'file:///local/foto.jpg', // lokaal pad — moet naar cloud
+      media_uri: null,
+    });
+    mockGetEvidence.mockResolvedValue(localRow);
+    mockListPendingSync.mockResolvedValue([op]);
+
+    // Dode blob/file: fetch faalt en de photo-store heeft geen fallback (mock → null),
+    // dus uploadLocalPhotoToCloud geeft null terug.
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(() => Promise.reject(new Error('dead blob'))) as unknown as typeof fetch;
+
+    try {
+      await processOfflineSyncQueue();
+    } finally {
+      global.fetch = originalFetch;
+    }
+
+    // Fail-closed: operatie blijft in de queue (retry), wordt niet verwijderd en de
+    // evidence wordt NIET als synced gemarkeerd met een onbruikbaar lokaal pad.
+    expect(mockMarkSyncAttempt).toHaveBeenCalledWith(
+      op.id,
+      expect.stringMatching(/upload naar cloud mislukt/i),
+    );
+    expect(mockRemoveSyncOperation).not.toHaveBeenCalled();
+    expect(mockUpdateEvidence).not.toHaveBeenCalledWith(
+      'uuid-foto',
+      expect.objectContaining({ sync_status: 'synced' }),
+    );
+  });
+});
+
 describe('subscribeOfflineSync', () => {
   it('roept listener direct aan met huidige state', () => {
     const listener = jest.fn();
