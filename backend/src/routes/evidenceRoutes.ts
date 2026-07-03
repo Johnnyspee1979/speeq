@@ -193,6 +193,22 @@ const getFileExtension = (mimeType?: string) => {
   }
 };
 
+// Herkent een 'ontbrekende kolom'-fout van PostgREST/Postgres. Alleen dán is de
+// legacy-fallback (zónder de Wkb-verificatievelden) gerechtvaardigd; bij elke
+// andere fout mag de insert niet stil die velden weglaten.
+const isMissingColumnError = (
+  error: { message?: string; code?: string } | null | undefined
+) => {
+  if (!error) return false;
+  const message = String(error.message ?? '').toLowerCase();
+  return (
+    error.code === 'PGRST204' ||
+    message.includes('does not exist') ||
+    message.includes('schema cache') ||
+    (message.includes('column') && message.includes('could not find'))
+  );
+};
+
 router.post(
   '/upload',
   uploadPhoto,
@@ -267,13 +283,17 @@ router.post(
       const extension = getFileExtension(req.file.mimetype);
       const safeEvidenceId = evidenceId.replace(/[^a-zA-Z0-9-_]/g, '-');
       const safeProjectId = projectId.replace(/[^a-zA-Z0-9-_]/g, '-');
-      const fileName = `${safeProjectId}/${safeEvidenceId}.${extension}`;
+      // Collision-vrij pad + upsert:false: Wkb-bewijs is onveranderbaar. Zonder dit
+      // kon een tweede upload met dezelfde evidence_id de originele (mogelijk al
+      // goedgekeurde) foto stil overschrijven, terwijl de oude DB-rij met zijn
+      // exif_hash naar hetzelfde pad bleef wijzen — het origineel was dan weg.
+      const fileName = `${safeProjectId}/${safeEvidenceId}-${Date.now()}.${extension}`;
 
       const { error: storageError } = await supabase.storage
         .from('wkb-evidence')
         .upload(fileName, req.file.buffer, {
           contentType: req.file.mimetype || 'image/jpeg',
-          upsert: true,
+          upsert: false,
         });
 
       if (storageError) {
@@ -332,7 +352,7 @@ router.post(
         | null = null;
       let dbError: { message: string } | null = null;
 
-      for (const payload of [richPayload, legacyPayload]) {
+      for (const [attempt, payload] of [richPayload, legacyPayload].entries()) {
         const response = await supabase
           .from('evidence')
           .insert([payload])
@@ -346,6 +366,19 @@ router.post(
         }
 
         dbError = response.error;
+
+        // Val alleen terug op het legacy-payload (zónder exif_hash, gps_accuracy en
+        // de verificatievlaggen) wanneer de rijke insert faalde op een ontbrekende
+        // kolom. Bij elke andere fout niet stil verificatievelden weglaten → falen.
+        if (attempt === 0) {
+          if (!isMissingColumnError(response.error)) {
+            break;
+          }
+          console.warn(
+            'Rijke evidence-insert faalde op een ontbrekende kolom; val terug op het legacy-payload zonder Wkb-verificatievelden. Voeg de ontbrekende kolommen toe aan de evidence-tabel. Detail:',
+            response.error.message
+          );
+        }
       }
 
       if (dbError) {

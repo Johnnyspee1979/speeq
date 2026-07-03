@@ -141,8 +141,10 @@ describe('POST /upload — verwerking', () => {
     // AI-validatie krijgt de buffer + inspectiepunt.
     expect(mockValidate).toHaveBeenCalledWith(expect.any(Buffer), 'BP-1');
 
-    // Storage-pad: veilige project/evidence-id + extensie uit mimetype.
-    expect(mockUpload.mock.calls[0]?.[0]).toBe('P-1/EV-1.png');
+    // Storage-pad: veilige project/evidence-id + collision-vrije suffix + extensie.
+    expect(mockUpload.mock.calls[0]?.[0]).toMatch(/^P-1\/EV-1-\d+\.png$/);
+    // upsert:false zodat bestaand bewijs nooit stil wordt overschreven.
+    expect((mockUpload.mock.calls[0]?.[2] as any).upsert).toBe(false);
 
     // Genormaliseerd insert-payload (camel→snake, string→getal/boolean).
     const payload: any = (mockInsert.mock.calls[0]?.[0] as any[])[0];
@@ -170,9 +172,9 @@ describe('POST /upload — verwerking', () => {
     expect(body.mediaUrl).toBe('https://signed/x');
   });
 
-  it('probeert het legacy-payload als de rich-insert faalt (200)', async () => {
+  it('valt alleen bij een ontbrekende-kolom-fout terug op het legacy-payload (200)', async () => {
     mockInsertSingle
-      .mockResolvedValueOnce({ data: null, error: { message: 'kolom bestaat niet' } })
+      .mockResolvedValueOnce({ data: null, error: { message: 'column "exif_hash" does not exist' } })
       .mockResolvedValueOnce({ data: { id: 7 }, error: null });
 
     const res = await call({ body: { evidenceData: validData }, file: file() });
@@ -182,10 +184,22 @@ describe('POST /upload — verwerking', () => {
     expect(res.json.mock.calls[0][0].cloudRecordId).toBe(7);
   });
 
-  it('mapt twee mislukte inserts op 500', async () => {
-    mockInsertSingle.mockResolvedValue({ data: null, error: { message: 'db kapot' } });
+  it('valt NIET terug op legacy bij een andere fout → 500, geen tweede insert', async () => {
+    // Een niet-kolom-fout mag niet stil de Wkb-verificatievelden weglaten.
+    mockInsertSingle.mockResolvedValueOnce({ data: null, error: { message: 'permission denied (RLS)' } });
     const res = await call({ body: { evidenceData: validData }, file: file() });
     expect(res.status).toHaveBeenCalledWith(500);
+    expect(mockInsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('mapt twee mislukte inserts (beide kolomfout) op 500', async () => {
+    mockInsertSingle.mockResolvedValue({
+      data: null,
+      error: { message: 'column "exif_hash" does not exist' },
+    });
+    const res = await call({ body: { evidenceData: validData }, file: file() });
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(mockInsert).toHaveBeenCalledTimes(2);
   });
 
   it('mapt een storage-fout op 500', async () => {
