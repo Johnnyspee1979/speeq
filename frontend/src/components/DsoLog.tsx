@@ -101,6 +101,11 @@ export default function DsoLog() {
     void getGereedmeldingItems(DEFAULT_PROJECT_ID).then(setGereedmeldingItems);
   };
 
+  // LET OP (verkoop-eerlijkheid, juli 2026): de DSO/STAM-aansluiting is in
+  // aanvraag (DKA-keuze + PKIoverheid lopen). Tot die live is, versturen de
+  // knoppen hieronder bewust DEMO-gegevens en is dat ook zichtbaar in de UI
+  // (banner + "(demo)"-labels). Pas wanneer de aansluiting live is, wordt dit
+  // vervangen door echte projectdata — nooit stilletjes demo-data indienen.
   const createDemoProjectPayload = () => ({
     projectData: {
       projectId: DEFAULT_PROJECT_ID,
@@ -256,6 +261,16 @@ export default function DsoLog() {
       <View style={styles.content}>
         <Text style={styles.title}>DSO Logboek</Text>
 
+        <View style={styles.demoBanner}>
+          <Text style={styles.demoBannerTitle}>Demo-omgeving</Text>
+          <Text style={styles.demoBannerText}>
+            De automatische DSO/STAM-aansluiting is in aanvraag. Meldingen op dit
+            scherm gebruiken demo-gegevens en gaan níét naar het bevoegd gezag.
+            Je dossier is wél meldingsklaar — de officiële melding doe je tot die
+            tijd via het Omgevingsloket.
+          </Text>
+        </View>
+
         <WkbCompliancePanel snapshot={complianceSnapshot} />
 
         <WkbGereedmeldingChecklist
@@ -365,6 +380,25 @@ const createStyles = (
       fontSize: 20,
       fontWeight: '700',
       marginBottom: 12,
+    },
+    demoBanner: {
+      backgroundColor: theme.colors.surfaceAlt,
+      borderLeftWidth: 4,
+      borderLeftColor: theme.colors.accent,
+      borderRadius: 10,
+      padding: 14,
+      marginBottom: 14,
+      gap: 4,
+    },
+    demoBannerTitle: {
+      color: theme.colors.textPrimary,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    demoBannerText: {
+      color: theme.colors.textSecondary,
+      fontSize: 12,
+      lineHeight: 18,
     },
     controls: {
       gap: 12,
