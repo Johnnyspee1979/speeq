@@ -4,6 +4,8 @@
 > **Datum:** 14 mei 2026
 > **Voor:** Johnny Spee, Spee Solutions
 
+> **⚠️ Historisch prijsdeel (besluit juli 2026).** De prijs- en marge-tabellen in dit rapport (€149 Team / €299 Pro / €899 Enterprise) horen bij de mei-analyse. Het geldende model: 30 dagen gratis proefproject → **Basis €299/mnd of €2.990/jr** → **Professional €599/mnd of €5.990/jr** → **Enterprise op maat via contact**; Solo/Team en €899 zijn vervallen. Zie `docs/VERKOOP-ANALYSE.md` §4. De cijfers hieronder blijven als beslissingshistorie staan.
+
 ---
 
 ## 1. Korte beoordeling — waar staan we nu
@@ -184,7 +186,7 @@ speesolutions.com/
 ├── /speeq/zuid-holland         — regio-pagina (lokaal SEO)
 ├── /speeq/vergelijken          — SpeeQ vs STA/Vastlegg/BKapp (eerlijk)
 ├── /speeq/eigen-database       — diepe USP-uitleg
-├── /speeq/pricing              — Team €149 / Pro €299 / Enterprise €899
+├── /speeq/pricing              — Basis €299 / Professional €599 / Enterprise op maat
 ├── /speeq/help                 — FAQ + onboarding
 └── /blog                       — 1× per week 800-1500 woorden
 ```

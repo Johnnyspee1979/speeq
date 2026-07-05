@@ -16,7 +16,8 @@
 - **Klant**: de natuurlijke of rechtspersoon die met Leverancier een Overeenkomst sluit.
 - **Gebruiker**: een natuurlijk persoon die SpeeQ via een account gebruikt.
 - **Overeenkomst**: de tussen Leverancier en Klant gesloten dienstverleningsovereenkomst.
-- **Pakket**: het door Klant gekozen abonnement (Solo, Team, Pro, Enterprise).
+<!-- [CONCEPT juli 2026 — Johnny reviewen vóór verzending] -->
+- **Pakket**: het door Klant gekozen abonnement (Basis, Professional, Enterprise).
 
 ## Artikel 2 — Toepasselijkheid
 
@@ -26,8 +27,11 @@
 
 ## Artikel 3 — Aanbod en totstandkoming
 
+<!-- [CONCEPT juli 2026 — Johnny reviewen vóór verzending] -->
 1. Aanbiedingen op de SpeeQ-website zijn vrijblijvend tot bevestiging via e-mail of online aanmelding.
 2. De Overeenkomst komt tot stand op het moment dat Klant een Pakket activeert en Leverancier een bevestigingsmail stuurt.
+3. **Proefperiode:** nieuwe Klanten kunnen SpeeQ 30 dagen gratis proberen met één proefproject. Hiervoor zijn geen betaalgegevens vereist. De proefperiode eindigt automatisch en gaat niet stilzwijgend over in een betaald Pakket.
+4. Het Pakket Enterprise komt uitsluitend tot stand via een individuele Overeenkomst na contact met Leverancier; online activatie is voor dit Pakket niet mogelijk.
 
 ## Artikel 4 — Levering en beschikbaarheid
 
@@ -37,12 +41,13 @@
 
 ## Artikel 5 — Pakketten en gebruik
 
-| Pakket | Maandprijs | Max projecten | Max gebruikers | Foto-opslag |
+<!-- [CONCEPT juli 2026 — Johnny reviewen vóór verzending] -->
+
+| Pakket | Prijs | Max actieve projecten | Max app-gebruikers | Foto-opslag |
 |---|---|---|---|---|
-| Solo | €49 | 5 | 3 | 25 GB |
-| Team | €149 | 25 | onbeperkt | 100 GB |
-| Pro | €299 | onbeperkt | onbeperkt | 250 GB |
-| Enterprise | vanaf €899 | onbeperkt | onbeperkt | 1 TB fair-use |
+| Basis | €299/mnd of €2.990/jr | 5 | 10 | 100 GB |
+| Professional | €599/mnd of €5.990/jr | 25 | onbeperkt | 250 GB |
+| Enterprise | op maat, via contact | onbeperkt | onbeperkt | 1 TB fair-use |
 
 1. Bij overschrijding van limieten neemt Leverancier contact op met Klant. Klant heeft 14 dagen om naar een hoger Pakket te upgraden of het gebruik te verminderen.
 2. Bij voortdurende overschrijding van fair-use-grenzen kan Leverancier het account beperken na een schriftelijke waarschuwing.
