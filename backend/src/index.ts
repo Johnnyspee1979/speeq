@@ -96,8 +96,13 @@ app.use('/api/wkb-dossier', requireAuth, requireActiveSubscription, dossierRoute
 app.use('/api/erp/afas', afasRoutes);
 app.use('/api/integrations/erp', erpRoutes);
 app.use('/api/integrations/exact-online', exactRoutes);
-app.use('/api/kik', kikRoutes);
-app.use('/api/integrations/kik', kikRoutes);
+// Was publiek gemount met de aanname 'eigen API-key-auth', maar die auth stond
+// nergens in kikRoutes → /borgingsplan lekte het borgingsplan en /evidence +
+// /sync-evidence accepteerden bewijs zonder token. Nu achter requireAuth (zelfde
+// gat als /api/integrations/dso, audit juli '26). De frontend stuurt de
+// Supabase-JWT mee (services/kik.ts).
+app.use('/api/kik', requireAuth, kikRoutes);
+app.use('/api/integrations/kik', requireAuth, kikRoutes);
 app.use('/api/stam', requireAuth, requireReviewer, requireActiveSubscription, stamRoutes);
 // Was publiek gemount met de aanname 'eigen API-key-auth', maar die auth stond
 // nergens in de handlers → iedereen kon STAM-bouw/gereedmeldingen indienen. Nu

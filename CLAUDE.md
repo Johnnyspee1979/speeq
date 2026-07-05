@@ -77,13 +77,14 @@ cd frontend && npm run typecheck
   dev-bypass (rol komt dan van `requireAuth`). Rol-gebaseerd, niet
   project-ownership — wil je per-project, dan `assertProjectReviewAccess`.
 - Beschermde mounts (`requireAuth`): `/api/wkb-evidence`, `/api/wkb-dossier`,
-  `/api/stam`, `/api/integrations/bim`, `/api/wkb-ai/ocr`, `/api/review`,
-  `/api/notifications`, `/api/voice`, `/api/maker` (laatste twee intern in de
-  router). Inline beschermd: `/api/admin/ai-stats`, `/api/dossier/:projectId`
-  (+`/export`), `/api/ai/validate`, `/api/dso/stam/submit`+`/status`. Tenant-
-  write/list achter auth; `/api/v1/tenants/resolve` blijft publiek (login).
-- Bewust **publiek/extern** gelaten: `/api/integrations/kik`, `/api/kik`,
-  `/api/erp/afas`, `/api/integrations/erp|exact-online` (eigen API-key-auth),
+  `/api/kik`, `/api/integrations/kik`, `/api/stam`, `/api/integrations/bim`,
+  `/api/wkb-ai/ocr`, `/api/review`, `/api/notifications`, `/api/voice`,
+  `/api/maker` (laatste twee intern in de router). Inline beschermd:
+  `/api/admin/ai-stats`, `/api/dossier/:projectId` (+`/export`),
+  `/api/ai/validate`, `/api/dso/stam/submit`+`/status`. Tenant-write/list achter
+  auth; `/api/v1/tenants/resolve` blijft publiek (login).
+- Bewust **publiek/extern** gelaten: `/api/erp/afas`,
+  `/api/integrations/erp|exact-online` (eigen API-key-auth),
   `/health`, `/api/health`, en `/qr` (achter `ENABLE_QR_DEMO`).
 - **Project-scope** (naast rol): de gebruikte dossier-routes (`/api/wkb-dossier/*`:
   genereer, bevoegd-gezag, consument(/export)) én de inline `/api/dossier/:projectId`
@@ -92,6 +93,9 @@ cd frontend && npm run typecheck
 - `/api/integrations/dso` is **niet langer publiek**: nu achter `requireAuth` +
   `requireReviewer` (de eerder aangenomen "eigen API-key-auth" bestond niet in de
   handlers). De frontend gebruikt deze alias niet.
+- `/api/kik` + `/api/integrations/kik` zijn **niet langer publiek** (zelfde gat:
+  geen auth in de handlers): nu achter `requireAuth`. De frontend (`services/kik.ts`)
+  stuurt de Supabase-JWT + `x-company-id` mee.
 
 ## Bekende open punten (zie hardening-rapport)
 - ~~Dossier-export en DSO-meldingen zonder token~~ → **opgelost**: routes
