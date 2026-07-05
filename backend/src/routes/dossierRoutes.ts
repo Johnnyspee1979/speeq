@@ -39,7 +39,21 @@ router.post(
 
       await assertDossierAccess(req, projectId);
 
+      const startedAt = Date.now();
       const result = await buildDossier(projectId);
+      // Urenlogboek-haakje: gestructureerde metriek zodat een log-drain de
+      // dossier-doorlooptijd per project kan meten — onderbouwing voor de
+      // tijdsbesparing-claim bij de eerste klanten (zie docs/handboek/07-prijsmodel.md).
+      console.log(
+        '[METRIEK] dossier_generated',
+        JSON.stringify({
+          projectId,
+          ok: result.ok,
+          evidenceCount: result.evidenceCount ?? null,
+          durationMs: Date.now() - startedAt,
+          at: new Date().toISOString(),
+        })
+      );
 
       if (result.ok) {
         res.status(200).json({
