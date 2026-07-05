@@ -2,6 +2,10 @@ import type { Request, Response } from 'express';
 
 const { Router } = require('express');
 const { requireReviewer } = require('../middleware/requireReviewer');
+const {
+  getAuthenticatedUserContext,
+  assertProjectReviewAccess,
+} = require('../services/authContextService');
 const { generateBevoegdGezagDossier } = require('../services/dossierGenerator');
 const { buildDossier } = require('../services/dossierService');
 const {
@@ -11,6 +15,14 @@ const {
 } = require('../services/consumerDossierGenerator');
 
 const router = Router();
+
+// Project-scope naast de reviewer-rolcheck: alleen de eigenaar/kwaliteitsborger
+// van dit project mag het dossier genereren/downloaden. Voorkomt dat een reviewer
+// dossiers (met GPS, foto's, notities) van andermans projecten kan opvragen.
+const assertDossierAccess = async (req: Request, projectId: string): Promise<void> => {
+  const context = await getAuthenticatedUserContext(req.headers.authorization);
+  await assertProjectReviewAccess(projectId, context);
+};
 
 // Adobe-dossiermotor: bouw/ververs het PDF-dossier (Word-sjabloon → Adobe → PDF),
 // sla het op in de `dossiers`-bucket en koppel het aan het project (dossier_url).
@@ -25,7 +37,23 @@ router.post(
         return;
       }
 
+      await assertDossierAccess(req, projectId);
+
+      const startedAt = Date.now();
       const result = await buildDossier(projectId);
+      // Urenlogboek-haakje: gestructureerde metriek zodat een log-drain de
+      // dossier-doorlooptijd per project kan meten — onderbouwing voor de
+      // tijdsbesparing-claim bij de eerste klanten (zie docs/handboek/07-prijsmodel.md).
+      console.log(
+        '[METRIEK] dossier_generated',
+        JSON.stringify({
+          projectId,
+          ok: result.ok,
+          evidenceCount: result.evidenceCount ?? null,
+          durationMs: Date.now() - startedAt,
+          at: new Date().toISOString(),
+        })
+      );
 
       if (result.ok) {
         res.status(200).json({
@@ -39,6 +67,10 @@ router.post(
       // Ontbrekende Adobe-config is geen serverfout maar een configuratiestaat.
       res.status(result.skipped ? 503 : 502).json({ error: result.reason });
     } catch (error: any) {
+      if (error?.statusCode) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
       console.error(
         '❌ Onverwachte fout bij Adobe-dossiergeneratie:',
         error?.message ?? error
@@ -62,6 +94,8 @@ router.get(
         return;
       }
 
+      await assertDossierAccess(req, projectId);
+
       const pdfBuffer = await generateBevoegdGezagDossier(projectId);
 
       res.setHeader('Content-Type', 'application/pdf');
@@ -75,6 +109,10 @@ router.get(
         `✅ Dossier Bevoegd Gezag (PDF) succesvol gegenereerd voor project: ${projectId}`
       );
     } catch (error: any) {
+      if (error?.statusCode) {
+        res.status(error.statusCode).json({ error: error.message });
+        return;
+      }
       console.error(
         '❌ Fout bij het genereren van het PDF Dossier:',
         error?.message ?? error
@@ -98,6 +136,8 @@ const handleConsumerDossierDownload = async (
       return;
     }
 
+    await assertDossierAccess(req, projectId);
+
     const pdfBuffer = await generateConsumerDossier(projectId);
 
     res.setHeader('Content-Type', 'application/pdf');
@@ -116,6 +156,11 @@ const handleConsumerDossierDownload = async (
         error: error.message,
         issues: error.issues,
       });
+      return;
+    }
+
+    if (error?.statusCode) {
+      res.status(error.statusCode).json({ error: error.message });
       return;
     }
 

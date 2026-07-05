@@ -160,16 +160,17 @@ HOOFDSTUK 5 — Voor wie, wat kost het (45 sec)
 - SpeeQ is voor aannemers die premium kiezen boven goedkoop —
   bewust kiezen voor een Nederlandse leverancier met een vaste
   contactpersoon
-- Drie pakketten, vanaf €149 per maand:
-  - Team: €149/mnd, tot 5 gebruikers, één project tegelijk
-  - Pro: €299/mnd, tot 15 gebruikers, eigen branding op PDF's,
-    vaste supportlijn
-  - Enterprise: €899/mnd en hoger, onbeperkt aantal gebruikers,
-    SLA, custom-integraties
-- Founder-deal voor de eerste 3 klanten: 12 maanden Pro tegen
-  Team-prijs (u betaalt €149 in plaats van €299)
-- 30 dagen gratis proef met volledige Pro-toegang. Geen credit-
-  card vooraf, geen opzegtermijn-trucs.
+- Twee pakketten plus maatwerk, vanaf €299 per maand:
+  - Basis: €299/mnd of €2.990/jaar, vijf actieve projecten,
+    tot tien app-gebruikers
+  - Professional: €599/mnd of €5.990/jaar, vijfentwintig actieve
+    projecten, eigen branding op PDF's, integraties zodra live
+  - Enterprise: op maat, via contact
+- Founder-deal voor de eerste tien klanten: twaalf maanden Basis
+  voor honderdnegenenveertig euro per maand in plaats van
+  tweehonderdnegenennegentig, in ruil voor een testimonial
+- 30 dagen gratis proefproject. Geen creditcard vooraf, geen
+  opzegtermijn-trucs.
 
 HOOFDSTUK 6 — Hoe begint u (30 sec)
 - Ga naar speesolutions.com/speeq

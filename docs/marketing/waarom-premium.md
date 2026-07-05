@@ -4,6 +4,8 @@
 > **Voor:** jezelf (zekerheid bij salesgesprek), klant (na de demo), website-pricing-pagina
 > **Datum:** 14 mei 2026
 
+> **Besluit juli 2026:** prijsmodel herzien. Actueel aanbod: 30 dagen gratis proefproject (geen creditcard), **Basis €299/mnd** of €2.990/jr (tot 10 app-gebruikers, 5 actieve projecten), **Professional €599/mnd** of €5.990/jr (tot 25 actieve projecten + integraties zodra live), **Enterprise op maat** via contact. De eerdere Solo (€49)- en Team (€149)-tarieven zijn vervallen; deze pagina is daarop bijgewerkt.
+
 ---
 
 ## In één zin

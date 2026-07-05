@@ -81,6 +81,9 @@ import DropdownMenu, { type DropdownMenuItem } from '../components/ui/DropdownMe
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useTranslation } from '../i18n';
 import { EmptyProjectWizard } from '../components/ui/EmptyProjectWizard';
+import { populateDemoData, clearDemoData } from '../services/DemoDataService';
+import { useActiveTenantId } from '../hooks/useActiveTenantId';
+import { useWkbAuth } from '../hooks/useWkbAuth';
 import {
   generateKeuringsrapportHtml,
   printKeuringsrapport,
@@ -116,6 +119,7 @@ interface EvidenceRow {
   inspection_point_id: string | null;
   media_uri: string | null;
   photo_uri: string | null;
+  exif_hash: string | null;
   timestamp: string | null;
   ai_status: AiStatus;
   ai_notes: string | null;
@@ -327,7 +331,7 @@ export default function WerkvoorbereiderDashboard({
     try {
       const { data } = await supabase
         .from('evidence')
-        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, ai_notes, sync_status, user_id, latitude, longitude, field_note, floor_plan_id, pin_x, pin_y, review_status, reviewed_by, reviewed_at, review_note')
+        .select('id, project_id, inspection_point_id, media_uri, photo_uri, exif_hash, timestamp, ai_status, ai_notes, sync_status, user_id, latitude, longitude, field_note, floor_plan_id, pin_x, pin_y, review_status, reviewed_by, reviewed_at, review_note')
         .eq('project_id', projectId)
         .order('timestamp', { ascending: false })
         .limit(300);
@@ -337,6 +341,34 @@ export default function WerkvoorbereiderDashboard({
     } catch { return []; }
     finally { setLoading(false); }
   }, [projectId]);
+
+  // ── Demo-data (verkoopgesprek) ────────────────────────────────────────────
+  const { user: demoUser } = useWkbAuth();
+  const demoTenantId = useActiveTenantId();
+  const canManageDemo = demoUser?.role === 'ADMIN'
+    || demoUser?.role === 'KEYUSER'
+    || demoUser?.email === 'johnny@speesolutions.com'
+    || demoUser?.email === 'johnny@speesolutions.nl';
+  const hasDemoData = useMemo(
+    () => evidence.some((e) => e.exif_hash?.startsWith('DEMO_MARKER')),
+    [evidence],
+  );
+  const [demoBusy, setDemoBusy] = useState(false);
+  const handleAddDemo = useCallback(async () => {
+    if (!demoTenantId) { showToast('⚠️ Geen actieve tenant — demo-data kan niet laden.'); return; }
+    setDemoBusy(true);
+    const ok = await populateDemoData(projectId, demoTenantId);
+    setDemoBusy(false);
+    showToast(ok ? '✅ Demo-foto\u2019s geladen' : '❌ Demo-data laden mislukt');
+    if (ok) await fetchEvidence();
+  }, [demoTenantId, projectId, fetchEvidence, showToast]);
+  const handleClearDemo = useCallback(async () => {
+    setDemoBusy(true);
+    const ok = await clearDemoData(projectId);
+    setDemoBusy(false);
+    showToast(ok ? '🧹 Demo-data gewist' : '❌ Demo-data wissen mislukt');
+    if (ok) await fetchEvidence();
+  }, [projectId, fetchEvidence, showToast]);
 
   // ── Folder sync helper ────────────────────────────────────────────────────────
   const runFolderSync = useCallback(async (rows: SyncEvidenceRow[], silent = false) => {
@@ -1180,6 +1212,11 @@ export default function WerkvoorbereiderDashboard({
             trendDays={trendDays}
             vakmanStats={vakmanStats}
             projectId={projectId}
+            showDemoOption={canManageDemo}
+            onAddDemo={handleAddDemo}
+            hasDemoData={hasDemoData && canManageDemo}
+            onClearDemo={handleClearDemo}
+            demoBusy={demoBusy}
           />
         )}
 
@@ -1717,9 +1754,14 @@ interface DashboardTabProps {
   trendDays: { day: string; count: number }[];
   vakmanStats: { userId: string; label: string; total: number; akkoord: number; vandaag: number }[];
   projectId?: string;
+  showDemoOption?: boolean;
+  onAddDemo?: () => void;
+  hasDemoData?: boolean;
+  onClearDemo?: () => void;
+  demoBusy?: boolean;
 }
 
-function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview, categoryStats, trendDays, vakmanStats, projectId }: DashboardTabProps) {
+function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview, categoryStats, trendDays, vakmanStats, projectId, showDemoOption, onAddDemo, hasDemoData, onClearDemo, demoBusy }: DashboardTabProps) {
   if (loading) {
     return <View style={tabSt.centered}><ActivityIndicator size="large" color={theme.colors.accent} /></View>;
   }
@@ -1727,7 +1769,11 @@ function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview,
   if (borgingspuntGrid.length === 0) {
     return (
       <View style={tabSt.emptyBox}>
-        <EmptyProjectWizard projectId={projectId === 'default' ? undefined : projectId} />
+        <EmptyProjectWizard
+          projectId={projectId === 'default' ? undefined : projectId}
+          showDemoOption={showDemoOption}
+          onAddDemo={onAddDemo}
+        />
       </View>
     );
   }
@@ -1736,6 +1782,27 @@ function DashboardTab({ borgingspuntGrid, loading, metrics, theme, onGotoReview,
 
   return (
     <View style={{ gap: 20 }}>
+      {hasDemoData && onClearDemo ? (
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+          gap: 12, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8,
+          backgroundColor: 'rgba(99,102,241,0.08)', borderWidth: 1, borderColor: 'rgba(99,102,241,0.35)',
+        }}>
+          <Text style={{ color: theme.colors.textSecondary, fontSize: 12, flex: 1 }}>
+            🎭 Dit project bevat demo-foto&rsquo;s (verkoopgesprek).
+          </Text>
+          <TouchableOpacity
+            onPress={onClearDemo}
+            disabled={demoBusy}
+            style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 6, backgroundColor: '#6366F1', opacity: demoBusy ? 0.6 : 1 }}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12 }}>
+              {demoBusy ? 'Bezig…' : 'Wis demo-data'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
       {needsReview > 0 && (
         <TouchableOpacity
           style={[tabSt.reviewBanner, { backgroundColor: 'rgba(217,119,6,0.1)', borderColor: '#d97706' }]}

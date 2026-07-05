@@ -114,8 +114,10 @@ const updateEvidenceReviewStatus = async (input: ReviewStatusUpdateInput) => {
     );
   }
 
+  // Stuur een melding bij REJECTED én NEEDS_REVIEW (beide vragen actie van de
+  // vakman); alleen APPROVED stuurt niets.
   const dispatchResult =
-    reviewStatus === 'REJECTED'
+    reviewStatus !== 'APPROVED'
       ? await dispatchReviewNotifications({
           evidenceId: input.evidenceId,
           projectId: String(record.project_id ?? ''),

@@ -77,14 +77,15 @@ SpeeQ levert elke klant een **eigen Supabase-instance in Frankfurt**. Fysiek ges
 
 ## 10. Prijs & aanbod
 
-| Pakket | Prijs/maand | Gebruikers |
+| Pakket | Prijs | Inbegrepen |
 |---|---|---|
-| Team | €149 | tot 5 |
-| Pro | €299 | tot 15 + eigen branding op PDF + vaste supportlijn |
-| Enterprise | vanaf €899 | onbeperkt + SLA + custom |
+| Basis | €299/mnd of €2.990/jr (= 2 maanden gratis) | tot 10 app-gebruikers, 5 actieve projecten |
+| Professional | €599/mnd of €5.990/jr | tot 25 actieve projecten + integraties (KiK/ERP) zodra live |
+| Enterprise | op maat, via contact | geen self-service checkout |
 
-**Founder-deal**: eerste 3 klanten 12 maanden Pro voor Team-prijs (€149 ipv €299).
-**Gratis trial**: 30 dagen Pro-toegang, geen creditcard vereist.
+**Proefperiode**: 30 dagen gratis proefproject, geen creditcard vereist.
+**Founder-deal** (intern aanbod, níet in ads): eerste 10 klanten 12 maanden Basis voor €149/mnd, in ruil voor testimonial + logo.
+**Rekensom voor ad copy (mag genoemd)**: €299/mnd bij 5 projecten ≈ €60 per project per maand — tegenover €2.000–5.000 kwaliteitsborger-kosten per GK1-woning. Goedkoper dan 5 Ed Controls-licenties.
 **Persoonlijk**: Johnny belt je zelf, geen call-center.
 
 ## 11. Bewijspunten / proof

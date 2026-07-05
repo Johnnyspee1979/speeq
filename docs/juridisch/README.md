@@ -1,6 +1,6 @@
 # Juridisch pack — SpeeQ door Spee Solutions
 
-> Vier documenten die je nodig hebt vóór je eerste betalende Pro-klant.
+> Vier documenten die je nodig hebt vóór je eerste betalende klant.
 > Alle templates moeten op `[PLAATSHOUDERS]` worden ingevuld voordat je ze stuurt.
 
 ## De documenten
@@ -10,7 +10,7 @@
 | [01-verwerkersovereenkomst.md](01-verwerkersovereenkomst.md) | Iedere zakelijke klant (verplicht AVG) | Bij contractondertekening |
 | [02-algemene-voorwaarden.md](02-algemene-voorwaarden.md) | Iedereen die SpeeQ gebruikt | Linken vanaf website footer + bij onboarding |
 | [03-privacyverklaring.md](03-privacyverklaring.md) | Iedereen (verplicht AVG) | Op website + in app |
-| [04-soa-service-overeenkomst.md](04-soa-service-overeenkomst.md) | Pro + Enterprise klanten | Bij contractondertekening |
+| [04-soa-service-overeenkomst.md](04-soa-service-overeenkomst.md) | Professional + Enterprise klanten | Bij contractondertekening |
 
 ## Eerste keer: invullen-checklist
 
@@ -44,12 +44,12 @@ Vóór gebruik moet je deze waardes per template invullen:
 ### Op de website
 - Footer: link naar `02-algemene-voorwaarden` en `03-privacyverklaring`
 - Bij account-aanmaak: checkbox *"Ik ga akkoord met de voorwaarden en privacyverklaring"*
-- Bij Pro-onboarding: stuur DPA mee als bijlage
+- Bij Professional-onboarding: stuur DPA mee als bijlage
 
 ## Belangrijke disclaimer
 
 Deze templates zijn een **vertrekpunt op basis van standaard ICT-praktijk**.
-- Voor enterprise-klanten (€899+) is een gang naar een specialist (Considerati, ICTRecht, of een lokale ICT-advocaat) aanbevolen
+- Voor Enterprise-klanten (maatwerk, op offerte) is een gang naar een specialist (Considerati, ICTRecht, of een lokale ICT-advocaat) aanbevolen
 - Bij internationale klanten (buiten EU): laat een gespecialiseerd kantoor naar de cross-border data flows kijken
 - Bij geschillen: deze documenten zijn geen vervanging voor juridisch advies
 

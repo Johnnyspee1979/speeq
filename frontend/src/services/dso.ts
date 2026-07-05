@@ -1,5 +1,6 @@
 import { BACKEND_URL } from '../config/app';
 import { supabase } from '../lib/supabase';
+import { getActiveTenantId } from '../config/tenant';
 
 // DSO/STAM-meldingen gaan naar bevoegd gezag; deze backend-routes vereisen auth.
 // We sturen de Supabase-JWT mee als Bearer-token (zelfde patroon als
@@ -14,7 +15,12 @@ const authHeaders = async (
   if (!token) {
     throw new Error('Je bent niet (meer) ingelogd. Log opnieuw in om de melding te versturen.');
   }
-  return { ...base, Authorization: `Bearer ${token}` };
+  const headers: Record<string, string> = { ...base, Authorization: `Bearer ${token}` };
+  // Tenant-slug voor de env-gated betaalmuur (zie dossierAuth). Additief: met de
+  // muur uit negeert de backend de header.
+  const companyId = getActiveTenantId();
+  if (companyId) headers['x-company-id'] = companyId;
+  return headers;
 };
 
 type DsoSubmitResponse = {

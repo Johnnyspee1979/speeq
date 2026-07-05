@@ -30,12 +30,14 @@ backend-auth nu bewust (fail-closed) — zet voor lokaal werken
 Kern: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `OPENAI_API_KEY`, `RESEND_API_KEY`.
 Integraties: `DIGIKOPPELING_API_URL/KEY` (DSO/STAM), `KIK_API_URL/KEY`,
 `AFAS_*`, `EXACT_*`, `BCF_*`, `ELEVENLABS_API_KEY`, `PDF_SERVICES_CLIENT_ID/SECRET`.
+Commerce: `LEMONSQUEEZY_WEBHOOK_SECRET` (signing secret voor de webhook).
 
-Security-flags (beide **standaard uit**):
+Security-flags (alle **standaard uit**):
 | Flag | Effect |
 |---|---|
 | `ALLOW_AUTH_BYPASS=true` | Sla auth over als Supabase niet geconfigureerd is. **Alleen lokaal.** |
 | `ENABLE_QR_DEMO=true` | Zet de publieke `/qr` demo-pagina aan (toont demo-inloggegevens). |
+| `ENFORCE_SUBSCRIPTION=true` | Zet de betaalmuur (`requireActiveSubscription`) aan op dossier-export + STAM. Standaard uit → no-op. Aanzetten = bewuste go-live-stap (zie `docs/commerce/lemon-squeezy-go-live.md`); frontend moet dan `x-company-id` meesturen. |
 
 Frontend gebruikt `EXPO_PUBLIC_*` (o.a. `EXPO_PUBLIC_SUPABASE_URL/ANON_KEY`,
 `BACKEND_URL`).
@@ -75,14 +77,25 @@ cd frontend && npm run typecheck
   dev-bypass (rol komt dan van `requireAuth`). Rol-gebaseerd, niet
   project-ownership — wil je per-project, dan `assertProjectReviewAccess`.
 - Beschermde mounts (`requireAuth`): `/api/wkb-evidence`, `/api/wkb-dossier`,
-  `/api/stam`, `/api/integrations/bim`, `/api/wkb-ai/ocr`, `/api/review`,
-  `/api/notifications`, `/api/voice`, `/api/maker` (laatste twee intern in de
-  router). Inline beschermd: `/api/admin/ai-stats`, `/api/dossier/:projectId`
-  (+`/export`), `/api/ai/validate`, `/api/dso/stam/submit`+`/status`. Tenant-
-  write/list achter auth; `/api/v1/tenants/resolve` blijft publiek (login).
-- Bewust **publiek/extern** gelaten: `/api/integrations/dso|kik`, `/api/kik`,
-  `/api/erp/afas`, `/api/integrations/erp|exact-online` (eigen API-key-auth),
+  `/api/kik`, `/api/integrations/kik`, `/api/stam`, `/api/integrations/bim`,
+  `/api/wkb-ai/ocr`, `/api/review`, `/api/notifications`, `/api/voice`,
+  `/api/maker` (laatste twee intern in de router). Inline beschermd:
+  `/api/admin/ai-stats`, `/api/dossier/:projectId` (+`/export`),
+  `/api/ai/validate`, `/api/dso/stam/submit`+`/status`. Tenant-write/list achter
+  auth; `/api/v1/tenants/resolve` blijft publiek (login).
+- Bewust **publiek/extern** gelaten: `/api/erp/afas`,
+  `/api/integrations/erp|exact-online` (eigen API-key-auth),
   `/health`, `/api/health`, en `/qr` (achter `ENABLE_QR_DEMO`).
+- **Project-scope** (naast rol): de gebruikte dossier-routes (`/api/wkb-dossier/*`:
+  genereer, bevoegd-gezag, consument(/export)) én de inline `/api/dossier/:projectId`
+  (+`/export`) roepen nu `assertProjectReviewAccess` aan — alleen eigenaar/
+  kwaliteitsborger, niet elke reviewer. `/consument/status` blijft rol-open.
+- `/api/integrations/dso` is **niet langer publiek**: nu achter `requireAuth` +
+  `requireReviewer` (de eerder aangenomen "eigen API-key-auth" bestond niet in de
+  handlers). De frontend gebruikt deze alias niet.
+- `/api/kik` + `/api/integrations/kik` zijn **niet langer publiek** (zelfde gat:
+  geen auth in de handlers): nu achter `requireAuth`. De frontend (`services/kik.ts`)
+  stuurt de Supabase-JWT + `x-company-id` mee.
 
 ## Bekende open punten (zie hardening-rapport)
 - ~~Dossier-export en DSO-meldingen zonder token~~ → **opgelost**: routes
@@ -92,7 +105,8 @@ cd frontend && npm run typecheck
   `window.open` zónder header), native geeft de header door aan
   `downloadAsync`. **Aanname:** downloads zijn login-only — géén deelbare
   login-loze links. Wil je die wél, dan zijn signed/getokende URLs nodig.
-  De `/api/integrations/dso`-mount is bewust ongemoeid (mogelijk extern vlak).
+  De `/api/integrations/dso`-mount zit nu achter `requireAuth` + `requireReviewer`
+  (was ongeauthenticeerd; iedereen kon STAM-meldingen indienen — audit jul '26).
 - Anon-Supabase-keys staan als fallback in `frontend/src/lib/supabase.ts` en
   `MasterSupabase.ts` (publiek-by-design, maar idealiter env-only).
 - Route-aliassen (`/api/integrations/kik|dso`, exact/erp) zijn ongebruikt door

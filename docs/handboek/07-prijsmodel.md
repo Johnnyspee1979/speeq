@@ -3,6 +3,8 @@
 > Hoe SpeeQ z'n prijzen vastgesteld zijn, waarom, en wat realistisch is voor Johnny als solo-maker.
 > Datum: 2026-05-12.
 
+> **⚠️ Historisch (besluit juli 2026).** De ladder hieronder (Solo €49 / Team €149 / Pro €299 / Enterprise €899+) is de oorspronkelijke analyse. Het **geldende** model: 30 dagen gratis proefproject → **Basis €299/mnd of €2.990/jr** (tot 10 app-gebruikers, 5 actieve projecten) → **Professional €599/mnd of €5.990/jr** (tot 25 projecten + KiK/ERP-integraties zodra live) → **Enterprise op maat, via contact**. Founder-deal (intern): eerste 10 klanten 12 mnd Basis à €149 tegen testimonial + logo. De Solo/Team-tiers en de €899-prijs zijn vervallen. Zie `docs/VERKOOP-ANALYSE.md` §4; de tabellen hieronder blijven als beslissingshistorie staan.
+
 ## Het strategisch principe
 
 > **Je verkoopt geen Wkb-software. Je verkoopt rust op de avond voor oplevering.**

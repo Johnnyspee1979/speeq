@@ -4,6 +4,8 @@
 > Bron: publieke pagina's STA Software, Vastlegg, Apexion/BKapp
 > Doel: feitelijke claims voor founder-mail, website, ad-copy
 
+> **Besluit juli 2026 — actueel prijsmodel:** de prijsstrategie onderaan dit document (Solo/Team/Pro-tiers) is een historisch besluit uit mei 2026. Het geldende model: 30 dagen gratis proefproject (geen creditcard) · **Basis** €299/mnd of €2.990/jr (tot 10 app-gebruikers, 5 actieve projecten) · **Professional** €599/mnd of €5.990/jr (tot 25 actieve projecten + KiK/ERP-integraties zodra live) · **Enterprise** op maat, via contact. Founder-deal (intern aanbod, geen publieke tier): eerste 10 klanten 12 mnd Basis à €149 in ruil voor testimonial + logo. Bruikbare rekensom: €299/mnd bij 5 projecten ≈ €60 per project per maand, tegenover €2.000–5.000 kwaliteitsborger-kosten per GK1-woning — goedkoper dan 5 Ed Controls-licenties.
+
 ## TL;DR — de drie open lanes
 
 Bij geen enkele Nederlandse Wkb-concurrent vonden we publiek:

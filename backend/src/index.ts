@@ -1,5 +1,12 @@
 import type { Request, Response } from 'express';
 
+// Forceer NL-tijdzone vóór elke datum-operatie. Railway-containers draaien in UTC,
+// waardoor toLocaleString('nl-NL') zonder timeZone-optie de bewijstijdstempels in
+// de officiële Wkb-PDF's 1–2 uur (en na middernacht zelfs een dag) verkeerd zette,
+// en de date-fns Wkb-termijnchecks (4 weken / 2 weken) op de verkeerde dag­grens
+// rekenden. Een expliciete Railway TZ-env overschrijft dit desgewenst nog.
+process.env.TZ = process.env.TZ || 'Europe/Amsterdam';
+
 process.on('uncaughtException', (err) => {
   console.error('[FATAL] Uncaught Exception:', err);
 });
@@ -36,7 +43,13 @@ const { startDossierRefreshJob } = require('./jobs/dossierRefreshCron');
 const { backendConfig, hasSupabaseConfig } = require('./config');
 const { requireAuth } = require('./middleware/auth');
 const { requireReviewer } = require('./middleware/requireReviewer');
+const { requireActiveSubscription } = require('./middleware/requireActiveSubscription');
+const {
+  getAuthenticatedUserContext,
+  assertProjectReviewAccess,
+} = require('./services/authContextService');
 const tenantRoutes = require('./routes/tenant.routes');
+const billingRoutes = require('./routes/billingRoutes');
 
 dotenv.config();
 
@@ -70,17 +83,32 @@ type EvidenceRow = {
 let supabaseClient: any | null = null;
 
 app.use(cors());
+// Lemon-Squeezy-webhook vóór de globale JSON-parser: de HMAC-handtekening wordt
+// over de RUWE body berekend, dus deze route krijgt een Buffer (express.raw).
+app.use('/api/billing', express.raw({ type: '*/*' }), billingRoutes);
 app.use(express.json());
 app.use('/api/v1/tenants', tenantRoutes);
 app.use('/api/wkb-evidence', requireAuth, evidenceRoutes);
-app.use('/api/wkb-dossier', requireAuth, dossierRoutes);
+// requireActiveSubscription is een betaalmuur die alleen actief is met
+// ENFORCE_SUBSCRIPTION=true (standaard uit → no-op). Op de betaalde acties
+// (dossier-export en STAM/DSO-melding), náást de rol-gate.
+app.use('/api/wkb-dossier', requireAuth, requireActiveSubscription, dossierRoutes);
 app.use('/api/erp/afas', afasRoutes);
 app.use('/api/integrations/erp', erpRoutes);
 app.use('/api/integrations/exact-online', exactRoutes);
-app.use('/api/kik', kikRoutes);
-app.use('/api/integrations/kik', kikRoutes);
-app.use('/api/stam', requireAuth, requireReviewer, stamRoutes);
-app.use('/api/integrations/dso', dsoRoutes);
+// Was publiek gemount met de aanname 'eigen API-key-auth', maar die auth stond
+// nergens in kikRoutes → /borgingsplan lekte het borgingsplan en /evidence +
+// /sync-evidence accepteerden bewijs zonder token. Nu achter requireAuth (zelfde
+// gat als /api/integrations/dso, audit juli '26). De frontend stuurt de
+// Supabase-JWT mee (services/kik.ts).
+app.use('/api/kik', requireAuth, kikRoutes);
+app.use('/api/integrations/kik', requireAuth, kikRoutes);
+app.use('/api/stam', requireAuth, requireReviewer, requireActiveSubscription, stamRoutes);
+// Was publiek gemount met de aanname 'eigen API-key-auth', maar die auth stond
+// nergens in de handlers → iedereen kon STAM-bouw/gereedmeldingen indienen. Nu
+// achter requireAuth + requireReviewer (zelfde niveau als /api/stam). De frontend
+// gebruikt deze alias niet; alleen /api/stam en /api/dso/stam/* worden aangeroepen.
+app.use('/api/integrations/dso', requireAuth, requireReviewer, dsoRoutes);
 app.use('/api/integrations/bim', requireAuth, bimRoutes);
 app.use('/api/wkb-ai/ocr', requireAuth, ocrRoutes);
 app.use('/api/review', requireAuth, reviewRoutes);
@@ -322,6 +350,13 @@ app.get('/api/admin/ai-stats', requireAuth, async (req: Request, res: Response) 
 app.get('/api/dossier/:projectId', requireAuth, async (req: Request, res: Response) => {
   try {
     const projectId = String(req.params.projectId ?? '');
+
+    // Project-scope: alleen de eigenaar/kwaliteitsborger van dit project mag het
+    // dossier (met GPS, foto-paden en notities) lezen — voorkomt IDOR waarbij een
+    // willekeurige ingelogde gebruiker door projectId's kan itereren.
+    const context = await getAuthenticatedUserContext(req.headers.authorization);
+    await assertProjectReviewAccess(projectId, context);
+
     const supabase = getSupabaseAdminClient();
 
     const { data: evidence, error } = await supabase
@@ -338,13 +373,19 @@ app.get('/api/dossier/:projectId', requireAuth, async (req: Request, res: Respon
   } catch (error: any) {
     const message = error?.message ?? 'Kon Wkb-dossier niet genereren.';
     console.error('Fout bij ophalen dossier:', message);
-    res.status(message.includes('configuratie') ? 503 : 500).json({ error: message });
+    const status = error?.statusCode ?? (message.includes('configuratie') ? 503 : 500);
+    res.status(status).json({ error: message });
   }
 });
 
 app.get('/api/dossier/:projectId/export', requireAuth, requireReviewer, async (req: Request, res: Response) => {
   try {
     const projectId = String(req.params.projectId ?? '');
+
+    // Project-scope naast de reviewer-rolcheck: alleen eigen projecten exporteren.
+    const context = await getAuthenticatedUserContext(req.headers.authorization);
+    await assertProjectReviewAccess(projectId, context);
+
     const dossierType = (req.query.type as string) ?? 'bevoegd-gezag';
     const aannemer = (req.query.aannemer as string) ?? '—';
     const adres = (req.query.adres as string) ?? '—';
@@ -488,7 +529,8 @@ app.get('/api/dossier/:projectId/export', requireAuth, requireReviewer, async (r
   } catch (error: any) {
     const message = error?.message ?? 'Kon PDF dossier niet genereren.';
     console.error('Fout bij exporteren PDF:', message);
-    res.status(message.includes('configuratie') ? 503 : 500).json({ error: message });
+    const status = error?.statusCode ?? (message.includes('configuratie') ? 503 : 500);
+    res.status(status).json({ error: message });
   }
 });
 
@@ -549,7 +591,11 @@ app.post('/api/ai/validate', requireAuth, async (req: Request, res: Response) =>
   }
 });
 
-app.post('/api/dso/stam/submit', requireAuth, requireReviewer, async (req: Request, res: Response) => {
+// STAM/DSO-melding is een betaalde actie → zelfde betaalmuur als /api/stam
+// (zie docs/commerce/lemon-squeezy-go-live.md §6). requireActiveSubscription is
+// env-gated (ENFORCE_SUBSCRIPTION); met de muur uit een no-op. De frontend stuurt
+// de tenant al mee via de x-company-id-header (services/dso.ts).
+app.post('/api/dso/stam/submit', requireAuth, requireReviewer, requireActiveSubscription, async (req: Request, res: Response) => {
   try {
     const payload = mapToStamPayload(req.body ?? {});
     const response = await submitToDSO(payload);

@@ -246,10 +246,14 @@ export async function getProjectMilestones(
 /** Lees de KYP-koppeling voor één SpeeQ-project (of null). */
 export async function getProjectMapping(
   speeqProjectId: string,
-): Promise<{ kypProjectId: number; kypProjectName: string | null } | null> {
+): Promise<{
+  kypProjectId: number;
+  kypProjectName: string | null;
+  writebackEnabled: boolean;
+} | null> {
   const { data, error } = await supabase
     .from('kyp_project_mapping')
-    .select('kyp_project_id, kyp_project_name')
+    .select('kyp_project_id, kyp_project_name, writeback_enabled')
     .eq('speeq_project_id', speeqProjectId)
     .maybeSingle();
 
@@ -257,6 +261,7 @@ export async function getProjectMapping(
   return {
     kypProjectId: data.kyp_project_id as number,
     kypProjectName: (data.kyp_project_name as string) ?? null,
+    writebackEnabled: !!data.writeback_enabled,
   };
 }
 
@@ -416,5 +421,242 @@ export async function getCachedPlanning(
     dateFinished: (row.date_finished as string) ?? null,
     responsible: (row.responsible as string) ?? null,
     status: (row.status as KypMilestoneStatus) ?? 'gepland',
+  }));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V2 — status-terugmelding (write-back)
+//
+// Eén minimale, expliciet geaccordeerde write-back: alleen het statusveld
+// (dateFinished) van een KYP-activiteit. Nooit planning/documenten/structuren.
+// Per gekoppeld project opt-in (default uit); elke poging gaat in de audit-log.
+// Zie docs/integraties/KYP-API.md (V2).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type WritebackActie = 'gereed_melden' | 'heropenen';
+
+/** Payload die we naar KYP sturen — uitsluitend het statusveld. */
+export interface WritebackPayload {
+  dateFinished: string | null;
+}
+
+/**
+ * Bouwt de KYP-PUT-payload puur op. Gereed-melden → dateFinished gevuld;
+ * heropenen → null. `nu` is injecteerbaar voor deterministische tests.
+ */
+export function buildWritebackPayload(
+  actie: WritebackActie,
+  nu: Date = new Date(),
+): WritebackPayload {
+  return {
+    dateFinished: actie === 'gereed_melden' ? nu.toISOString() : null,
+  };
+}
+
+/**
+ * Eén geauthenticeerde PUT naar de KYP-REST-API. Gooit nooit — Result terug.
+ * Schrijft uitsluitend de meegegeven body (in de praktijk alleen dateFinished).
+ */
+async function kypPut<T = unknown>(
+  baseUrl: string,
+  token: string,
+  path: string,
+  body: unknown,
+): Promise<Result<{ httpStatus: number; data: T | null }>> {
+  const url = `${baseUrl.replace(/\/+$/, '')}${path}`;
+  try {
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      return {
+        ok: false,
+        error: 'KYP-token geweigerd (401/403). Controleer het token en de Projectmanager-rol.',
+      };
+    }
+    if (!res.ok) {
+      return { ok: false, error: `KYP gaf status ${res.status}.` };
+    }
+
+    let data: T | null = null;
+    try {
+      data = (await res.json()) as T;
+    } catch {
+      data = null; // sommige PUT's geven geen body terug
+    }
+    return { ok: true, data: { httpStatus: res.status, data } };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'onbekende netwerkfout';
+    return { ok: false, error: `KYP onbereikbaar: ${msg}` };
+  }
+}
+
+/**
+ * Koppel een SpeeQ-controlepunt aan een KYP-activiteit (statusmapping).
+ * Eén mapping per (project, controlepunt). RLS staat dit toe voor ADMIN/WV.
+ */
+export async function mapAction(args: {
+  speeqProjectId: string;
+  speeqControlepuntId: string;
+  kypProjectId: number;
+  kypActivityId: number;
+}): Promise<Result> {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from('kyp_status_mapping').upsert(
+    {
+      speeq_project_id: args.speeqProjectId,
+      speeq_controlepunt_id: args.speeqControlepuntId,
+      kyp_project_id: args.kypProjectId,
+      kyp_activity_id: args.kypActivityId,
+      created_by: user?.id ?? null,
+    },
+    { onConflict: 'speeq_project_id,speeq_controlepunt_id' },
+  );
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+/** Schrijf één regel naar de write-back audit-log (faalt nooit hard). */
+async function logWriteback(row: {
+  speeqProjectId: string;
+  speeqControlepuntId: string;
+  kypProjectId: number;
+  kypActivityId: number;
+  actie: WritebackActie;
+  status: 'gelukt' | 'mislukt';
+  httpStatus: number | null;
+  foutmelding: string | null;
+  userId: string | null;
+}): Promise<void> {
+  try {
+    await supabase.from('kyp_writeback_log').insert({
+      speeq_project_id: row.speeqProjectId,
+      speeq_controlepunt_id: row.speeqControlepuntId,
+      kyp_project_id: row.kypProjectId,
+      kyp_activity_id: row.kypActivityId,
+      actie: row.actie,
+      status: row.status,
+      http_status: row.httpStatus,
+      foutmelding: row.foutmelding,
+      uitgevoerd_door: row.userId,
+    });
+  } catch {
+    // Een gefaalde log mag de flow nooit blokkeren.
+  }
+}
+
+/**
+ * Meld de status van een gekoppeld controlepunt terug naar KYP.
+ *
+ * Gates (alle moeten kloppen, anders géén schrijfpoging):
+ *   1. Actieve KYP-config met token.
+ *   2. Project is gekoppeld én write-back staat per project AAN (opt-in).
+ *   3. Er is een statusmapping controlepunt → KYP-activiteit.
+ *
+ * De UI vraagt de gebruiker vooraf om bevestiging; deze functie schrijft nooit
+ * ongevraagd. Elke poging (gelukt/mislukt) gaat in kyp_writeback_log. Een
+ * mislukte terugmelding blokkeert de SpeeQ-workflow niet.
+ */
+export async function pushStatus(args: {
+  speeqProjectId: string;
+  speeqControlepuntId: string;
+  actie: WritebackActie;
+  nu?: Date;
+}): Promise<Result<{ httpStatus: number }>> {
+  const config = await getKypConfig();
+  if (!config) {
+    return { ok: false, error: 'Geen actief KYP-token ingesteld.' };
+  }
+
+  const mapping = await getProjectMapping(args.speeqProjectId);
+  if (!mapping) {
+    return { ok: false, error: 'Dit project is nog niet aan een KYP-project gekoppeld.' };
+  }
+  if (!mapping.writebackEnabled) {
+    return { ok: false, error: 'Terugmelden naar KYP staat uit voor dit project.' };
+  }
+
+  const { data: statusMap, error: mapErr } = await supabase
+    .from('kyp_status_mapping')
+    .select('kyp_project_id, kyp_activity_id')
+    .eq('speeq_project_id', args.speeqProjectId)
+    .eq('speeq_controlepunt_id', args.speeqControlepuntId)
+    .maybeSingle();
+
+  if (mapErr || !statusMap) {
+    return { ok: false, error: 'Geen KYP-actie gekoppeld aan dit controlepunt.' };
+  }
+
+  const kypProjectId = statusMap.kyp_project_id as number;
+  const kypActivityId = statusMap.kyp_activity_id as number;
+  const payload = buildWritebackPayload(args.actie, args.nu);
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  const res = await kypPut(
+    config.baseUrl,
+    config.token,
+    `/projects/${kypProjectId}/activities/${kypActivityId}`,
+    payload,
+  );
+
+  await logWriteback({
+    speeqProjectId: args.speeqProjectId,
+    speeqControlepuntId: args.speeqControlepuntId,
+    kypProjectId,
+    kypActivityId,
+    actie: args.actie,
+    status: res.ok ? 'gelukt' : 'mislukt',
+    httpStatus: res.ok ? res.data.httpStatus : null,
+    foutmelding: res.ok ? null : res.error,
+    userId: user?.id ?? null,
+  });
+
+  if (!res.ok) return res;
+  return { ok: true, data: { httpStatus: res.data.httpStatus } };
+}
+
+/** Eén regel uit de write-back-log (voor het audit-overzicht in de UI). */
+export interface WritebackLogEntry {
+  speeqControlepuntId: string | null;
+  kypActivityId: number;
+  actie: WritebackActie;
+  status: 'gelukt' | 'mislukt';
+  httpStatus: number | null;
+  foutmelding: string | null;
+  uitgevoerdAt: string | null;
+}
+
+/** Lees de write-back-log van een project (nieuwste eerst). */
+export async function getWritebackLog(
+  speeqProjectId: string,
+): Promise<WritebackLogEntry[]> {
+  const { data, error } = await supabase
+    .from('kyp_writeback_log')
+    .select(
+      'speeq_controlepunt_id, kyp_activity_id, actie, status, http_status, foutmelding, uitgevoerd_at',
+    )
+    .eq('speeq_project_id', speeqProjectId)
+    .order('uitgevoerd_at', { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((row) => ({
+    speeqControlepuntId: (row.speeq_controlepunt_id as string) ?? null,
+    kypActivityId: row.kyp_activity_id as number,
+    actie: row.actie as WritebackActie,
+    status: row.status as 'gelukt' | 'mislukt',
+    httpStatus: (row.http_status as number) ?? null,
+    foutmelding: (row.foutmelding as string) ?? null,
+    uitgevoerdAt: (row.uitgevoerd_at as string) ?? null,
   }));
 }

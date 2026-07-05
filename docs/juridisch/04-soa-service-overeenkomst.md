@@ -49,19 +49,26 @@ Bij strijdigheid prevaleert deze SOA boven de algemene voorwaarden.
 | Onboarding | [ONBOARDING_TYPE] (remote / on-site) |
 | Support | [SUPPORT_NIVEAU] (e-mail / prio / dedicated) |
 
+<!-- [CONCEPT juli 2026 — Johnny reviewen. SLA-tijden bewust afgestemd op een
+     solo-leverancier: beloof niet wat één persoon niet kan waarmaken.] -->
+
 ## Artikel 3 — Service Levels (SLA)
+
+**Kantoortijden** in dit artikel: werkdagen (ma–vr, excl. NL-feestdagen) 09:00–17:00.
+Aangekondigde afwezigheid (vakantie) wordt vooraf gemeld met een vervangende
+reactietermijn; de infrastructuur draait onbemand door.
 
 | Metriek | Doelstelling |
 |---|---|
-| Uptime productie-omgeving | **99,5% per maand** |
-| Eerste reactie support (kantoortijden) | < 4 werkuren |
-| Eerste reactie support (Enterprise) | < 1 werkuur |
-| Resolutie kritieke storing (P1) | < 8 werkuren |
-| Resolutie hoge prioriteit (P2) | < 2 werkdagen |
-| Resolutie normaal (P3) | < 5 werkdagen |
+| Uptime productie-omgeving | **99,5% per maand** (managed infra: Railway/Vercel/Supabase) |
+| Eerste reactie support (kantoortijden) | < 1 werkdag |
+| Eerste reactie support (Enterprise) | < 4 werkuren |
+| Resolutie kritieke storing (P1) | Inspanningsverplichting: aanpak binnen 1 werkdag. Storingen bij de managed-infra-leveranciers volgen hún hersteltijd |
+| Resolutie hoge prioriteit (P2) | < 3 werkdagen |
+| Resolutie normaal (P3) | Best effort, richttijd < 10 werkdagen |
 | Onderhoudsvensters | Aangekondigd ≥ 48u vooraf, bij voorkeur 22:00–06:00 NL |
 | Back-up frequentie | Dagelijks + 7-daagse point-in-time recovery |
-| Data-export op verzoek | Binnen 5 werkdagen |
+| Data-export | **Self-service in de app op elk moment** (dossier-JSON + PDF's); volledige gebundelde export op verzoek < 5 werkdagen |
 
 **Definitie kritieke storing (P1):** systeem volledig onbereikbaar voor alle gebruikers van Klant gedurende > 30 minuten.
 
@@ -85,8 +92,8 @@ Credit aanvragen binnen 30 dagen via info@speesolutions.com.
 
 | Niveau | Inhoud |
 |---|---|
-| **Pro support** | E-mail support op werkdagen 09:00–17:00, reactie < 4 werkuren |
-| **Enterprise support** | E-mail + telefoon, prio-lijn, reactie < 1 werkuur, dedicated contactpersoon |
+| **Basis / Professional support** | E-mail support op werkdagen 09:00–17:00, eerste reactie < 1 werkdag |
+| **Enterprise support** | E-mail + telefoon, prio-lijn, eerste reactie < 4 werkuren, dedicated contactpersoon |
 
 Support omvat **geen** training, consultancy, of inhoudelijke Wkb-advisering. Dit is op offerte beschikbaar à € 125/uur.
 
@@ -95,7 +102,7 @@ Support omvat **geen** training, consultancy, of inhoudelijke Wkb-advisering. Di
 1. Prijzen zijn **exclusief BTW**.
 2. **Facturatie:** maandelijks vooraf óf jaarlijks vooruit (2 maanden gratis bij jaarbetaling).
 3. **Betalingstermijn:** 14 dagen na factuurdatum.
-4. Betaalmethoden: automatische incasso (SEPA), iDEAL, bankoverschrijving, creditcard via Mollie/Stripe.
+4. Betaling verloopt via Lemon Squeezy als _Merchant of Record_ (factureert namens Leverancier en draagt de BTW af); betaalmethoden o.a. iDEAL, creditcard en bankoverschrijving.
 5. **Prijsindexatie:** jaarlijks per 1 januari volgens CBS dienstenprijsindex, maximaal +5%.
 6. Wezenlijke prijswijzigingen worden 60 dagen vooraf aangekondigd; Klant heeft opzegrecht tegen ingangsdatum.
 
@@ -105,7 +112,31 @@ Support omvat **geen** training, consultancy, of inhoudelijke Wkb-advisering. Di
 2. Na initiële looptijd: maandelijks opzegbaar per kalendermaand.
 3. **Opzegging:** via e-mail aan info@speesolutions.com of via account-paneel.
 4. Bij tussentijdse opzegging door Klant tijdens de initiële looptijd zonder toerekenbare tekortkoming Leverancier: resterende termijnen verschuldigd.
-5. Bij beëindiging: data-export binnen 5 werkdagen na verzoek; vernietiging binnen 60 dagen na export.
+5. Bij beëindiging: Klant kan op elk moment zelf een export maken in de app; een volledige gebundelde export volgt op verzoek binnen 5 werkdagen. Vernietiging binnen 60 dagen na export.
+
+<!-- [CONCEPT juli 2026 — Johnny reviewen. Dit artikel beantwoordt het #1
+     koop-bezwaar bij een eenmanszaak: "wat als de leverancier wegvalt?". Laat de
+     bewaartermijn/escrow-keuze door een jurist bevestigen vóór verzending.] -->
+
+## Artikel 7a — Continuïteit en data-eigendom
+
+1. **Data-eigendom.** Alle door Klant vastgelegde gegevens (foto's, dossiers,
+   metadata) zijn en blijven eigendom van Klant. Leverancier verkrijgt hierop geen
+   eigendoms- of gebruiksrecht buiten het leveren van de Dienst.
+2. **Self-service export.** Klant kan te allen tijde, zonder tussenkomst van
+   Leverancier, zijn projectgegevens exporteren via de app (dossier-JSON + PDF's).
+3. **Continuïteit bij wegvallen Leverancier.** Bij discontinuering van de Dienst,
+   staking van de onderneming of langdurige verhindering van Leverancier geldt:
+   a. Leverancier (of diens rechtsopvolger/nabestaanden) stelt Klant hiervan zo
+      spoedig mogelijk op de hoogte;
+   b. Klant behoudt gedurende ten minste **3 maanden** lees- en exporttoegang tot
+      zijn gegevens, dan wel ontvangt binnen die termijn een volledige export;
+   c. de productie-infrastructuur draait op managed diensten van derden
+      (Railway, Vercel, Supabase), zodat de gegevens niet afhankelijk zijn van
+      één werkplek van Leverancier.
+4. **Escrow (optioneel, op verzoek Enterprise).** Op verzoek kan een broncode- en
+   data-escrowregeling bij een onafhankelijke derde worden overeengekomen tegen
+   meerprijs.
 
 ## Artikel 8 — Verplichtingen Klant
 

@@ -25,7 +25,7 @@ Je wil alles. Dat snap ik. Maar alles tegelijk = niets goed.
 **Wat:**
 Stuur 3 aannemers die je persoonlijk kent een mail met deze structuur:
 - Wie je bent, wat SpeeQ is (2 zinnen)
-- Wat ze krijgen: 12 maanden Pro voor Team-prijs (€149 i.p.v. €299)
+- Wat ze krijgen: founder-deal — 12 maanden Basis à €149 i.p.v. €299/mnd
 - Wat jij terugkrijgt: testimonial + logo op website
 - "Heb je 20 minuten deze week voor een demo?"
 
@@ -68,7 +68,7 @@ Je hebt de Stitch-prompt al af. Vandaag:
 
 **Tegen Claude zeggen:** "help mij juridische pack opzetten voor SpeeQ"
 
-**Resultaat:** Je kunt elke Pro-klant binnen 5 min een DPA mailen.
+**Resultaat:** Je kunt elke betalende klant binnen 5 min een DPA mailen.
 
 ## Vrijdag — Continuïteit
 

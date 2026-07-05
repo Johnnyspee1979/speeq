@@ -2,11 +2,11 @@ export const nl: Record<string, string> = {
 
   // ── Navigatie ──────────────────────────────────────────────────────────────
   'nav.camera':        'Camera',
-  'nav.dossier':       'Dossier',
+  'nav.dossier':       'Projectfoto\'s',
   'nav.tekening':      'Tekening',
-  'nav.review':        'Review',
+  'nav.review':        'Beoordeling',
   'nav.kaart':         'GPS Kaart',
-  'nav.checklist':     'Checklist',
+  'nav.checklist':     'Borgingslijst',
   'nav.stickers':      'QR-stickers',
   'nav.taken':         'Taakverdeling',
   'nav.dashboard':     'Dashboard',

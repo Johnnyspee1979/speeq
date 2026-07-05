@@ -51,6 +51,10 @@ import { fetchWeather, type WeatherSnapshot } from '../services/WeatherService';
 import VoiceNoteButton from './VoiceNoteButton';
 import ContextForm, { defaultContextData, type ContextData } from './ContextForm';
 import { checkImageSharpnessLocal } from '../services/EdgeAIValidation';
+import {
+  searchControlepunten,
+  type Controlepunt,
+} from '../services/ControlepuntBibliotheekService';
 import { createEvidenceHash, createEvidenceId } from '../services/evidenceIntegrity';
 import { validateCaptureOnDevice } from '../services/aiEdge';
 import { evaluateLocationSecurity } from '../services/LocationSecurityService';
@@ -419,6 +423,29 @@ export default function CameraView({
     () => findWkbTaskTemplateByInspectionPointId(inspectionPointId)?.categoryId,
     [inspectionPointId]
   );
+  // Controlepunt-bibliotheek: stelt gestandaardiseerde namen voor terwijl de
+  // vakman zijn veldnotitie typt ("scheurtje" → tik "Scheurvorming"). De
+  // discipline van het borgingspunt versmalt de suggesties; 'STRUCTURAL' is een
+  // alias voor de 'BOUW'-categorie.
+  const controlepuntCategorie = useMemo<Controlepunt['categorie'] | undefined>(() => {
+    const known: Controlepunt['categorie'][] = [
+      'BOUW',
+      'BOUWFYSICA',
+      'INSTALLATIE',
+      'ELEKTRA',
+      'BRANDVEILIGHEID',
+      'AFBOUW_SCHILDER',
+    ];
+    if (activeCategoryId === 'STRUCTURAL') return 'BOUW';
+    return known.find((c) => c === activeCategoryId);
+  }, [activeCategoryId]);
+  const controlepuntSuggestions = useMemo<Controlepunt[]>(() => {
+    const q = fieldNote.trim();
+    if (q.length < 2) return [];
+    const hits = searchControlepunten(q, { categorie: controlepuntCategorie, limit: 4 });
+    // Verberg de rij zodra de notitie al exact de standaardnaam is.
+    return hits.filter((c) => c.naam.toLowerCase() !== q.toLowerCase());
+  }, [fieldNote, controlepuntCategorie]);
   const activeTimerConfig = activeTask?.timerConfig;
   const usesNen1006TimerOverlay = isNen1006TimerConfig(activeTimerConfig);
   const usesNen1078TimerOverlay = isNen1078TimerConfig(activeTimerConfig);
@@ -2351,6 +2378,22 @@ export default function CameraView({
           <VoiceNoteButton onResult={(text) => setFieldNote(text)} />
         </View>
 
+        {/* Controlepunt-suggesties: tik een gestandaardiseerde naam aan */}
+        {controlepuntSuggestions.length > 0 ? (
+          <View style={styles.controlepuntSuggestRow}>
+            {controlepuntSuggestions.map((c) => (
+              <TouchableOpacity
+                key={c.id}
+                style={styles.controlepuntSuggestChip}
+                onPress={() => setFieldNote(c.naam)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.controlepuntSuggestChipText}>{c.naam}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
+
         {/* Primary capture button */}
         {!usesStructuredPressureTestOverlay ? (
           <TouchableOpacity
@@ -4092,6 +4135,27 @@ const createStyles = (theme: { name?: string; colors: Record<string, string> }) 
       fontSize: 15,
       minHeight: 60,
       textAlignVertical: 'top',
+    },
+    // Controlepunt-suggesties
+    controlepuntSuggestRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginTop: -6,
+      marginBottom: 14,
+    },
+    controlepuntSuggestChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: theme.colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+    },
+    controlepuntSuggestChipText: {
+      color: theme.colors.textPrimary,
+      fontSize: 13,
+      fontWeight: '600',
     },
     // Primary capture button
     webCaptureBtn: {

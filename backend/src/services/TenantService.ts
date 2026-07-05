@@ -1,5 +1,17 @@
 const { getSupabaseAdminClient } = require('./supabaseAdmin');
 
+import type { AbonnementStatus, TenantAbonnement } from './entitlementService';
+
+/** Velden die de webhook op een tenant wegschrijft. */
+export interface AbonnementUpdate {
+  status: AbonnementStatus;
+  plan?: string | null;
+  geldigTot?: string | null;
+  proefEindigtAt?: string | null;
+  lsCustomerId?: string | null;
+  lsSubscriptionId?: string | null;
+}
+
 export interface TenantConfig {
   companyId: string;
   name: string;
@@ -274,6 +286,84 @@ class TenantService {
       throw new Error(`Kon tenant niet bijwerken: ${error.message}`);
     }
     return rowToConfig(data);
+  }
+
+  /**
+   * Leest de abonnementstatus van een tenant (voor de entitlement-gate).
+   * Fail-closed: bij een onbekende tenant of infra-fout → status 'geen', zodat
+   * de gate geen toegang geeft. (De `demo`-tenant geldt als actief voor lokaal.)
+   */
+  static async getAbonnement(companyId: string): Promise<TenantAbonnement> {
+    const id = companyId.toLowerCase();
+    try {
+      const supabase = getSupabaseAdminClient();
+      const { data, error } = await supabase
+        .from(TABLE)
+        .select('abonnement_status, abonnement_plan, abonnement_geldig_tot')
+        .eq('company_id', id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[TenantService] getAbonnement error', error);
+        if (id === 'demo') return { status: 'actief', plan: 'demo', geldigTot: null };
+        return { status: 'geen', plan: null, geldigTot: null };
+      }
+      if (data) {
+        return {
+          status: (data.abonnement_status ?? 'geen') as AbonnementStatus,
+          plan: data.abonnement_plan ?? null,
+          geldigTot: data.abonnement_geldig_tot ?? null,
+        };
+      }
+    } catch (err) {
+      console.error('[TenantService] getAbonnement supabase unavailable', err);
+    }
+    if (id === 'demo') return { status: 'actief', plan: 'demo', geldigTot: null };
+    return { status: 'geen', plan: null, geldigTot: null };
+  }
+
+  /**
+   * Schrijft de abonnementvelden weg (door de geverifieerde webhook). Matcht op
+   * company_id; valt terug op ls_subscription_id als de tenant-id ontbreekt of
+   * niet gevonden wordt. Gooit als er geen rij gematcht kon worden.
+   */
+  static async updateAbonnement(
+    tenantId: string | null,
+    update: AbonnementUpdate
+  ): Promise<void> {
+    const supabase = getSupabaseAdminClient();
+    const row = {
+      abonnement_status: update.status,
+      abonnement_plan: update.plan ?? null,
+      abonnement_geldig_tot: update.geldigTot ?? null,
+      proef_eindigt_at: update.proefEindigtAt ?? null,
+      ls_customer_id: update.lsCustomerId ?? null,
+      ls_subscription_id: update.lsSubscriptionId ?? null,
+      abonnement_bijgewerkt_at: new Date().toISOString(),
+    };
+
+    if (tenantId && tenantId.trim()) {
+      const { data, error } = await supabase
+        .from(TABLE)
+        .update(row)
+        .eq('company_id', tenantId.trim().toLowerCase())
+        .select('company_id');
+      if (error) throw new Error(`Kon abonnement niet bijwerken: ${error.message}`);
+      if (data && data.length > 0) return;
+    }
+
+    // Fallback: match op de subscription-id (bv. bij vervolg-events zonder custom_data).
+    if (update.lsSubscriptionId) {
+      const { data, error } = await supabase
+        .from(TABLE)
+        .update(row)
+        .eq('ls_subscription_id', update.lsSubscriptionId)
+        .select('company_id');
+      if (error) throw new Error(`Kon abonnement niet bijwerken: ${error.message}`);
+      if (data && data.length > 0) return;
+    }
+
+    throw new Error('Geen tenant gevonden voor dit abonnement-event.');
   }
 }
 

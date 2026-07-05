@@ -32,7 +32,7 @@ die van je concurrent in dezelfde tabel staan.
 Ik zoek 3 founder-klanten die hun ervaring willen delen. In ruil daarvoor
 krijg jij:
 
-- 12 maanden Pro-pakket voor de Team-prijs (€149 i.p.v. €299/mnd)
+- 12 maanden het Basis-pakket voor €149 i.p.v. €299/mnd (founder-deal)
 - Persoonlijke onboarding (Zoom, 1 uur) — ik regel je migratie van je
   huidige tool, jij stuurt één AVG-mail naar je leverancier
 - Vaste lijn naar mij voor support de eerste 6 maanden

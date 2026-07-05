@@ -1,5 +1,25 @@
 import { BACKEND_URL } from '../config/app';
+import { supabase } from '../lib/supabase';
+import { getActiveTenantId } from '../config/tenant';
 import type { CloudEvidence } from './cloudEvidenceService';
+
+// De KiK-routes zitten nu achter requireAuth; stuur de Supabase-JWT mee als
+// Bearer-token (zelfde patroon als services/dso.ts).
+const authHeaders = async (
+  base: Record<string, string> = {}
+): Promise<Record<string, string>> => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) {
+    throw new Error('Je bent niet (meer) ingelogd. Log opnieuw in om naar KiK te synchroniseren.');
+  }
+  const headers: Record<string, string> = { ...base, Authorization: `Bearer ${token}` };
+  const companyId = getActiveTenantId();
+  if (companyId) headers['x-company-id'] = companyId;
+  return headers;
+};
 
 const readErrorMessage = async (response: Response, fallback: string) => {
   try {
@@ -24,7 +44,7 @@ export const pushApprovedEvidenceToKik = async (
 
   const response = await fetch(`${BACKEND_URL}/api/kik/evidence`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       projectId,
       evidence: evidence.map((item) => ({

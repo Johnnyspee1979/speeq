@@ -1,7 +1,7 @@
 # Landing-page spec — speesolutions.com/speeq
 
 > **Wat dit is:** complete paste-klare specificatie voor de SpeeQ-landing in Framer (of Webflow). Sectie voor sectie: copy, kleuren, fonts, afmetingen, beeld-prompts.
-> **Versie:** 1.0 · 2026-05-20
+> **Versie:** 1.1 · 2026-07-05 — prijssectie bijgewerkt naar de prijsladder van juli 2026 (Basis €299 / Professional €599 / Enterprise op maat)
 > **Bouwtijd:** geschat 4-6 uur in Framer als alle assets klaarliggen.
 
 ---
@@ -20,7 +20,7 @@
 | `text/secondary` | `#2F2A25` | Subtitels |
 | `text/muted` | `#575B5F` | Captions, kleine labels |
 | `accent/forest` | `#1F4D3A` | "Gegarandeerd"-marker, succes-badges |
-| `accent/terracotta` | `#F88363` | Founder-deal badge, één primaire CTA-kleur |
+| `accent/terracotta` | `#F88363` | "Aanbevolen"-badge, één primaire CTA-kleur |
 | `border/warm` | `#C9B099` | Alle borders en dividers |
 
 ### Fonts (in Framer toevoegen via Google Fonts)
@@ -94,7 +94,7 @@ De werkvoorbereider beoordeelt op kantoor. Aan einde project:
 
 **Trust-strip (klein, 16px boven CTA, text/muted, 13px Inter):**
 ```
-Eerste 6 maanden directe lijn naar Johnny · Workspace binnen 24 uur · 30 dagen proef
+Eerste 6 maanden directe lijn naar Johnny · Workspace binnen 24 uur · 30 dagen gratis proefproject, geen creditcard
 ```
 
 ### Rechts — beeld

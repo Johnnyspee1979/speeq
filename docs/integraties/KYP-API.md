@@ -100,3 +100,51 @@ anders                        ──>  StatusPill "gepland" (neutral)
 
 Zolang stap 1–3 niet gedaan zijn, toont de planning-kaart een nette lege staat
 met uitleg; er crasht niets.
+
+---
+
+# V2 — status-terugmelding (write-back)
+
+> Onderzoeksdatum: 2026-06-09 · Aanleiding: Ed Controls koppelt nu
+> bidirectioneel met KYP; de terugmelding wordt een verkoopbezwaar.
+
+## Wat V2 toevoegt
+
+Eén minimale, expliciet geaccordeerde write-back: als een gekoppeld
+SpeeQ-controlepunt op **afgerond** gaat, schrijven we de bijbehorende
+KYP-activiteit op **gereed** terug. **Alleen het statusveld** (`dateFinished`).
+Nooit planning, documenten, structuren of verwijderingen.
+
+## Schrijf-endpoint (Swagger)
+
+| Methode | Pad | Doel |
+|---|---|---|
+| PUT | `/projects/{projectId}/activities/{activityId}` | Werk één activiteit bij |
+
+We sturen **uitsluitend** het veld `dateFinished` mee (gevuld = gereed, `null` =
+heropenen). Alle andere velden laten we ongemoeid; KYP behoudt ze. Het endpoint
+vereist dezelfde Bearer-auth en de **Projectmanager**-rol als de leesroutes.
+
+> Blijkt dit endpoint in een latere KYP-versie niet (meer) beschikbaar of niet
+> beperkt tot status, dan valt V2 stil terug op read-only V1 — de write-back is
+> per project **opt-in (default uit)** en blokkeert nooit de SpeeQ-workflow.
+
+## Veiligheidsmodel
+
+- **Opt-in per gekoppeld project** (`kyp_project_mapping.writeback_enabled`,
+  default `false`). Staat het uit → geen enkele schrijfpoging.
+- **Bevestiging per actie** in de UI vóór er iets naar KYP gaat (de service zelf
+  schrijft nooit ongevraagd; de werkvoorbereider drukt bewust op terugmelden).
+- **Statusmapping** (`kyp_status_mapping`): koppelt een SpeeQ-controlepunt aan een
+  KYP-activiteit (`kyp_activity_id`) binnen het gekoppelde project.
+- **Audit-log** (`kyp_writeback_log`): elke poging — wie, wat, wanneer, de
+  KYP-HTTP-status en of het lukte. Mislukt = `status='mislukt'`, het SpeeQ-punt
+  blijft afgerond; opnieuw proberen kan.
+- Het token blijft versleuteld per tenant (zoals V1); nooit in code/git/master-DB.
+
+## Service-uitbreiding
+
+`frontend/src/services/KypService.ts`: `buildWritebackPayload` (puur — alleen
+`dateFinished`), `mapAction` (statusmapping opslaan), `pushStatus` (PUT + log,
+respecteert opt-in), `getWritebackLog`. Tests dekken payload-opbouw, opt-in-gate,
+succes-log en mislukt-log.

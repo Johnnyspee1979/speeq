@@ -72,10 +72,38 @@ const buildInspectionCameraDeepLink = (
   )}`;
 };
 
+// Status-bewuste notificatie-metadata. NEEDS_REVIEW én REJECTED sturen allebei een
+// melding naar de vakman (met eigen tekst + event-type); APPROVED stuurt niets.
+const REVIEW_NOTIFICATION_META = {
+  REJECTED: {
+    eventType: 'evidence.review.rejected',
+    webhookEventType: 'EVIDENCE_REJECTED',
+    pushTitle: 'Wkb foto afgekeurd',
+    pushBody: (inspectionPointId?: string | null) =>
+      inspectionPointId
+        ? `Controlepunt ${inspectionPointId} is afgekeurd. Open de app voor herstel.`
+        : 'Een Wkb-bewijsstuk is afgekeurd. Open de app voor herstel.',
+  },
+  NEEDS_REVIEW: {
+    eventType: 'evidence.review.needs_review',
+    webhookEventType: 'EVIDENCE_NEEDS_REVIEW',
+    pushTitle: 'Wkb foto vraagt aandacht',
+    pushBody: (inspectionPointId?: string | null) =>
+      inspectionPointId
+        ? `Controlepunt ${inspectionPointId} moet worden nagekeken. Open de app.`
+        : 'Een Wkb-bewijsstuk moet worden nagekeken. Open de app.',
+  },
+} as const;
+
+const resolveReviewMeta = (reviewStatus: string) =>
+  reviewStatus === 'NEEDS_REVIEW'
+    ? REVIEW_NOTIFICATION_META.NEEDS_REVIEW
+    : REVIEW_NOTIFICATION_META.REJECTED;
+
 const buildReviewNotificationPayload = (
   input: ReviewNotificationPayloadInput
 ) => ({
-  eventType: 'evidence.review.rejected',
+  eventType: resolveReviewMeta(input.reviewStatus).eventType,
   occurredAt: input.occurredAt ?? new Date().toISOString(),
   evidence: {
     id: input.evidenceId,
@@ -105,7 +133,10 @@ const buildReviewNotificationPayload = (
   },
 });
 
-const fetchWebhookEndpoints = async (projectId: string) => {
+const fetchWebhookEndpoints = async (
+  projectId: string,
+  webhookEventType: string
+) => {
   const supabase = getSupabaseAdminClient();
   const { data, error } = await supabase
     .from('review_webhook_endpoints')
@@ -116,7 +147,7 @@ const fetchWebhookEndpoints = async (projectId: string) => {
     return (data ?? []).filter(
       (item: any) =>
         (!item.project_id || item.project_id === projectId) &&
-        (!item.event_type || item.event_type === 'EVIDENCE_REJECTED')
+        (!item.event_type || item.event_type === webhookEventType)
     );
   }
 
@@ -201,6 +232,7 @@ const upsertNotificationSubscription = async (
 const dispatchReviewNotifications = async (
   input: ReviewNotificationPayloadInput
 ): Promise<ReviewDispatchResult> => {
+  const meta = resolveReviewMeta(input.reviewStatus);
   const payload = buildReviewNotificationPayload(input);
   const result: ReviewDispatchResult = {
     webhooksDelivered: 0,
@@ -210,7 +242,7 @@ const dispatchReviewNotifications = async (
   };
 
   const [webhookEndpoints, pushSubscriptions] = await Promise.all([
-    fetchWebhookEndpoints(input.projectId),
+    fetchWebhookEndpoints(input.projectId, meta.webhookEventType),
     input.evidenceOwnerId
       ? fetchNotificationSubscriptions(input.projectId, input.evidenceOwnerId)
       : Promise.resolve([]),
@@ -220,7 +252,7 @@ const dispatchReviewNotifications = async (
     try {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        'X-Wkb-Event': 'evidence.review.rejected',
+        'X-Wkb-Event': meta.eventType,
       };
 
       if (endpoint.secret) {
@@ -246,10 +278,8 @@ const dispatchReviewNotifications = async (
         'https://exp.host/--/api/v2/push/send',
         {
           to: subscription.expo_push_token,
-          title: 'Wkb foto afgekeurd',
-          body: input.inspectionPointId
-            ? `Controlepunt ${input.inspectionPointId} is afgekeurd. Open de app voor herstel.`
-            : 'Een Wkb-bewijsstuk is afgekeurd. Open de app voor herstel.',
+          title: meta.pushTitle,
+          body: meta.pushBody(input.inspectionPointId),
           data: payload,
         },
         {

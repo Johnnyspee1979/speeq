@@ -22,15 +22,15 @@
 
 ### Pricing (definitief)
 
-| Pakket | Prijs/mnd | Users | Branding | Support |
+| Pakket | Prijs | Projecten | Branding | Support |
 |---|---|---|---|---|
-| **Team** | €149 | tot 5 | SpeeQ + klant-logo verplicht | mail |
-| **Pro** | €299 | tot 15 | volledig eigen branding | mail + telefoon |
-| **Enterprise** | €899+ | onbeperkt | custom + SLA | dedicated |
+| **Basis** | €299/mnd of €2.990/jr | 5 actief, tot 10 app-gebruikers | SpeeQ + klant-logo | mail |
+| **Professional** | €599/mnd of €5.990/jr | 25 actief + KiK/ERP zodra live | volledig eigen branding | mail + telefoon |
+| **Enterprise** | op maat, via contact | onbeperkt | custom + SLA | dedicated |
 
-**Founder-deal (eerste 3 klanten):** 12 maanden Pro voor Team-prijs = €149/mnd.
+**Founder-deal (eerste 10 klanten):** 12 maanden Basis à €149/mnd i.p.v. €299, in ruil voor testimonial + logo.
 
-**Geen Solo-pakket meer** — premium-positionering, instap is Team. Concurrent (STA/Vastlegg/BKapp) zit lager maar zonder eigen database.
+**Geen instap-tier onder €299** — premium-positionering, instap is Basis. Concurrenten (STA/Vastlegg/BKapp) zitten lager, maar zonder eigen database per klant.
 
 ### Architectuur
 
@@ -41,7 +41,7 @@
 | Subdomain per klant (`comcivo.app.speesolutions.com`) | Nog niet — bij klant #5 evalueren |
 | Data-residency | Frankfurt (Supabase) |
 | Backup | Supabase auto-dagelijks, 7 dagen retentie (Pro plan inbegrepen) |
-| SLA | Geen formele SLA — "best effort" (te herzien bij Pro/Enterprise) |
+| SLA | Geen formele SLA — "best effort" (te herzien bij Professional/Enterprise) |
 | Audit-trail | Volledig (BRL-conform) — elke wijziging gelogd |
 | 2FA | Optioneel per user |
 
@@ -64,10 +64,10 @@ LinkedIn / cold-mail (jij stuurt 1-pager)
 DEMO-CALL (20 min Zoom, jij toont app)
   ↓
 TRIAL START (jij maakt workspace handmatig — 30 min)
-  ↓ 30 dagen volledige Pro-toegang gratis
+  ↓ 30 dagen volledige Basis-toegang gratis
 TRIAL EIND
   ↓
-Geen actie van klant = automatische conversie naar 12 maanden Pro
+Geen actie van klant = automatische conversie naar 12 maanden Basis
 (5 dagen vooraf: 5 mails + 5 in-app popups als waarschuwing)
 ```
 
@@ -100,7 +100,7 @@ Per nieuwe keyuser:
 | Optie | Inbegrepen vanaf |
 |---|---|
 | Klant upload eigen logo in instellingen | Alle pakketten verplicht |
-| Klant kiest tussen "alleen SpeeQ-branding" of "eigen branding" | Pro+ |
+| Klant kiest tussen "alleen SpeeQ-branding" of "eigen branding" | Professional+ |
 | Klant verbergt SpeeQ helemaal (white-label) | Enterprise |
 
 ### Users binnen klant-workspace
@@ -119,16 +119,16 @@ Lead (LinkedIn/cold-mail)
   ↓
 Demo-call (20-30 min, jij toont)
   ↓
-Trial-start (30 dagen, Pro-toegang)
+Trial-start (30 dagen, Basis-toegang)
   ↓
-Trial-eind → auto-conversie 12 mnd Pro
+Trial-eind → auto-conversie 12 mnd Basis
 ```
 
 Geen tussenstap "offerte" — pricing is publiek op landingpage, transparant.
 
 ### Trial-conversie (juridisch correct)
 
-- Bij signup verplicht vinkje: *"Ik begrijp dat na 30 dagen trial automatisch een 12-maanden Pro-abonnement à €299/mnd ingaat, tenzij ik vóór dag 25 opzeg."*
+- Bij signup verplicht vinkje: *"Ik begrijp dat na 30 dagen trial automatisch een 12-maanden Basis-abonnement à €299/mnd ingaat, tenzij ik vóór dag 25 opzeg."*
 - 5 dagen vooraf: dagelijks 1 mail + 1 in-app popup
 - Wel-vink = bewijsmateriaal in audit-log
 - Vermeld duidelijk in algemene voorwaarden
@@ -146,7 +146,7 @@ Geen tussenstap "offerte" — pricing is publiek op landingpage, transparant.
 |---|---|
 | In-app | Realtime (foto geüpload, dossier klaar, deadline) |
 | Mail | Klant kiest: alle / alleen kritiek / dagelijkse samenvatting / wekelijks |
-| SMS | Alleen voor kritieke deadlines (Pro+) |
+| SMS | Alleen voor kritieke deadlines (Professional+) |
 
 ### Tools & integraties
 
@@ -208,7 +208,7 @@ Geen tussenstap "offerte" — pricing is publiek op landingpage, transparant.
   - 6× LinkedIn templates (banner + 5 posts) herrenderen
   - `docs/marketing/verzonden/concept-01-abdel.md` aanpassen
   - Juridische PDF's footer-tekst checken
-- [x] **Prijzen aanpassen in alle materialen:** definitief Team €149 / Pro €299 / Enterprise €899
+- [x] **Prijzen aanpassen in alle materialen:** definitief Basis €299 / Professional €599 / Enterprise op maat (besluit juli 2026)
 
 ### B. Auth & tenant (2 weken)
 
@@ -279,9 +279,9 @@ Doel: nieuwe klant in 5 min in plaats van 30.
 
 | Punt | Risico | Mitigatie |
 |---|---|---|
-| Status-pagina privé (Q38=b) | Bij outage kan klant niet inloggen om status te zien | Bij Pro+ ook publieke status overwegen |
+| Status-pagina privé (Q38=b) | Bij outage kan klant niet inloggen om status te zien | Bij Professional+ ook publieke status overwegen |
 | Wachtwoord-reset handmatig (Q35=c) | Jij ziek/weekend = klant kan niet inloggen | Magic-link is primair — reset is edge-case |
-| Geen SLA (Q34=c) | Pro/Enterprise kunnen contract eisen | Bij Enterprise: SLA toevoegen tegen meerprijs |
+| Geen SLA (Q34=c) | Professional/Enterprise kunnen contract eisen | Bij Enterprise: SLA toevoegen tegen meerprijs |
 | Solo afgeschaft | Verlies kleine eenmanszaken | Bewust — premium-positie |
 | Hele bedrijfsdata in handen van 1 persoon | Bij ziekte Johnny: continuïteit? | Bij klant #5: ZZP-back-up regelen |
 

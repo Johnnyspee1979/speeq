@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react-native';
 import {
   DEFAULT_GEVOLGKLASSE,
@@ -37,12 +37,31 @@ export default function WkbOfficialPanel() {
     (check) => check.severity === 'warning' && !check.ok
   ).length;
 
-  const openSource = async (check: WkbOfficialCheck) => {
-    try {
-      await Linking.openURL(check.source.url);
-    } catch (error) {
-      console.error('Kon Wkb-bron niet openen:', error);
+  const openSource = (check: WkbOfficialCheck) => {
+    const title = 'Externe link openen';
+    const message = `Je verlaat SpeeQ om een officiele overheidsbron (${check.source.label}) te bekijken. Wil je doorgaan?`;
+
+    const go = async () => {
+      try {
+        await Linking.openURL(check.source.url);
+      } catch (error) {
+        console.error('Kon Wkb-bron niet openen:', error);
+      }
+    };
+
+    // react-native-web's Alert.alert is een no-op; val op web terug op de
+    // browser-confirm (zelfde pattern als elders in de app).
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm(`${title}\n\n${message}`)) {
+        void go();
+      }
+      return;
     }
+
+    Alert.alert(title, message, [
+      { text: 'Annuleren', style: 'cancel' },
+      { text: 'Doorgaan', onPress: () => { void go(); } },
+    ]);
   };
 
   return (

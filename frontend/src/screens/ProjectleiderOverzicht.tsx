@@ -30,6 +30,9 @@ import { useTheme } from '../theme/ThemeProvider';
 import TenantBrandMark from '../components/TenantBrandMark';
 import { EmptyProjectWizard } from '../components/ui/EmptyProjectWizard';
 import ProjectAanmakenModal from '../components/ProjectAanmakenModal';
+import { populateDemoData, clearDemoData } from '../services/DemoDataService';
+import { useActiveTenantId } from '../hooks/useActiveTenantId';
+import { useWkbAuth } from '../hooks/useWkbAuth';
 // SpeeQ-assets (alleen nog gebruikt op entry-screens; in-app draait op klant-branding).
 const speeqLogoFull = require('../assets/speeq-logo-full.png');
 const speeqQLogo    = require('../assets/speeq-q-logo.png');
@@ -44,6 +47,7 @@ interface EvidenceRow {
   inspection_point_id: string | null;
   media_uri: string | null;
   photo_uri: string | null;
+  exif_hash?: string | null;
   timestamp: string | null;
   ai_status: string | null;
   sync_status: string | null;
@@ -136,7 +140,7 @@ export default function ProjectleiderOverzicht() {
     try {
       const { data } = await supabase
         .from('evidence')
-        .select('id, project_id, inspection_point_id, media_uri, photo_uri, timestamp, ai_status, sync_status, user_id, field_note, latitude, longitude')
+        .select('id, project_id, inspection_point_id, media_uri, photo_uri, exif_hash, timestamp, ai_status, sync_status, user_id, field_note, latitude, longitude')
         .in('project_id', projectIds)
         .order('created_at', { ascending: false })
         .limit(500);
@@ -196,6 +200,7 @@ export default function ProjectleiderOverzicht() {
         detailEvidence={detailEvidence}
         onSelect={handleSelect}
         onProjectUpdated={(updated) => setSelectedProject(updated)}
+        onReload={loadAll}
         theme={theme}
         isDark={isDark}
         totals={totals}
@@ -215,6 +220,7 @@ export default function ProjectleiderOverzicht() {
         evidence={detailEvidence}
         onBack={() => setSelectedProject(null)}
         onProjectUpdated={(updated) => setSelectedProject(updated)}
+        onReload={loadAll}
         theme={theme}
         isDark={isDark}
         isDesktop={false}
@@ -269,12 +275,13 @@ interface DesktopLayoutProps {
   detailEvidence: EvidenceRow[];
   onSelect: (p: Project) => void;
   onProjectUpdated: (p: Project) => void;
+  onReload?: () => void;
   theme: { name?: string; colors: Record<string, string> };
   isDark: boolean;
   totals: Totals;
 }
 
-function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvidence, onSelect, onProjectUpdated, theme, isDark, totals }: DesktopLayoutProps) {
+function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvidence, onSelect, onProjectUpdated, onReload, theme, isDark, totals }: DesktopLayoutProps) {
   const [search, setSearch] = useState('');
   /** Per Johnny 25 mei: "+ Nieuw project" voorop in hero ipv achter modal. */
   const [showCreate, setShowCreate] = useState(false);
@@ -382,6 +389,7 @@ function DesktopLayout({ projects, statsMap, loading, selectedProject, detailEvi
             evidence={detailEvidence}
             onBack={undefined}
             onProjectUpdated={onProjectUpdated}
+            onReload={onReload}
             theme={theme}
             isDark={isDark}
             isDesktop
@@ -603,12 +611,13 @@ interface DetailPanelProps {
   evidence: EvidenceRow[];
   onBack: (() => void) | undefined;
   onProjectUpdated: (p: Project) => void;
+  onReload?: () => void;
   theme: { name?: string; colors: Record<string, string> };
   isDark: boolean;
   isDesktop: boolean;
 }
 
-function DetailPanel({ project, stats, evidence, onBack, onProjectUpdated, theme, isDark, isDesktop }: DetailPanelProps) {
+function DetailPanel({ project, stats, evidence, onBack, onProjectUpdated, onReload, theme, isDark, isDesktop }: DetailPanelProps) {
   // Gebruik centrale rename-helper voor consistente UI updates over alle
   // schermen (projectlijst + header + picker). Fix voor "rename werkt in
   // header maar niet in projectenlijst" (Johnny 24 mei).
@@ -795,7 +804,7 @@ function DetailPanel({ project, stats, evidence, onBack, onProjectUpdated, theme
         </View>
 
         {/* Tab inhoud */}
-        {activeTab === 'bewijs'   && <BewijsTab evidence={evidence} theme={theme} isDark={isDark} projectId={project.id} />}
+        {activeTab === 'bewijs'   && <BewijsTab evidence={evidence} theme={theme} isDark={isDark} projectId={project.id} onReload={onReload} />}
         {activeTab === 'bonnen'   && <BonnenTab projectId={project.id} theme={theme} />}
         {activeTab === 'notities' && <NotitiesTab projectId={project.id} theme={theme} />}
 
@@ -806,16 +815,50 @@ function DetailPanel({ project, stats, evidence, onBack, onProjectUpdated, theme
 
 // ─── Tab: Bewijs ─────────────────────────────────────────────────────────────
 
-function BewijsTab({ evidence, theme, isDark, projectId }: { evidence: EvidenceRow[]; theme: { colors: Record<string, string> }; isDark: boolean; projectId?: string }) {
+function BewijsTab({ evidence, theme, isDark, projectId, onReload }: { evidence: EvidenceRow[]; theme: { colors: Record<string, string> }; isDark: boolean; projectId?: string; onReload?: () => void }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [noteMap, setNoteMap]       = useState<Record<string, string>>({});
   const [savingId, setSavingId]     = useState<string | null>(null);
   const [savedId, setSavedId]       = useState<string | null>(null);
 
+  // ── Demo-data (alleen admin/keyuser/Johnny) ──────────────────────────────
+  const { user: demoUser } = useWkbAuth();
+  const demoTenantId = useActiveTenantId();
+  const canManageDemo =
+    demoUser?.role === 'ADMIN' ||
+    demoUser?.role === 'KEYUSER' ||
+    demoUser?.email === 'johnny@speesolutions.com' ||
+    demoUser?.email === 'johnny@speesolutions.nl';
+  const hasDemoData = useMemo(
+    () => evidence.some((e) => e.exif_hash?.startsWith('DEMO_MARKER')),
+    [evidence],
+  );
+  const [demoBusy, setDemoBusy] = useState(false);
+
+  const handleAddDemo = useCallback(async () => {
+    if (!projectId || !demoTenantId) return;
+    setDemoBusy(true);
+    const ok = await populateDemoData(projectId, demoTenantId);
+    setDemoBusy(false);
+    if (ok) onReload?.();
+  }, [projectId, demoTenantId, onReload]);
+
+  const handleClearDemo = useCallback(async () => {
+    if (!projectId) return;
+    setDemoBusy(true);
+    const ok = await clearDemoData(projectId);
+    setDemoBusy(false);
+    if (ok) onReload?.();
+  }, [projectId, onReload]);
+
   if (evidence.length === 0) {
     return (
       <View style={tabSt.emptyBox}>
-        <EmptyProjectWizard projectId={projectId} />
+        <EmptyProjectWizard
+          projectId={projectId}
+          showDemoOption={canManageDemo}
+          onAddDemo={canManageDemo ? handleAddDemo : undefined}
+        />
       </View>
     );
   }
@@ -833,6 +876,19 @@ function BewijsTab({ evidence, theme, isDark, projectId }: { evidence: EvidenceR
 
   return (
     <View style={{ gap: 8 }}>
+      {canManageDemo && hasDemoData && (
+        <View style={tabSt.demoBanner}>
+          <Text style={tabSt.demoBannerText}>Demo-data actief in dit project</Text>
+          <TouchableOpacity
+            style={[tabSt.demoBannerBtn, demoBusy && { opacity: 0.5 }]}
+            onPress={handleClearDemo}
+            disabled={demoBusy}
+            activeOpacity={0.8}
+          >
+            <Text style={tabSt.demoBannerBtnText}>{demoBusy ? 'Bezig…' : 'Wis demo-data'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {evidence.map(item => {
         const badge  = aiBadge(item.ai_status);
         const uri    = item.media_uri ?? item.photo_uri ?? null;
@@ -1302,6 +1358,10 @@ const detailSt = StyleSheet.create({
 // Tab shared
 const tabSt = StyleSheet.create({
   emptyBox:       { alignItems: 'center', paddingVertical: 48, gap: 12 },
+  demoBanner:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, backgroundColor: '#F3EAFB', borderWidth: 1, borderColor: '#D9C2F0' },
+  demoBannerText: { fontSize: 13, fontWeight: '700', color: '#6B3FA0', flexShrink: 1 },
+  demoBannerBtn:  { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 9, backgroundColor: '#6B3FA0' },
+  demoBannerBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   emptyTitle:     { fontSize: 16, fontWeight: '800' },
   emptyBody:      { fontSize: 13, textAlign: 'center', maxWidth: 320, lineHeight: 20 },
   evidenceCard:   { borderRadius: 14, borderWidth: 1, overflow: 'hidden' },

@@ -1,3 +1,16 @@
+jest.mock('../../lib/supabase', () => ({
+  supabase: {
+    auth: {
+      getSession: jest.fn().mockResolvedValue({
+        data: { session: { access_token: 'test-token' } },
+      }),
+    },
+  },
+}));
+jest.mock('../../config/tenant', () => ({
+  getActiveTenantId: jest.fn(() => 'tenant-abc'),
+}));
+
 import { pushApprovedEvidenceToKik } from '../kik';
 
 describe('pushApprovedEvidenceToKik', () => {
@@ -35,6 +48,13 @@ describe('pushApprovedEvidenceToKik', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+
+    // KiK zit nu achter requireAuth: de Supabase-JWT + tenant gaan mee.
+    const headers = request.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer test-token');
+    expect(headers['x-company-id']).toBe('tenant-abc');
+    expect(headers['Content-Type']).toBe('application/json');
+
     const payload = JSON.parse(String(request.body)) as {
       projectId: string;
       evidence: Array<Record<string, unknown>>;
