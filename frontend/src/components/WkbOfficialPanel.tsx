@@ -39,10 +39,16 @@ export default function WkbOfficialPanel() {
 
   const openSource = (check: WkbOfficialCheck) => {
     const title = 'Externe link openen';
-    const message = `Je verlaat SpeeQ om een officiele overheidsbron (${check.source.label}) te bekijken. Wil je doorgaan?`;
+    const message = `Je verlaat SpeeQ om een officiële overheidsbron (${check.source.label}) te bekijken. Deze opent in een nieuw tabblad. Wil je doorgaan?`;
 
     const go = async () => {
       try {
+        // Web: forceer een nieuw tabblad (met noopener) zodat de gebruiker
+        // SpeeQ niet kwijtraakt. Native: open de systeembrowser.
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.open(check.source.url, '_blank', 'noopener,noreferrer');
+          return;
+        }
         await Linking.openURL(check.source.url);
       } catch (error) {
         console.error('Kon Wkb-bron niet openen:', error);
@@ -68,7 +74,7 @@ export default function WkbOfficialPanel() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Text style={styles.title}>Officiele Wkb randvoorwaarden</Text>
+          <Text style={styles.title}>Officiële Wkb-randvoorwaarden</Text>
           <Text style={styles.subtitle}>
             Gebaseerd op IPLO en Wetten.nl, gericht op de formele Wkb-scope en meldplicht.
           </Text>
