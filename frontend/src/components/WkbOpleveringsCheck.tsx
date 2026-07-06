@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -100,6 +101,9 @@ export default function WkbOpleveringsCheck({
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
   const deviceType = getDeviceType(width);
+  // Live foto maken werkt niet op een desktop-browser (geen bruikbare camera);
+  // op de telefoon-browser wél. Camera-knop daarom grijs + tooltip op desktop.
+  const isDesktopWeb = Platform.OS === 'web' && deviceType === 'DESKTOP';
   const styles = useMemo(() => createStyles(theme, deviceType), [theme, deviceType]);
   const [checklist, setChecklist] = useState<LocalPunchlistItem[]>(buildDefaultItems);
   const [isSaving, setIsSaving] = useState(false);
@@ -147,6 +151,18 @@ export default function WkbOpleveringsCheck({
   };
 
   const handleOpenCamera = (item: LocalPunchlistItem) => {
+    // Op desktop opent de camera-tab niet (die zit alleen op mobiel in de nav),
+    // dus de knop leek "niets te doen". Leg nu vriendelijk uit waar het wél werkt.
+    if (isDesktopWeb) {
+      if (typeof window !== 'undefined') {
+        window.alert(
+          'Foto maken werkt op de telefoon.\n\n' +
+            'Scan de QR-code op "Mijn werkruimte" of open SpeeQ op je mobiel om ' +
+            'bewijsfoto\'s te maken. Op de telefoon opent de camera direct.'
+        );
+      }
+      return;
+    }
     onOpenCamera({
       id: `oplevering-${item.id}`,
       title: item.title,
@@ -224,11 +240,16 @@ export default function WkbOpleveringsCheck({
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.cameraButton}
+        style={[styles.cameraButton, isDesktopWeb && styles.cameraButtonDisabled]}
         onPress={() => handleOpenCamera(item)}
-        activeOpacity={0.8}
+        activeOpacity={isDesktopWeb ? 1 : 0.8}
+        accessibilityLabel={isDesktopWeb ? 'Foto maken — werkt op telefoon' : 'Foto maken voor dit punt'}
+        {...(Platform.OS === 'web'
+          ? ({ title: isDesktopWeb ? 'Werkt op telefoon' : 'Foto maken' } as object)
+          : {})}
       >
-        <Camera color={theme.colors.accent} size={24} />
+        <Camera color={isDesktopWeb ? theme.colors.textSecondary : theme.colors.accent} size={24} />
+        {isDesktopWeb ? <Text style={styles.cameraHint}>telefoon</Text> : null}
       </TouchableOpacity>
     </View>
   );
@@ -236,7 +257,7 @@ export default function WkbOpleveringsCheck({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerEyebrow}>OFFLINE PUNCHLIST</Text>
+        <Text style={styles.headerEyebrow}>OFFLINE BORGINGSLIJST</Text>
         <Text style={styles.headerTitle}>Opleverings-check</Text>
         <Text style={styles.headerText}>
           Loop de woning of het pand langs, vink visuele controles af en leg afwijkingen
@@ -405,6 +426,18 @@ const createStyles = (
       backgroundColor: theme.colors.surfaceAlt,
       borderLeftWidth: 1,
       borderLeftColor: theme.colors.border,
+    },
+    cameraButtonDisabled: {
+      opacity: 0.6,
+      ...(Platform.OS === 'web' ? ({ cursor: 'not-allowed' } as object) : {}),
+    },
+    cameraHint: {
+      marginTop: 3,
+      fontSize: 9,
+      fontWeight: '700',
+      color: theme.colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.3,
     },
     footer: {
       paddingHorizontal: 20,

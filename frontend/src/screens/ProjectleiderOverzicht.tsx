@@ -667,7 +667,7 @@ function DetailPanel({ project, stats, evidence, onBack, onProjectUpdated, onRel
   };
 
   const TABS: { id: DetailTab; label: string; count?: number }[] = [
-    { id: 'bewijs',   label: '📸 Bewijs',   count: evidence.length },
+    { id: 'bewijs',   label: '📸 Foto\'s',   count: evidence.length },
     { id: 'bonnen',   label: '📄 Bonnen' },
     { id: 'notities', label: '📝 Notities' },
   ];

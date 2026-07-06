@@ -10,7 +10,7 @@ export const nl: Record<string, string> = {
   'nav.stickers':      'QR-stickers',
   'nav.taken':         'Taakverdeling',
   'nav.dashboard':     'Dashboard',
-  'nav.bewijs':        'Bewijs',
+  'nav.bewijs':        'Foto\'s',
   'nav.rapportage':    'Rapportage',
 
   // ── Rollen ─────────────────────────────────────────────────────────────────

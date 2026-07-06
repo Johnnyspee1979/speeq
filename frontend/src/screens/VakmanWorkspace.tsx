@@ -34,6 +34,7 @@ import {
 import PushNotificationBanner from '../components/PushNotificationBanner';
 import OfflineSyncBanner from '../components/OfflineSyncBanner';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { EmptyProjectWizard } from '../components/ui/EmptyProjectWizard';
 import { subscribeToWebPush, isPushSupported, getPushPermission } from '../services/WebPushService';
 import { Platform } from 'react-native';
 import { useTranslation } from '../i18n';
@@ -332,6 +333,11 @@ export default function VakmanWorkspace({
           )}
         </View>
 
+        {/* ── Leeg project: vriendelijke onboarding (QR op desktop) i.p.v. lege tabs ── */}
+        {!loading && evidence.length === 0 ? (
+          <EmptyProjectWizard projectId={projectId === 'default' ? undefined : projectId} />
+        ) : (
+        <>
         {/* ── Tabs ── */}
         <View style={[st.tabRow, { borderBottomColor: theme.colors.border }]}>
           {TABS.map(tab => (
@@ -424,6 +430,8 @@ export default function VakmanWorkspace({
             theme={theme}
             commentCountMap={commentCountMap}
           />
+        )}
+        </>
         )}
 
       </ScrollView>

@@ -614,7 +614,7 @@ function AppShell() {
                     opleveringStyles.switchButtonTextActive,
                 ]}
               >
-                Punchlist
+                Borgingslijst
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
