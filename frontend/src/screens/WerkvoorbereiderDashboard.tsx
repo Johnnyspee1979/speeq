@@ -2262,7 +2262,7 @@ function BewijsTab({ evidence, allEvidence, filter, setFilter, metrics, loading,
       <View style={tabSt.emptyBox}>
         <Text style={{ fontSize: 40 }}>{hasActiveSearch ? '🔍' : '📭'}</Text>
         <Text style={[tabSt.emptyTitle, { color: theme.colors.textPrimary }]}>
-          {hasActiveSearch ? 'Geen resultaten' : filter === 'alle' ? 'Nog geen bewijsstukken' : `Geen ${filter} items`}
+          {hasActiveSearch ? 'Geen resultaten' : filter === 'alle' ? 'Nog geen foto\'s' : `Geen ${filter} items`}
         </Text>
         <Text style={[tabSt.emptyBody, { color: theme.colors.textSecondary }]}>
           {hasActiveSearch

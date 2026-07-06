@@ -79,10 +79,10 @@ export const nl: Record<string, string> = {
   'dash.progress':        'Voortgang',
   'dash.trend':           '7-daagse trend',
   'dash.vakmensen':       'Vakmensen — uploads',
-  'dash.no_evidence':     'Nog geen bewijsstukken',
+  'dash.no_evidence':     'Nog geen foto\'s',
   'dash.no_evidence.sub': 'Zodra vaklieden foto\'s uploaden verschijnen de borgingspunten hier.',
   'dash.review_alert':    '{n} borgingspunt{s} wacht{t} op review',
-  'dash.goto_review':     'Tik om naar Bewijs te gaan →',
+  'dash.goto_review':     'Tik om naar Foto\'s te gaan →',
 
   // ── Bewijs-tab ─────────────────────────────────────────────────────────────
   'bewijs.csv':           'CSV exporteren',
@@ -94,7 +94,7 @@ export const nl: Record<string, string> = {
   'bewijs.date_to':       'Datum tot',
   'bewijs.results':       '{n} resultaten',
   'bewijs.clear':         '✕ Wissen',
-  'bewijs.empty':         'Nog geen bewijsstukken',
+  'bewijs.empty':         'Nog geen foto\'s',
   'bewijs.empty.sub':     'Vaklieden uploaden foto\'s via de app.',
   'bewijs.no_results':    'Geen resultaten',
   'bewijs.shortcuts':     'A = goedkeuren · R = afkeuren · Esc = wissen',
