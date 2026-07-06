@@ -1,7 +1,7 @@
 # SpeeQ — STATUS
 
 > **Eén pagina, één waarheid.** Open dit elke ochtend.
-> Laatste update: 23 mei 2026 · sessie offline-stack + voice + UX-diagnose
+> Laatste update: 6 juli 2026 · UX-pijnpunten demo weggewerkt (branch `fix/ux-demo-pijnpunten`, lokaal)
 
 ---
 
@@ -46,16 +46,18 @@
 
 ## 🔴 Pijnpunten gevonden tijdens demo (23 mei)
 
-| # | Wat | Impact |
-|---|---|---|
-| 1 | Geen onboarding voor leeg project | Klant staart naar lege schermen |
-| 2 | 14 items in zijbalk, alle rollen door elkaar | Overweldigd |
-| 3 | Camera-icoon doet niets op desktop | Verwarrend |
-| 4 | "Bewijs/Dossier/Punchlist" — 3 woorden, 1 ding | Terminologie |
-| 5 | Links openen externe overheid-pagina's | Onbedoelde uitstap |
-| 6 | Klik op verkeerd icoon → raw JSON-pagina | Niet user-proof |
+| # | Wat | Impact | Status (6 juli) |
+|---|---|---|---|
+| 1 | Geen onboarding voor leeg project | Klant staart naar lege schermen | ✅ QR-wizard in VakmanWorkspace |
+| 2 | 14 items in zijbalk, alle rollen door elkaar | Overweldigd | ✅ rol-nav (Admin 8 / WV 4 / Vakman 1) |
+| 3 | Camera-icoon doet niets op desktop | Verwarrend | ✅ grijs + "telefoon" + klik-uitleg |
+| 4 | "Bewijs/Dossier/Punchlist" — 3 woorden, 1 ding | Terminologie | ✅ Foto's / Borgingslijst / Dossier(=PDF) |
+| 5 | Links openen externe overheid-pagina's | Onbedoelde uitstap | ✅ waarschuwing + nieuw tabblad |
+| 6 | Klik op verkeerd icoon → raw JSON-pagina | Niet user-proof | ✅ backend-acties afgevangen; "Origineel"-link gehard |
 
 Zie `docs/sessies/2026-05-23-ux-ultraplan.md` voor volledige diagnose + plan.
+
+> **6 juli 2026 — UX-fix-sessie.** Alle 6 pijnpunten weggewerkt op branch `fix/ux-demo-pijnpunten` (5 commits, lokaal, niet gepusht). typecheck + jest (1178) groen. Elke fix visueel geverifieerd in de web-preview. Pijnpunt 6 was in de huidige build niet meer te reproduceren (auth-fetch + in-app foutmeldingen dekken alle dossier/deel/portaal-acties al); als vangnet is de losse "🔍 Origineel"-documentlink extra gehard tegen lege/verlopen URLs.
 
 ---
 
