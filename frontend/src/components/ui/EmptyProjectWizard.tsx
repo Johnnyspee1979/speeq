@@ -123,7 +123,7 @@ export const EmptyProjectWizard: React.FC<EmptyProjectWizardProps> = ({
         <Text style={styles.emoji}>👋</Text>
         <Text style={styles.title}>Klaar voor je eerste foto?</Text>
         <Text style={styles.body}>
-          Open de Punchlist, kies een controlepunt en tik op het camera-icoon.
+          Open de Borgingslijst, kies een controlepunt en tik op het camera-icoon.
         </Text>
 
         {onOpenPunchlist ? (
@@ -134,7 +134,7 @@ export const EmptyProjectWizard: React.FC<EmptyProjectWizardProps> = ({
               pressed && styles.btnPressed,
             ]}
           >
-            <Text style={styles.primaryBtnText}>Open Punchlist</Text>
+            <Text style={styles.primaryBtnText}>Open Borgingslijst</Text>
           </Pressable>
         ) : null}
 
