@@ -1409,7 +1409,19 @@ export default function WerkvoorbereiderDashboard({
                           <Text style={{ color: '#fff', fontWeight: '700' }}>📄 PDF bekijken</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          onPress={() => window.open(doc.photoUrl, '_blank')}
+                          onPress={() => {
+                            // User-proof: een lege of niet-http(s) bronlink opende
+                            // een leeg/rauw tabblad (bv. verlopen storage-link →
+                            // XML/JSON-foutpagina). Vang dat af met een nette melding.
+                            const url = doc.photoUrl;
+                            if (!url || !/^https?:\/\//i.test(url)) {
+                              if (typeof window !== 'undefined') {
+                                window.alert('Origineel niet beschikbaar — dit document heeft geen geldige bronlink. Bekijk het via "PDF bekijken".');
+                              }
+                              return;
+                            }
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          }}
                           style={{
                             paddingHorizontal: 14,
                             paddingVertical: 8,
