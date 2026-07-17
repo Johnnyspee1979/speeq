@@ -11,7 +11,7 @@
 
 | Wat | URL / Plek |
 |---|---|
-| Frontend (web/PWA) | `speeq-a9q4ndkrk-spee-solutions.vercel.app` |
+| Frontend (web/PWA) | `wkb-snap-sync.vercel.app` (canoniek prod-domein van Vercel-project `speeq-wkb`; nieuwe build live 17 jul, backend-URL in bundle geverifieerd) |
 | Backend API | `awake-beauty-production-9a80.up.railway.app` |
 | Supabase project | `kgiuavfvhtdgwuygbyzo` (eu-central-1) |
 | Voice TTS bucket | `speeq-voice-cache` (public, 5MB cap, mp3) |
@@ -98,7 +98,7 @@ Zijbalk past zich aan op basis van rol.
 
 ## 📋 Demo-script voor verkoopgesprek (5 min)
 
-1. **Open** `speeq-a9q4ndkrk-spee-solutions.vercel.app`
+1. **Open** `wkb-snap-sync.vercel.app`
 2. **Toon Modules** — "Klant kiest zelf: AI ja/nee, GPS ja/nee, Offline ja/nee"
 3. **Toon Presets** — "50+ kant-en-klare checks, niets zelf bedenken"
 4. **Toon Bedrijfsbranding** — "Jouw logo, jouw kleur, in elk dossier"
@@ -114,7 +114,7 @@ Zijbalk past zich aan op basis van rol.
 | Supabase project | `kgiuavfvhtdgwuygbyzo` of nieuw via MCP |
 | Voice cache bucket | `npx ts-node backend/src/scripts/setupVoiceBucket.ts` |
 | `ELEVENLABS_API_KEY` op Railway | Variables tab → Add |
-| Frontend deploy | `npx vercel --prod --yes` vanuit `frontend/` |
+| Frontend deploy | `npx vercel deploy --prod` vanuit `frontend/` — **remote build** (Vercel bouwt zelf). Let op: de EXPO_PUBLIC_*-vars staan als "sensitive" op Vercel → `vercel pull`/lokale `vercel build` krijgt lege waardes en bakt een kapotte bundle (login zegt dan "geen verbinding"). Remote build heeft de echte waardes wél (17 jul geleerd) |
 | Backend deploy | `railway up` **vanaf de repo-root** (service heeft rootDirectory=backend/; vanuit `backend/` faalt de build met "Failed to read app source directory"). Check eerst `railway status` → project móet awake-beauty zijn. Node is gepind via `NIXPACKS_NODE_VERSION=22` (supabase-js vereist native WebSocket) |
 
 ---
