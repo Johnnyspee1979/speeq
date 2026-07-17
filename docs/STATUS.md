@@ -1,8 +1,9 @@
 # SpeeQ — STATUS
 
 > **Eén pagina, één waarheid.** Open dit elke ochtend.
-> Laatste update: 17 juli 2026 · Fase 1 "fundament + vangnet" (branch `fase1/fundament-en-vangnet`): ADR 0001 (tenant-model/command center/hosting beslist), CI-testgate vóór Vercel-deploy, afas/erp/exact achter auth, tenant-scope op evidence/kik-uploads, `admin/` + Maker-v1 gearchiveerd. Volledige analyse: `docs/strategie/2026-07-17-vierkanten-analyse.md`.
-> ⚠️ Actiepunt dat alléén Johnny kan doen: oude ElevenLabs-key (per ongeluk als variabele-naam geplakt) in het ElevenLabs-dashboard disablen — staat al sinds mei open, zie regel "Oude ElevenLabs API key disablen" hieronder.
+> Laatste update: 17 juli 2026 · Fase 1 gemerged (PR #129): ADR 0001, CI-testgate + branch protection op main, afas/erp/exact achter auth, tenant-scope op evidence/kik, `admin/` + Maker-v1 gearchiveerd. Volledige analyse: `docs/strategie/2026-07-17-vierkanten-analyse.md`.
+> ✅ ElevenLabs-key geroteerd (17 jul): nieuwe key op Railway gezet en geverifieerd. Oude/blootgestelde keys in het ElevenLabs-dashboard nog disablen als je 5 min hebt (alles behalve de key die nu in gebruik is en "Claude API MCP").
+> ⚠️ Ontdekt (17 jul): de workflow "Deploy production to Vercel" staat sinds eind mei **handmatig uit** — de `VERCEL_TOKEN`-secret in GitHub is ongeldig (5 runs gefaald op 29-30 mei). Frontend-deploys gaan dus nog handmatig (`npx vercel --prod` vanuit `frontend/`). Fix = nieuwe token op vercel.com → GitHub-secret `VERCEL_TOKEN` vervangen → workflow weer aanzetten (hoort bij fase 4, release-trein).
 
 ---
 
@@ -122,7 +123,8 @@ Zijbalk past zich aan op basis van rol.
 
 | Item | Wanneer |
 |---|---|
-| Oude ElevenLabs API key disablen (per-ongeluk als variabele-naam geplakt) | Vandaag nog |
+| ~~Oude ElevenLabs API key disablen (per-ongeluk als variabele-naam geplakt)~~ | ✅ 17 jul: key geroteerd; oude keys in dashboard nog uitzetten |
+| Nieuwe `VERCEL_TOKEN` maken (vercel.com → Settings → Tokens) + GitHub-secret vervangen + workflow "Deploy production to Vercel" weer aanzetten | Bij fase 4 |
 | Railway trial upgrade naar Hobby ($5/m) | Voor 30 mei |
 | Eerste klant op de tool zetten + observeren | Deze week |
 
