@@ -83,9 +83,11 @@ cd frontend && npm run typecheck
   `/api/admin/ai-stats`, `/api/dossier/:projectId` (+`/export`),
   `/api/ai/validate`, `/api/dso/stam/submit`+`/status`. Tenant-write/list achter
   auth; `/api/v1/tenants/resolve` blijft publiek (login).
-- Bewust **publiek/extern** gelaten: `/api/erp/afas`,
-  `/api/integrations/erp|exact-online` (eigen API-key-auth),
-  `/health`, `/api/health`, en `/qr` (achter `ENABLE_QR_DEMO`).
+- `/api/erp/afas`, `/api/integrations/erp|exact-online` zijn **niet langer
+  publiek** (de aangenomen "eigen API-key-auth" bestond niet: creds kwamen uit
+  headers/query mét fallback op server-env — audit 17 jul '26): nu achter
+  `requireAuth`. Bewust publiek gebleven: `/health`, `/api/health`, en `/qr`
+  (achter `ENABLE_QR_DEMO`).
 - **Project-scope** (naast rol): de gebruikte dossier-routes (`/api/wkb-dossier/*`:
   genereer, bevoegd-gezag, consument(/export)) én de inline `/api/dossier/:projectId`
   (+`/export`) roepen nu `assertProjectReviewAccess` aan — alleen eigenaar/
@@ -111,3 +113,18 @@ cd frontend && npm run typecheck
   `MasterSupabase.ts` (publiek-by-design, maar idealiter env-only).
 - Route-aliassen (`/api/integrations/kik|dso`, exact/erp) zijn ongebruikt door
   de frontend; mogelijk voor externe integraties — niet zomaar verwijderen.
+
+## Fundament-besluiten (ADR 0001, 17 jul 2026)
+Zie `docs/adr/0001-fundament-besluiten.md` — deze keuzes zijn leidend:
+1. **Tenant-model = één gedeelde Supabase + RLS** (`tenant_id`-kolom,
+   `tenant_fence_*`-policies). Per-klant Supabase-projecten zijn geschrapt als
+   actief pad; `tenants.supabase_url/anon_key` alleen als latere enterprise-optie.
+2. **Command center = in-app `MakerDashboardScreen`** (gatekeeper, e-mail-gated,
+   `/api/maker/*`). `admin/` en `MakerDashboard.tsx` v1 (incl. `/maker`-route)
+   staan in `_archief/` — niet reanimeren.
+3. **Backend blijft op Railway**; frontend op Vercel. "GitHub voor updates" =
+   CI-testgate (`.github/workflows/checks.yml`) + later auto-deploy, geen
+   hosting-migratie.
+- Tenant/project-scope op uploads: `requireProjectTenantScope`
+  (`backend/src/middleware/`) zit op `/api/wkb-evidence/upload` en `/api/kik/*`
+  — project moet bestaan én in de tenant van de ingelogde gebruiker vallen.
