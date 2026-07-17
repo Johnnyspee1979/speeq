@@ -93,9 +93,14 @@ app.use('/api/wkb-evidence', requireAuth, evidenceRoutes);
 // ENFORCE_SUBSCRIPTION=true (standaard uit → no-op). Op de betaalde acties
 // (dossier-export en STAM/DSO-melding), náást de rol-gate.
 app.use('/api/wkb-dossier', requireAuth, requireActiveSubscription, dossierRoutes);
-app.use('/api/erp/afas', afasRoutes);
-app.use('/api/integrations/erp', erpRoutes);
-app.use('/api/integrations/exact-online', exactRoutes);
+// Was publiek gemount met de aanname 'eigen API-key-auth', maar die auth stond
+// nergens in de handlers: AFAS-creds kwamen uit headers/query mét fallback op
+// server-env-credentials, dus een anonieme caller kon op óns AFAS/Exact boeken
+// (audit 17 jul '26). Nu achter requireAuth; de frontend gebruikt deze routes
+// niet, externe koppelingen moeten voortaan een Supabase-JWT meesturen.
+app.use('/api/erp/afas', requireAuth, afasRoutes);
+app.use('/api/integrations/erp', requireAuth, erpRoutes);
+app.use('/api/integrations/exact-online', requireAuth, exactRoutes);
 // Was publiek gemount met de aanname 'eigen API-key-auth', maar die auth stond
 // nergens in kikRoutes → /borgingsplan lekte het borgingsplan en /evidence +
 // /sync-evidence accepteerden bewijs zonder token. Nu achter requireAuth (zelfde

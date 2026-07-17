@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 const { createClient } = require('@supabase/supabase-js');
 const { backendConfig, hasSupabaseConfig } = require('../config');
 const { validateEvidenceWithAI } = require('../services/aiValidationService');
+const { requireProjectTenantScope } = require('../middleware/requireProjectTenantScope');
 
 dotenv.config();
 
@@ -212,6 +213,10 @@ const isMissingColumnError = (
 router.post(
   '/upload',
   uploadPhoto,
+  // Ná multer (evidenceData is dan beschikbaar), vóór de handler: project moet
+  // bestaan én in de tenant van de ingelogde gebruiker vallen (audit 17 jul '26
+  // — daarvoor kon elke ingelogde gebruiker naar elk project uploaden).
+  requireProjectTenantScope,
   async (req: MulterRequest, res: Response): Promise<void> => {
     try {
       if (!req.file || !req.body?.evidenceData) {
@@ -222,8 +227,9 @@ router.post(
       const evidenceData = parseEvidenceData(req.body.evidenceData);
       const evidenceId =
         getStringField(evidenceData, ['id', 'evidence_id']) || `bewijs-${Date.now()}`;
-      const projectId =
-        getStringField(evidenceData, ['projectId', 'project_id']) || 'onbekend-project';
+      // Geen 'onbekend-project'-fallback meer: bewijs zonder geldig project is
+      // waardeloos in het Wkb-dossier én omzeilde de tenant-scope-check.
+      const projectId = getStringField(evidenceData, ['projectId', 'project_id']);
       const inspectionPointId = getStringField(evidenceData, [
         'inspectionPointId',
         'inspection_point_id',
@@ -264,6 +270,11 @@ router.post(
           'locationSecurityMessage',
           'location_security_message',
         ]) || null;
+
+      if (!projectId) {
+        res.status(400).json({ error: 'projectId ontbreekt in evidenceData.' });
+        return;
+      }
 
       if (!inspectionPointId) {
         res.status(400).json({ error: 'inspectionPointId ontbreekt in evidenceData.' });
@@ -310,9 +321,17 @@ router.post(
       const mediaUrl = signedData?.signedUrl ?? fileName;
       const aiFindingsText = aiResult.findings.join(' | ');
 
+      // tenant_id komt uit de scope-check (requireProjectTenantScope) — de
+      // productie-DB heeft de kolom (RLS tenant-fence); in een verouderde
+      // omgeving zonder kolom vangt de bestaande legacy-fallback dit op.
+      const tenantId =
+        (req as MulterRequest & { projectTenantScope?: { tenantId: string | null } })
+          .projectTenantScope?.tenantId ?? null;
+
       const richPayload = {
         evidence_id: evidenceId,
         project_id: projectId,
+        tenant_id: tenantId,
         inspection_point_id: inspectionPointId,
         media_uri: fileName,
         photo_uri: fileName,
