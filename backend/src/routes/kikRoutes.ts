@@ -7,13 +7,18 @@ const {
   pushEvidenceBatchToKiK,
   pushEvidenceToKiK,
 } = require('../services/kikService');
+// Tenant/project-hek (audit 17 jul '26): requireAuth op de mount bewees alleen
+// dát iemand ingelogd was — elke gebruiker kon elk borgingsplan opvragen en
+// bewijs voor elk project naar KiK pushen. Nu: project moet bestaan én in de
+// tenant van de ingelogde gebruiker vallen.
+const { requireProjectTenantScope } = require('../middleware/requireProjectTenantScope');
 
 const router = Router();
 
 const readString = (value: unknown) =>
   typeof value === 'string' && value.trim() ? value.trim() : '';
 
-router.get('/borgingsplan/:projectId', async (req: Request, res: Response): Promise<void> => {
+router.get('/borgingsplan/:projectId', requireProjectTenantScope, async (req: Request, res: Response): Promise<void> => {
   try {
     const projectId = String(req.params.projectId ?? '').trim();
 
@@ -31,7 +36,7 @@ router.get('/borgingsplan/:projectId', async (req: Request, res: Response): Prom
   }
 });
 
-router.post('/evidence', async (req: Request, res: Response): Promise<void> => {
+router.post('/evidence', requireProjectTenantScope, async (req: Request, res: Response): Promise<void> => {
   try {
     const projectId = typeof req.body?.projectId === 'string' ? req.body.projectId : '';
     const evidence = Array.isArray(req.body?.evidence) ? req.body.evidence : [];
@@ -52,7 +57,7 @@ router.post('/evidence', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-router.post('/sync-evidence', async (req: Request, res: Response): Promise<void> => {
+router.post('/sync-evidence', requireProjectTenantScope, async (req: Request, res: Response): Promise<void> => {
   try {
     const source =
       req.body?.evidenceData && typeof req.body.evidenceData === 'object'

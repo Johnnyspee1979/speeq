@@ -2,6 +2,8 @@
 # zodat `railway up` vanaf de repo-root geen 200 MB+ aan worktrees/node_modules
 # uploadt (anders 413 Payload Too Large).
 .claude/
+_archief/
+_KENNISBOEK/
 frontend/
 www/
 demo-prep/

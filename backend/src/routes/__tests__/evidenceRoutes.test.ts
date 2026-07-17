@@ -119,6 +119,13 @@ describe('POST /upload — validatie', () => {
     expect(mockValidate).not.toHaveBeenCalled();
   });
 
+  it('weigert met 400 als projectId ontbreekt (geen onbekend-project-fallback meer)', async () => {
+    const { projectId, ...zonder } = validData;
+    const res = await call({ body: { evidenceData: zonder }, file: file() });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockValidate).not.toHaveBeenCalled();
+  });
+
   it('weigert met 400 als inspectionPointId ontbreekt', async () => {
     const { inspectionPointId, ...zonder } = validData;
     const res = await call({ body: { evidenceData: zonder }, file: file() });

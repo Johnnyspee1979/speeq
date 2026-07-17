@@ -18,7 +18,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Testgate (ADR 0001): main deployt pas nadat backend-tests + typechecks en
+  # frontend-checks groen zijn. Zelfde checks als op PR's (checks.yml).
+  checks:
+    uses: ./.github/workflows/checks.yml
+
   deploy:
+    needs: checks
     runs-on: ubuntu-latest
     defaults:
       run:

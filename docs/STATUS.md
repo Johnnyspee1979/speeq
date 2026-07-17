@@ -1,7 +1,8 @@
 # SpeeQ — STATUS
 
 > **Eén pagina, één waarheid.** Open dit elke ochtend.
-> Laatste update: 6 juli 2026 · UX-pijnpunten demo weggewerkt (branch `fix/ux-demo-pijnpunten`, lokaal)
+> Laatste update: 17 juli 2026 · Fase 1 "fundament + vangnet" (branch `fase1/fundament-en-vangnet`): ADR 0001 (tenant-model/command center/hosting beslist), CI-testgate vóór Vercel-deploy, afas/erp/exact achter auth, tenant-scope op evidence/kik-uploads, `admin/` + Maker-v1 gearchiveerd. Volledige analyse: `docs/strategie/2026-07-17-vierkanten-analyse.md`.
+> ⚠️ Actiepunt dat alléén Johnny kan doen: oude ElevenLabs-key (per ongeluk als variabele-naam geplakt) in het ElevenLabs-dashboard disablen — staat al sinds mei open, zie regel "Oude ElevenLabs API key disablen" hieronder.
 
 ---
 

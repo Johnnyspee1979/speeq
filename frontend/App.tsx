@@ -64,7 +64,6 @@ import LoginScreen from './src/screens/LoginScreen';
 import TeamBeheerScreen from './src/screens/TeamBeheerScreen';
 import TenantBrandingScreen from './src/screens/TenantBrandingScreen';
 import TenantFeaturesScreen from './src/screens/TenantFeaturesScreen';
-import MakerDashboard from './src/screens/MakerDashboard';
 import EvidenceMapView from './src/components/EvidenceMapView';
 import JoinScreen from './src/screens/JoinScreen';
 import TekenGoedkeuringScreen from './src/screens/TekenGoedkeuringScreen';
@@ -1096,25 +1095,6 @@ const createOpleveringStyles = (
     },
   });
 
-/**
- * isMakerRoute — true zodra het pad `/maker` is óf `?maker=1` in de URL staat.
- *
- * Het maker-paneel bypasst alle tenant-gates: het draait tegen de master-DB
- * en heeft zijn eigen auth-flow (zie MakerDashboard). Bezoekers zonder geldige
- * maker-sessie zien gewoon het login-formulier.
- */
-function isMakerRoute(): boolean {
-  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
-  try {
-    const path = window.location.pathname || '';
-    if (path === '/maker' || path.startsWith('/maker/')) return true;
-    const params = new URLSearchParams(window.location.search);
-    return params.get('maker') === '1';
-  } catch {
-    return false;
-  }
-}
-
 // Bridge: callt de active-tenant hook en wrapt children in TenantProvider →
 // async fetch op tenant_features + realtime UPDATE-listener → ThemeProvider
 // hertekent de hele app instant zodra de KEYUSER kleuren aanpast.
@@ -1124,21 +1104,6 @@ function TenantAwareTheme({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  // Maker-route checken vóór alle providers — direct render, geen tenant-init.
-  const makerMode = isMakerRoute();
-
-  if (makerMode) {
-    return (
-      <LanguageProvider>
-        <TenantAwareTheme>
-          <AppErrorBoundary>
-            <MakerDashboard />
-          </AppErrorBoundary>
-        </TenantAwareTheme>
-      </LanguageProvider>
-    );
-  }
-
   return (
     <LanguageProvider>
       <TenantAwareTheme>
