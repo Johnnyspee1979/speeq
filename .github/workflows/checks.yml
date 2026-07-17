@@ -46,10 +46,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Node 24 = lokale dev-versie. Niet verlagen naar 20: de i18n- en
+      # ShareService-tests gebruiken de globale `navigator` (Node ≥21).
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
