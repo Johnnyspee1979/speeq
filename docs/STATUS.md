@@ -125,7 +125,7 @@ Zijbalk past zich aan op basis van rol.
 |---|---|
 | ~~Oude ElevenLabs API key disablen (per-ongeluk als variabele-naam geplakt)~~ | ✅ 17 jul: key geroteerd; oude keys in dashboard nog uitzetten |
 | Nieuwe `VERCEL_TOKEN` maken (vercel.com → Settings → Tokens) + GitHub-secret vervangen + workflow "Deploy production to Vercel" weer aanzetten | Bij fase 4 |
-| Railway trial upgrade naar Hobby ($5/m) | Voor 30 mei |
+| ~~Railway trial upgrade naar Hobby ($5/m)~~ | ✅ 17 jul: geüpgraded naar Hobby |
 | Eerste klant op de tool zetten + observeren | Deze week |
 
 ---
