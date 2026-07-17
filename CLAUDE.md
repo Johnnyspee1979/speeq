@@ -63,6 +63,12 @@ cd frontend && npm run typecheck
 - **Geen `supertest`** als dependency. Voor route-tests: óf router-stack
   inspecteren, óf een wegwerp-Express-app + Node's globale `fetch`/`FormData`.
 - **zsh expandt globs** zoals `*.ts` in bash-`grep`; gebruik de Grep-tool.
+- **Railway-deploys**: `railway up` vanaf de **repo-root** (service rootDirectory
+  = backend/), nooit vanuit `backend/`. Links zijn per map — check altijd eerst
+  `railway status` (project = awake-beauty), anders maakt `up` stil een nieuw
+  project aan. Node gepind op 22 (`NIXPACKS_NODE_VERSION` + engines):
+  supabase-js vereist native WebSocket; een rebuild op oudere Node brak op
+  17 jul '26 álle requireAuth-routes in prod.
 
 ## Auth-model (kort)
 - `backend/src/middleware/auth.ts` → `requireAuth`: verifieert Supabase-JWT,

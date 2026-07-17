@@ -18,10 +18,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Node 24 = lokale dev-versie; backend/package.json eist >=22 omdat
+      # @supabase/supabase-js native WebSocket nodig heeft (Railway draait 22
+      # via NIXPACKS_NODE_VERSION — hard geleerd op 17 jul '26: een rebuild op
+      # oudere Node brak álle requireAuth-routes in productie).
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: backend/package-lock.json
 

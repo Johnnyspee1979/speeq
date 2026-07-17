@@ -115,7 +115,7 @@ Zijbalk past zich aan op basis van rol.
 | Voice cache bucket | `npx ts-node backend/src/scripts/setupVoiceBucket.ts` |
 | `ELEVENLABS_API_KEY` op Railway | Variables tab → Add |
 | Frontend deploy | `npx vercel --prod --yes` vanuit `frontend/` |
-| Backend deploy | `cd backend && railway up` |
+| Backend deploy | `railway up` **vanaf de repo-root** (service heeft rootDirectory=backend/; vanuit `backend/` faalt de build met "Failed to read app source directory"). Check eerst `railway status` → project móet awake-beauty zijn. Node is gepind via `NIXPACKS_NODE_VERSION=22` (supabase-js vereist native WebSocket) |
 
 ---
 
