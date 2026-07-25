@@ -1,29 +1,38 @@
 /**
  * Unit-tests voor VoicePreferencesContext.
  *
+ * Gesproken feedback is op 25 juli 2026 uit het product gehaald. De context
+ * bestaat nog wél — consumers (`useVoicePlayback`, `CameraView`,
+ * `RejectionBanner`) vragen `voiceEnabled` op en moeten altijd `false` krijgen.
+ * Deze tests bewaken precies dat: uit blijft uit, ook als iemand vroeger een
+ * voorkeur had opgeslagen en ook als er nog ergens een toggle wordt aangeroepen.
+ *
  * Geen JSX (de jest-config heeft geen .tsx transform op dit moment),
  * dus we gebruiken React.createElement direct.
  */
 
 import React from 'react';
-import { render, act, waitFor } from '@testing-library/react-native';
+import { render, act } from '@testing-library/react-native';
 
-// localforage in-memory mock
+// localforage in-memory mock — de provider hoort hem niet meer te gebruiken.
 const lfStore = new Map<string, string>();
+const getItem = jest.fn((key: string) =>
+  Promise.resolve(lfStore.has(key) ? lfStore.get(key) : null),
+);
+const setItem = jest.fn((key: string, val: string) => {
+  lfStore.set(key, val);
+  return Promise.resolve(val);
+});
 jest.mock('localforage', () => ({
   __esModule: true,
   default: {
-    getItem: (key: string) =>
-      Promise.resolve(lfStore.has(key) ? lfStore.get(key) : null),
-    setItem: (key: string, val: string) => {
-      lfStore.set(key, val);
-      return Promise.resolve(val);
-    },
+    getItem: (key: string) => getItem(key),
+    setItem: (key: string, val: string) => setItem(key, val),
   },
 }));
 
 jest.mock('react-native', () => ({
-  Platform: { OS: 'web' },
+  Platform: { OS: 'ios' },
 }));
 
 import {
@@ -53,6 +62,8 @@ function renderWithProvider() {
 
 beforeEach(() => {
   lfStore.clear();
+  getItem.mockClear();
+  setItem.mockClear();
   lastCtx = null;
   jest.spyOn(console, 'warn').mockImplementation(() => {});
 });
@@ -61,74 +72,47 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-// ─── getPlatformVoiceDefault ─────────────────────────────────────────────────
+// ─── Platform-default ────────────────────────────────────────────────────────
 
 describe('getPlatformVoiceDefault', () => {
-  it('web → false (kantoor)', () => {
+  it('is uit, ook op native (was daar vroeger aan)', () => {
     expect(getPlatformVoiceDefault()).toBe(false);
   });
 });
 
-// ─── Provider — initial-load ────────────────────────────────────────────────
+// ─── Provider ────────────────────────────────────────────────────────────────
 
-describe('VoicePreferencesProvider — initial load', () => {
-  it('isLoaded begint op false en wordt true na localforage-read', async () => {
+describe('VoicePreferencesProvider', () => {
+  it('staat direct uit en is meteen geladen', () => {
     renderWithProvider();
-    expect(lastCtx?.isLoaded).toBe(false);
-    await waitFor(() => expect(lastCtx?.isLoaded).toBe(true));
+    expect(lastCtx?.voiceEnabled).toBe(false);
+    expect(lastCtx?.isLoaded).toBe(true);
   });
 
-  it('gebruikt platform-default bij lege storage', async () => {
-    renderWithProvider();
-    await waitFor(() => expect(lastCtx?.isLoaded).toBe(true));
-    expect(lastCtx?.voiceEnabled).toBe(false); // web default
-  });
-
-  it("respecteert opgeslagen 'true'", async () => {
+  it('negeert een eerder opgeslagen voorkeur', async () => {
     lfStore.set('speeq_voice_enabled', 'true');
     renderWithProvider();
-    await waitFor(() => expect(lastCtx?.isLoaded).toBe(true));
-    expect(lastCtx?.voiceEnabled).toBe(true);
-  });
-
-  it("respecteert opgeslagen 'false'", async () => {
-    lfStore.set('speeq_voice_enabled', 'false');
-    renderWithProvider();
-    await waitFor(() => expect(lastCtx?.isLoaded).toBe(true));
+    await act(async () => {});
     expect(lastCtx?.voiceEnabled).toBe(false);
+    expect(getItem).not.toHaveBeenCalled();
   });
-});
 
-// ─── setVoiceEnabled + toggleVoice ───────────────────────────────────────────
-
-describe('VoicePreferencesProvider — mutations', () => {
-  it('setVoiceEnabled persists naar localforage', async () => {
+  it('setVoiceEnabled(true) zet niets aan en schrijft niets weg', async () => {
     renderWithProvider();
-    await waitFor(() => expect(lastCtx?.isLoaded).toBe(true));
-
     await act(async () => {
       await lastCtx!.setVoiceEnabled(true);
     });
-
-    expect(lastCtx?.voiceEnabled).toBe(true);
-    expect(lfStore.get('speeq_voice_enabled')).toBe('true');
+    expect(lastCtx?.voiceEnabled).toBe(false);
+    expect(setItem).not.toHaveBeenCalled();
   });
 
-  it('toggleVoice flipt state', async () => {
+  it('toggleVoice doet niets', async () => {
     renderWithProvider();
-    await waitFor(() => expect(lastCtx?.isLoaded).toBe(true));
-    expect(lastCtx?.voiceEnabled).toBe(false);
-
-    await act(async () => {
-      await lastCtx!.toggleVoice();
-    });
-    expect(lastCtx?.voiceEnabled).toBe(true);
-    expect(lfStore.get('speeq_voice_enabled')).toBe('true');
-
     await act(async () => {
       await lastCtx!.toggleVoice();
     });
     expect(lastCtx?.voiceEnabled).toBe(false);
+    expect(setItem).not.toHaveBeenCalled();
   });
 });
 

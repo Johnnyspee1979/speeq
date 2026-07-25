@@ -36,19 +36,26 @@ export interface VoicePreferencesContextValue {
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'speeq_voice_enabled';
-
 const VoicePreferencesContext =
   createContext<VoicePreferencesContextValue | undefined>(undefined);
 
-// ─── Default per platform ───────────────────────────────────────────────────
+// ─── Uitgezet ───────────────────────────────────────────────────────────────
 
 /**
- * Bouwplaats (native) krijgt voice aan. Kantoor (web) krijgt voice uit
- * om geluidsuitbarstingen in open kantoren te voorkomen.
+ * Gesproken feedback is uit het product gehaald (25 juli 2026). De zwevende
+ * luidspreker-knop stond permanent over de app heen en leverde niets op.
+ *
+ * De context blijft bestaan zodat `useVoicePlayback`, `CameraView` en
+ * `RejectionBanner` niet hoeven te weten dat de functie weg is: ze vragen
+ * `voiceEnabled` op, krijgen `false`, en zwijgen. Geen losse eindjes, geen
+ * halfwerkende knop.
+ *
+ * Wil je het ooit terug: geef `voiceEnabled` weer een echte state, zet de
+ * opslag terug (sleutel `speeq_voice_enabled`) en hang de knop opnieuw in
+ * TenantProvider. De backend-route `/api/voice/tts` is ongemoeid gelaten.
  */
 export function getPlatformVoiceDefault(): boolean {
-  return Platform.OS === 'ios' || Platform.OS === 'android';
+  return false;
 }
 
 // ─── Provider ───────────────────────────────────────────────────────────────
@@ -56,47 +63,26 @@ export function getPlatformVoiceDefault(): boolean {
 export const VoicePreferencesProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const [voiceEnabled, setVoiceEnabledState] = useState<boolean>(
-    getPlatformVoiceDefault(),
-  );
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const stored = await localforage.getItem<string>(STORAGE_KEY);
-        if (cancelled) return;
-        if (stored === 'true') setVoiceEnabledState(true);
-        else if (stored === 'false') setVoiceEnabledState(false);
-        // else: behoud platform-default
-      } catch (err) {
-        console.warn('[VoicePreferences] kon storage niet lezen:', err);
-      } finally {
-        if (!cancelled) setIsLoaded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const setVoiceEnabled = useCallback(async (enabled: boolean) => {
-    setVoiceEnabledState(enabled);
-    try {
-      await localforage.setItem(STORAGE_KEY, enabled ? 'true' : 'false');
-    } catch (err) {
-      console.warn('[VoicePreferences] kon storage niet schrijven:', err);
-    }
+  // Geen state, geen opslag: altijd uit. Een eerder opgeslagen 'true' van een
+  // gebruiker die de knop ooit aanzette, mag niet blijven nagalmen.
+  const setVoiceEnabled = useCallback(async (_enabled: boolean) => {
+    /* bewust leeg — spraak is uitgezet */
   }, []);
 
   const toggleVoice = useCallback(async () => {
-    await setVoiceEnabled(!voiceEnabled);
-  }, [voiceEnabled, setVoiceEnabled]);
+    /* bewust leeg — spraak is uitgezet */
+  }, []);
 
   return React.createElement(
     VoicePreferencesContext.Provider,
-    { value: { voiceEnabled, isLoaded, toggleVoice, setVoiceEnabled } },
+    {
+      value: {
+        voiceEnabled: false,
+        isLoaded: true,
+        toggleVoice,
+        setVoiceEnabled,
+      },
+    },
     children,
   );
 };

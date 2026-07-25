@@ -311,6 +311,81 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Diepe gezondheidscheck — voor externe monitoring
+// ─────────────────────────────────────────────────────────────────────────────
+// `/health` en `/api/health` raken de database niet aan: die melden 'ok' zolang
+// het Node-proces draait. Railway gebruikt `/health` bewust zo (liveness) — een
+// haperende Supabase moet niet de container herstarten.
+//
+// Deze route is het tegenovergestelde: hij doet een échte query en geeft 503
+// zodra de database onbereikbaar is. Hang daar een externe monitor aan, dan
+// merk jij een storing vóór de klant. Zonder deze route meet een monitor alleen
+// of Node nog ademt, niet of de app werkt.
+//
+// De query is bewust goedkoop (alleen tellen, geen rijen ophalen) en heeft een
+// eigen tijdslimiet, zodat de check zelf nooit blijft hangen.
+app.get('/api/health/diep', async (_req: Request, res: Response) => {
+  const gestart = Date.now();
+  const checks: Record<string, { ok: boolean; ms?: number; melding?: string }> = {};
+
+  // ── Database ──────────────────────────────────────────────────────────────
+  if (!hasSupabaseConfig()) {
+    checks.database = { ok: false, melding: 'Supabase niet geconfigureerd' };
+  } else {
+    const dbStart = Date.now();
+    try {
+      const supabase = getSupabaseAdminClient();
+      const query = supabase
+        .from('tenants')
+        .select('company_id', { count: 'exact', head: true });
+
+      const { error } = await Promise.race([
+        query,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('time-out na 5s')), 5000)
+        ),
+      ]);
+
+      if (error) throw error;
+      checks.database = { ok: true, ms: Date.now() - dbStart };
+    } catch (err: any) {
+      checks.database = {
+        ok: false,
+        ms: Date.now() - dbStart,
+        melding: err?.message || 'onbekende fout',
+      };
+    }
+  }
+
+  // ── Configuratie die stil kan wegvallen ───────────────────────────────────
+  // Geen harde fout: de app draait zonder, maar je wilt het wél zien.
+  checks.email = backendConfig.resendApiKey
+    ? { ok: true }
+    : { ok: false, melding: 'RESEND_API_KEY ontbreekt' };
+  checks.dso = backendConfig.digikoppelingApiUrl
+    ? { ok: true }
+    : {
+        ok: false,
+        melding:
+          'DSO-adapter niet geconfigureerd — melden naar bevoegd gezag werkt niet',
+      };
+
+  // Alleen de database bepaalt of we gezond zijn. E-mail en DSO zijn wél
+  // zichtbaar, maar mogen geen vals alarm geven op een dossier-app die verder
+  // gewoon draait.
+  const gezond = checks.database.ok;
+
+  res.status(gezond ? 200 : 503).json({
+    status: gezond ? 'gezond' : 'ongezond',
+    env: backendConfig.appEnv,
+    dsoOmgeving: backendConfig.dsoEnvironment,
+    tijdstip: new Date().toISOString(),
+    duurMs: Date.now() - gestart,
+    checks,
+  });
+});
+
 app.get('/api/admin/ai-stats', requireAuth, async (req: Request, res: Response) => {
   try {
     const supabase = getSupabaseAdminClient();
