@@ -18,7 +18,6 @@ import { OfflineConflictTrigger } from '../components/ui/OfflineConflictTrigger'
 import { OfflineRetryInsightsTrigger } from '../components/ui/OfflineRetryInsightsTrigger';
 import { OfflineSyncBootstrap } from '../components/OfflineSyncBootstrap';
 import { VoicePreferencesProvider } from '../context/VoicePreferencesContext';
-import { VoiceQuickToggle } from '../components/ui/VoiceQuickToggle';
 
 interface TenantProviderProps {
   children: React.ReactNode;
@@ -102,7 +101,6 @@ export const TenantProvider = ({ children, activeTenantId }: TenantProviderProps
           <OfflineSyncFloatingBadge />
           <OfflineConflictTrigger />
           <OfflineRetryInsightsTrigger />
-          <VoiceQuickToggle />
         </VoicePreferencesProvider>
       </ThemeProvider>
     );
@@ -115,7 +113,6 @@ export const TenantProvider = ({ children, activeTenantId }: TenantProviderProps
         {children}
         <OfflineSyncFloatingBadge />
         <OfflineConflictTrigger />
-        <VoiceQuickToggle />
       </VoicePreferencesProvider>
     </ThemeProvider>
   );
